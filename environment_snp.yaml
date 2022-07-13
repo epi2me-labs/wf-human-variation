@@ -1,0 +1,14 @@
+name: epi2melabs-nf-human-snp-conda
+channels:
+    - epi2melabs
+    - bioconda
+    - conda-forge
+    - defaults
+dependencies:
+    - aplanat==0.6.5
+    - bcftools==1.10.2
+    - clair3==0.1.11 # requires py36
+    - fastcat>=0.4.8
+    - epi2melabs==0.0.22
+    - typing-extensions==4.1.1 # 4.2.0 has withdrawn py36 support
+    - mosdepth==0.3.3

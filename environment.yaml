@@ -1,0 +1,12 @@
+name: epi2melabs-nf-human-variation-common
+channels:
+    - epi2melabs
+    - bioconda
+    - conda-forge
+    - defaults
+dependencies:
+    - aplanat==0.6.5
+    - bcftools==1.10.2
+    - fastcat>=0.4.8
+    - epi2melabs==0.0.22
+    - mosdepth==0.3.3

@@ -1,0 +1,42 @@
+# Include shared CI
+include:
+    - project: "epi2melabs/ci-templates"
+      file: "wf-containers.yaml"
+
+docker-run:
+    # Define a 1D job matrix to inject a variable named MATRIX_NAME into
+    #   the CI environment, we can use the value of MATRIX_NAME to determine
+    #   which options to apply as part of the rules block below
+    # NOTE There is a slightly cleaner way to define this matrix to include
+    #   the variables, but it is broken when using long strings! See CW-756
+    parallel:
+        matrix:
+            - MATRIX_NAME: ["wf-human-snp", "wf-human-sv", "omni"]
+    rules:
+        # NOTE As we're overriding the rules block for the included docker-run
+        #   we must redefine this CI_COMMIT_BRANCH rule to prevent docker-run
+        #   being incorrectly scheduled for "detached merge request pipelines" etc.
+        - if: ($CI_COMMIT_BRANCH == null || $CI_COMMIT_BRANCH == "dev-template")
+          when: never
+
+        - if: $MATRIX_NAME == "wf-human-snp"
+          variables:
+              NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_PROCESS_FILES: "modules/wf-human-snp.nf"
+              NF_IGNORE_PROCESSES: "hap"
+              NF_WORKFLOW_OPTS: "--snp --bam demo_data/chr6_chr20.bam --bed demo_data/chr6_chr20.bed --ref demo_data/chr6_chr20.fasta --model demo_data/ont_r104_e81_sup_g5015 --phase_vcf"
+
+        - if: $MATRIX_NAME == "wf-human-sv"
+          variables:
+              NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-sv/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_PROCESS_FILES: "modules/wf-human-sv.nf"
+              NF_IGNORE_PROCESSES: "getAllChromosomesBed,minimap2_ubam"
+              NF_WORKFLOW_OPTS: "--sv --bam demo_data/test.bam --ref demo_data/chr20_human_g1k_v37_part.fasta.gz --bed demo_data/target.bed --tr_bedfile demo_data/human_hs37d5.trf.bed"
+
+        #TODO tr_bedfile in test data
+        - if: ($MATRIX_NAME == "omni" && $CI_COMMIT_BRANCH == "dev-omni")
+          variables:
+              NF_BEFORE_SCRIPT: "wget -qO gm24385_q20_2021.10-chr20.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-omni/gm24385_q20_2021.10-chr20.tar.gz && tar -xzvf gm24385_q20_2021.10-chr20.tar.gz && rm gm24385_q20_2021.10-chr20.tar.gz"
+              NF_PROCESS_FILES: "modules/wf-human-sv.nf modules/wf-human-snp.nf"
+              NF_IGNORE_PROCESSES: "hap,post_clair_phase_contig,getAllChromosomesBed,minimap2_ubam"
+              NF_WORKFLOW_OPTS: "--snp --sv --bam gm24385_q20_2021.10-chr20/chr20.bam --ref gm24385_q20_2021.10-chr20/chr20.fasta --bed gm24385_q20_2021.10-chr20/chr20.bed --model gm24385_q20_2021.10-chr20/ont_r104_e81_sup_g5015"

@@ -1,0 +1,13 @@
+.git
+bin
+CHANGELOG.md
+data
+lib
+LICENSE
+main.nf
+nextflow.config
+README.md
+test_data
+# we typically run tests with outputs to these:
+output
+work

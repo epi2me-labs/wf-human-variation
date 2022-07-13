@@ -1,0 +1,244 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://raw.githubusercontent.com/./master/nextflow_schema.json",
+    "title": "epi2me-labs/wf-template",
+    "description": "Nextflow workflow template repository.",
+    "url": "https://github.com/epi2me-labs/wf-template",
+    "type": "object",
+    "definitions": {
+        "basic_input_output_options": {
+            "title": "Basic Input/Output Options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "properties": {
+                "ubam": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "unaligned BAM file of reads to be aligned to --ref"
+                },
+                "bam": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "BAM alignment file of reads to genomic reference. A corresponding .bai file must also be present."
+                },
+                "ref": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Reference .fasta file. A corresponding .fai file must also be present."
+                },
+                "bed": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "A BED file describing regions to process."
+                },
+                "model": {
+                    "type": "string",
+                    "description": "Clair3 Model directory. These can be obtained from http://www.bio8.cs.hku.hk/clair3/clair3_models/ and https://github.com/nanoporetech/rerio/tree/master/clair3_models."
+                },
+                "out_dir": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "default": "output",
+                    "description": "Directory for output of all user-facing files."
+                },
+                "threads": {
+                    "type": "integer",
+                    "default": 4,
+                    "description": "Set max number of threads to use for more intense processes (limited by config executor cpus)"
+                },
+                "ubam_threads": {
+                    "type": "integer",
+                    "default": 8,
+                    "description": "Set max number of threads to use for aligning reads from uBAM (limited by config executor cpus)"
+                }
+            }
+        },
+        "sv_options": {
+            "title": "wf-human-sv options",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "tr_bed": {
+                    "type": "string",
+                    "format": "path",
+                    "description": "Input .bed file containing tandem repeat annotations for the reference genome. Improves accuracy in our benchmarking."
+                }
+            }
+        },
+        "snp_options": {
+            "title": "wf-human-snp options",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "ref_pct_full": {
+                    "type": "number",
+                    "default": 0.1,
+                    "description": "Expected percentage of low quality 0/0 variants called in the pileup mode for full-alignment mode calling."
+                },
+                "var_pct_full": {
+                    "type": "number",
+                    "default": 0.7,
+                    "description": "Expected percentage of low quality 0/1 and 1/1 variants called in the pileup mode for full-alignment mode calling."
+                },
+                "snp_min_af": {
+                    "type": "number",
+                    "default": 0.08,
+                    "description": "Minimum SNP AF required for a candidate variant."
+                },
+                "indel_min_af": {
+                    "type": "number",
+                    "default": 0.15,
+                    "description": "Minimum Indel AF required for a candidate variant."
+                },
+                "vcf_fn": {
+                    "type": "string",
+                    "default": "EMPTY",
+                    "hidden": true,
+                    "description": "Candidate sites VCF file input, variants will only be called at the sites in the VCF file if provided."
+                },
+                "phase_vcf": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Phase output VCF."
+                },
+                "use_longphase": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Use longphase for final phasing of output variants (experimental)."
+                },
+                "use_longphase_intermediate": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Use longphase for intermediate phasing."
+                },
+                "min_cov": {
+                    "type": "number",
+                    "default": 2.0,
+                    "description": "Minimum coverage required to call a variant (experimental)."
+                },
+                "min_mq": {
+                    "type": "number",
+                    "default": 5.0,
+                    "description": "Reads with mapping quality < min_mq are filtered (experimental)."
+                },
+                "min_contig_size": {
+                    "type": "number",
+                    "default": 0,
+                    "description": "Contigs with contig size < min_contig_size are filtered (experimental)."
+                },
+                "sample_name": {
+                    "type": "string",
+                    "default": "SAMPLE",
+                    "description": "Sample name to be displayed in VCF outputs."
+                },
+                "ctg_name": {
+                    "type": "string",
+                    "default": "EMPTY",
+                    "description": "The name of the sequence to be processed"
+                },
+                "include_all_ctgs": {
+                    "type": "string",
+                    "default": "False",
+                    "description": "Call variants on all contigs, otherwise call in chr{1..22,X,Y}."
+                },
+                "GVCF": {
+                    "type": "string",
+                    "default": "False",
+                    "description": "Output a GVCF file. (Experimental)."
+                }
+            }
+        },
+        "meta_data": {
+            "title": "Meta Data",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "report_name": {
+                    "type": "string",
+                    "default": "report",
+                    "description": "Output report filename suffix."
+                },
+                "disable_ping": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable to prevent sending a workflow ping."
+                }
+            }
+        },
+        "generic_options": {
+            "title": "Generic options",
+            "type": "object",
+            "fa_icon": "far fa-question-circle",
+            "description": "Less common options for the pipeline, typically set in a config file.",
+            "help_text": "These options are common to all nf-core pipelines and allow you to customise some of the core preferences for how the pipeline runs.\n\nTypically these options would be set in a Nextflow config file loaded for all pipeline runs, such as `~/.nextflow/config`.",
+            "properties": {
+                "help": {
+                    "type": "boolean",
+                    "description": "Display help text.",
+                    "fa_icon": "fas fa-question-circle",
+                    "hidden": true
+                }
+            }
+        }
+    },
+    "allOf": [
+        {
+            "$ref": "#/definitions/basic_input_output_options"
+        },
+        {
+            "$ref": "#/definitions/snp_options"
+        },
+        {
+            "$ref": "#/definitions/sv_options"
+        },
+        {
+            "$ref": "#/definitions/meta_data"
+        },
+        {
+            "$ref": "#/definitions/generic_options"
+        }
+    ],
+    "properties": {
+        "process_label": {
+            "type": "string",
+            "description": "The main process label for template processes to use by default",
+            "hidden": true,
+            "default": "wf-template"
+        },
+        "aws_image_prefix": {
+            "type": "string",
+            "hidden": true
+        },
+        "aws_queue": {
+            "type": "string",
+            "hidden": true
+        },
+        "wfversion": {
+            "type": "string",
+            "default": "v0.1.0",
+            "hidden": true
+        },
+        "monochrome_logs": {
+            "type": "boolean"
+        },
+        "validate_params": {
+            "type": "boolean",
+            "default": true
+        },
+        "show_hidden_params": {
+            "type": "boolean"
+        },
+        "call_retries": {
+            "type": "integer",
+            "default": 5
+        }
+    },
+    "docs": {
+        "intro": "## Introduction\n\nThis workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small\nvariants from long reads. Clair3 makes the best of two methods: pileup (for fast\ncalling of variant candidates in high confidence regions), and full-alignment\n(to improve precision of calls of more complex candidates).\n\nThis workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for\ncalling structural variants.\n\n",
+        "links": "## Useful links\n\n* [nextflow](https://www.nextflow.io/)\n* [docker](https://www.docker.com/products/docker-desktop)\n* [conda](https://docs.conda.io/en/latest/miniconda.html)\n"
+    }
+}

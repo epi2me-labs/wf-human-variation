@@ -1,0 +1,17 @@
+# Nothing to see here. A sentinel file to replace real data.
+# e.g.:
+#
+# process run {
+#     input:
+#         path some_data
+#         path extra_data
+#     script:
+#     def extra = extra_data.name != 'OPTIONAL_FILE' ? "--extra-data $opt" : ''
+#     """
+#     command ${some_data} ${extra}
+#     """
+# }
+#
+# some_data = ...
+# extra_data = Channel.fromPath("$projectDir/data/OPTIONAL_FILE"))
+# run(some_data, extra_data)

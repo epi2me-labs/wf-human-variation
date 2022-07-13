@@ -1,0 +1,76 @@
+name: Bug Report
+description: File a bug report
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+      value: "A bug happened!"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you running?
+      options:
+        - Windows 10
+        - Windows 11
+        - macOS
+        - ubuntu 18.04
+        - ubuntu 20.04
+    validations:
+      required: true
+  - type: dropdown
+    id: execution
+    attributes:
+      label: Workflow Execution
+      description: Where are you running the workflow?
+      options:
+        - EPI2ME Labs desktop application
+        - Command line
+        - EPI2ME
+        - Other (please describe)
+    validations:
+      required: true
+  - type: input
+    id: labs-version
+    attributes:
+      label: Workflow Execution - EPI2ME Labs Versions
+      description: If you're running using EPI2ME Labs please provide the version and the environment version (Click the blue help icon bottom left and select ":bout")?
+    validations:
+      required: false
+  - type: dropdown
+    id: profile
+    attributes:
+      label: Workflow Execution - Execution Profile
+      description: If you're using the CLI to run the workflow, what profile are you using?
+      options:
+        - Docker
+        - Singularity
+        - Conda
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Workflow Version
+      description: What version of the workflow are you running?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+    validations:
+      required: true
