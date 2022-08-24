@@ -19,7 +19,7 @@ include {
     getVersions;
     vcfStats;
     makeReport;
-} from "../modules/wf-human-snp.nf"
+} from "../modules/local/wf-human-snp.nf"
 
 // workflow module
 workflow clair3 {

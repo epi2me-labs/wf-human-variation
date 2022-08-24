@@ -3,7 +3,6 @@ channels:
     - epi2melabs
     - bioconda
     - conda-forge
-    - defaults
 dependencies:
     - python==3.8.*
     - gcc_linux-64
@@ -11,7 +10,7 @@ dependencies:
     - aplanat >=0.6.5
     - pysam
     - nanoplot
-    - fastcat
+    - fastcat==0.4.11
     - seqtk
     - samtools >=1.8
     - bedtools
@@ -22,6 +21,7 @@ dependencies:
     - minimap2==2.24
     - sniffles=2.0.3
     - epi2melabs==0.0.22
+    - pip
     - pip:
         - pyfaidx
         - Truvari

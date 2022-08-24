@@ -1,44 +1,43 @@
 #!/usr/bin/env nextflow
 
-// Developer notes
-// 
-// This template workflow provides a basic structure to copy in order
-// to create a new workflow. Current recommended pratices are:
-//     i) create a simple command-line interface.
-//    ii) include an abstract workflow scope named "pipeline" to be used
-//        in a module fashion
-//   iii) a second concreate, but anonymous, workflow scope to be used
-//        as an entry point when using this workflow in isolation.
-
 nextflow.enable.dsl = 2
 
-include { start_ping; end_ping } from './lib/ping'
-
 include { clair3 } from './workflows/wf-human-snp'
-include { output_snp } from './modules/wf-human-snp'
+include { output_snp } from './modules/local/wf-human-snp'
 
 include { bam as sv } from './workflows/wf-human-sv'
-include { minimap2_ubam; output_sv } from './modules/wf-human-sv'
+include { minimap2_ubam; output_sv } from './modules/local/wf-human-sv'
+
 
 // entrypoint workflow
 WorkflowMain.initialise(workflow, params, log)
 workflow {
+    Map colors = NfcoreTemplate.logColours(params.monochrome_logs)
 
-    start_ping()
+    can_start = true
+    if (!params.snp && !params.sv) {
+        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv]" + colors.reset)
+        can_start = false
+    }
+
+    if (params.containsKey("ubam_threads")) {
+        log.error (colors.red + "--ubam_threads is deprecated. Use `nextflow run ${workflow.manifest.name} --help` to see the parameter list." + colors.reset)
+        can_start = false
+    }
 
     // Check common files
     ref = Channel.fromPath(params.ref, checkIfExists: true)
 
     output_bam = false
     if ((params.bam && params.ubam) || (!params.bam && !params.ubam)) {
-        println("Must provide one of --bam or --ubam.")
-        exit 1
+        throw new Exception("Must provide one of --bam or --ubam.")
+        can_start = false
     }
     else if (params.bam) {
         bam = Channel.fromPath(params.bam, checkIfExists: true)
         bai = Channel.fromPath(params.bam + ".bai", checkIfExists: true)
     }
-    else if (params.ubam) {
+    else if (params.ubam && can_start) {
         output_bam = true // output alignment BAM as artifact
         ubam = Channel.fromPath(params.ubam, checkIfExists: true)
         mapped = minimap2_ubam(ref, ubam)
@@ -56,7 +55,16 @@ workflow {
     // TODO should be a channel?
     OPTIONAL = file("$projectDir/data/OPTIONAL_FILE")
 
-    if (params.snp) {
+    if (can_start) {
+        if (params.disable_ping == false) {
+            try {
+                Pinguscript.ping_post(workflow, "start", "none", params.out_dir, params)
+            } catch(RuntimeException e1) {
+            }
+        }
+    }
+
+    if (params.snp && can_start) {
         fai = Channel.fromPath(params.ref + ".fai", checkIfExists: true)
         snp_ref = ref.concat(fai).buffer(size: 2)
         snp_bam = bam.concat(bai).buffer(size: 2)
@@ -77,7 +85,7 @@ workflow {
         )
         output_snp(clair_vcf[0].flatten())
     }
-    if(params.sv) {
+    if(params.sv && can_start) {
 
         results = sv(bam, bai, ref, bed, OPTIONAL)
         artifacts = results[0].flatten()
@@ -89,7 +97,20 @@ workflow {
 
         output_sv(artifacts)
     }
+}
 
-    //TODO end ping telemetry
-    end_ping(OPTIONAL)
+if (params.disable_ping == false) {
+    workflow.onComplete {
+        try{
+            Pinguscript.ping_post(workflow, "end", "none", params.out_dir, params)
+        }catch(RuntimeException e1) {
+        }
+    }
+
+    workflow.onError {
+        try{
+            Pinguscript.ping_post(workflow, "error", "$workflow.errorMessage", params.out_dir, params)
+        }catch(RuntimeException e1) {
+        }
+    }
 }
