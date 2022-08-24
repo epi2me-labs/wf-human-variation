@@ -1,9 +1,9 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/./master/nextflow_schema.json",
-    "title": "epi2me-labs/wf-template",
-    "description": "Nextflow workflow template repository.",
-    "url": "https://github.com/epi2me-labs/wf-template",
+    "$id": "https://raw.githubusercontent.com/epi2me-labs/wf-human-variation/master/nextflow_schema.json",
+    "title": "epi2me-labs/wf-human-variation pipeline parameters",
+    "description": "consolidated human variation calling pipeline for ONT data",
+    "url": "https://github.com/epi2me-labs/wf-human-variation",
     "type": "object",
     "definitions": {
         "basic_input_output_options": {
@@ -11,6 +11,9 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
+            "required": [
+                "ref"
+            ],
             "properties": {
                 "ubam": {
                     "type": "string",
@@ -47,10 +50,20 @@
                     "default": 4,
                     "description": "Set max number of threads to use for more intense processes (limited by config executor cpus)"
                 },
-                "ubam_threads": {
+                "ubam_map_threads": {
+                    "type": "integer",
+                    "default": 12,
+                    "description": "Set max number of threads to use for aligning reads from uBAM (limited by config executor cpus)"
+                },
+                "ubam_sort_threads": {
                     "type": "integer",
                     "default": 8,
-                    "description": "Set max number of threads to use for aligning reads from uBAM (limited by config executor cpus)"
+                    "description": "Set max number of threads to use for sorting and indexing aligned reads from uBAM (limited by config executor cpus)"
+                },
+                "ubam_bam2fq_threads": {
+                    "type": "integer",
+                    "default": 4,
+                    "description": "Set max number of threads to use for uncompressing uBAM and generating FASTQ for alignment (limited by config executor cpus)"
                 }
             }
         },
@@ -60,10 +73,20 @@
             "description": "",
             "default": "",
             "properties": {
+                "sv": {
+                    "type": "boolean",
+                    "description": "Call for structural variants",
+                    "default": false
+                },
                 "tr_bed": {
                     "type": "string",
                     "format": "path",
                     "description": "Input .bed file containing tandem repeat annotations for the reference genome. Improves accuracy in our benchmarking."
+                },
+                "cluster_merge_pos": {
+                    "type": "number",
+                    "default": 150.0,
+                    "description": "Max. merging distance for insertions and deletions on the same read and cluster in non-repeat regions"
                 }
             }
         },
@@ -73,6 +96,11 @@
             "description": "",
             "default": "",
             "properties": {
+                "snp": {
+                    "type": "boolean",
+                    "description": "Call for small variants",
+                    "default": false
+                },
                 "ref_pct_full": {
                     "type": "number",
                     "default": 0.1,
@@ -126,7 +154,7 @@
                 },
                 "min_contig_size": {
                     "type": "number",
-                    "default": 0,
+                    "default": 0.0,
                     "description": "Contigs with contig size < min_contig_size are filtered (experimental)."
                 },
                 "sample_name": {
@@ -148,6 +176,10 @@
                     "type": "string",
                     "default": "False",
                     "description": "Output a GVCF file. (Experimental)."
+                },
+                "call_retries": {
+                    "type": "integer",
+                    "default": 5
                 }
             }
         },
@@ -219,7 +251,7 @@
         },
         "wfversion": {
             "type": "string",
-            "default": "v0.1.0",
+            "default": "v0.1.1",
             "hidden": true
         },
         "monochrome_logs": {
@@ -231,10 +263,6 @@
         },
         "show_hidden_params": {
             "type": "boolean"
-        },
-        "call_retries": {
-            "type": "integer",
-            "default": 5
         }
     },
     "docs": {

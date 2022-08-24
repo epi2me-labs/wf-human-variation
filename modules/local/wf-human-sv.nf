@@ -2,7 +2,7 @@ import groovy.json.JsonBuilder
 
 process minimap2_ubam {
     label "wf_human_sv"
-    cpus params.ubam_threads
+    cpus {params.ubam_map_threads + params.ubam_sort_threads + params.ubam_bam2fq_threads}
     input:
         file reference
         file reads
@@ -11,9 +11,8 @@ process minimap2_ubam {
         path "*.mm2.bam.bai", emit: bam_index
     script:
     """
-    samtools bam2fq -t -T MM,ML ${reads} | minimap2 -y -t ${task.cpus} -ax map-ont ${reference} - \
-    | samtools sort -@ ${params.threads} -o ${reads.baseName}.mm2.bam -
-    samtools index -@ ${params.threads} ${reads.baseName}.mm2.bam
+    samtools bam2fq -@ ${params.ubam_bam2fq_threads} -T 1 ${reads} | minimap2 -y -t ${params.ubam_map_threads} -ax map-ont ${reference} - \
+    | samtools sort -@ ${params.ubam_sort_threads} --write-index -o ${reads.baseName}.mm2.bam##idx##${reads.baseName}.mm2.bam.bai -
     """
 }
 

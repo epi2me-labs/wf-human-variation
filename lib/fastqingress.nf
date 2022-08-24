@@ -29,6 +29,25 @@ process checkSampleSheet {
     """
 }
 
+/**
+ * Compare number of samples in samplesheet
+ * with the number of barcoded dirs found and
+ * print warnings
+ *
+ *
+ * @param number of samples in sample sheet
+ * @param number of barcoded directories
+ * @return null
+ */
+
+def compareSampleSheetFastq(int sample_sheet_count, int valid_dir_count)
+{
+
+    if (sample_sheet_count != valid_dir_count) {
+      log.warn """The number of samplesheet entries ({}) does not match the number of barcoded directories ({})""", sample_sheet_count, valid_dir_count
+    }
+
+}
 
 /**
  * Take an input file and sample name to return a channel with
@@ -37,13 +56,14 @@ process checkSampleSheet {
  *
  * @param input_file Single fastq file
  * @param sample_name Name to give the sample
- * @return Channel of tuples (path, sample_id, type)
+ * @return Channel of tuples (path, map(sample_id, type, barcode))
  */
 def handle_single_file(input_file, sample_name)
 {
     singleFile = Channel.fromPath(input_file)
     sample = handleSingleFile(singleFile)
-    return sample.map { it -> tuple(it, sample_name === null ? it.simpleName : sample_name, 'test_sample') }
+    return sample.map { it -> tuple(it, create_metamap([sample_id:sample_name ?: it.simpleName])) }
+
 }
 
 
@@ -54,7 +74,7 @@ def handle_single_file(input_file, sample_name)
  * @param pattern file object corresponding to top level input folder.
  * @param maxdepth maximum depth to traverse
  * @return list of files.
- */ 
+ */
 
 def find_fastq(pattern, maxdepth)
 {
@@ -76,7 +96,7 @@ def find_fastq(pattern, maxdepth)
  * @param staging Top-level output_directory.
  * @return A File object representating the staging directory created
  *     under output
- */ 
+ */
 def sanitize_fastq(input_folder, staging)
 {
     // TODO: this fails if input_folder is an S3 path
@@ -104,7 +124,7 @@ def sanitize_fastq(input_folder, staging)
 
 
 /**
- * Take an input directory return the barcode and non barcode 
+ * Take an input directory return the barcode and non barcode
  * sub directories contained within.
  *
  *
@@ -126,7 +146,7 @@ def get_subdirectories(input_directory)
  *
  * @param samples CSV file according to MinKNOW sample sheet specification
  * @return A Nextflow Channel of tuples (barcode, sample name, sample type)
- */ 
+ */
 def get_sample_sheet(sample_sheet)
 {
     println("Checking sample sheet.")
@@ -141,15 +161,15 @@ def get_sample_sheet(sample_sheet)
     return checkSampleSheet(sample_sheet)
         .splitCsv(header: true)
         .map { row -> tuple(
-            row.barcode, 
-            row.sample_id, 
-            row.type ? row.type : 'test_sample') 
+            row.barcode,
+            row.sample_id,
+            row.type ? row.type : 'test_sample')
         }
 }
 
 
 /**
- * Take a list of input directories and return directories which are 
+ * Take a list of input directories and return directories which are
  * valid, i.e. contains only .fastq(.gz) files.
  *
  *
@@ -207,18 +227,19 @@ def get_valid_directories(input_dirs)
  *
  * @param input_directory Directory of fastq files
  * @param sample_name Name to give the sample
- * @return Channel of tuples (path, sample_id, type)
+ * @return Channel of tuples (path, map(sample_id, type, barcode))
  */
-def handle_flat_dir(input_directory, sample_name) 
+def handle_flat_dir(input_directory, sample_name)
 {
     valid_dirs= get_valid_directories([ file(input_directory) ])
     return Channel.fromPath(valid_dirs)
-        .map { it -> tuple(it, sample_name === null ? it.baseName : sample_name, 'test_sample') }
+        .map { it -> tuple(it, create_metamap([sample_id:sample_name ?: it.baseName])) }
+
 }
 
 
 /**
- * Take a list of barcode directories and a sample sheet to return 
+ * Take a list of barcode directories and a sample sheet to return
  * a channel of named samples.
  *
  *
@@ -227,7 +248,7 @@ def handle_flat_dir(input_directory, sample_name)
  *     or a simple string for non-multiplexed data.
  * @param min_barcode Minimum barcode to accept.
  * @param max_barcode Maximum (inclusive) barcode to accept.
- * @return Channel of tuples (path, sample_id, type)
+ * @return Channel of tuples (path, map(sample_id, type, barcode))
  */
 def handle_barcoded_dirs(barcoded_dirs, sample_sheet, min_barcode, max_barcode)
 {
@@ -238,15 +259,34 @@ def handle_barcoded_dirs(barcoded_dirs, sample_sheet, min_barcode, max_barcode)
             .fromPath(valid_dirs)
             .filter(~/.*barcode[0-9]{1,3}$/)  // up to 192
             .filter { barcode_in_range(it, min_barcode, max_barcode) }
-            .map { path -> tuple(path.baseName, path.baseName, 'test_sample') }
+            .map { path -> tuple(path.baseName, path.baseName, 'test_sample')}
+    } else {
+
+        // return warning if there is a discrepancy between the samplesheet and barcode dirs
+
+        // unclassfied will never be in the sample_sheet so remove
+        non_unclassified = valid_dirs
+        non_unclassified -= 'unclassified'
+
+        barcode_dirs_found = non_unclassified.size()
+
+        int count = 0
+
+        // We do this instead of .count() because valid_dirs is a list and
+        // sample_sheet is a channel - the channel is only populated after
+        // checkSampleSheet is complete and so if you compare without
+        // waiting for that then the comparisson fails
+        sample_sheet_entries = sample_sheet.subscribe onNext: { count++ }, onComplete: { compareSampleSheetFastq(count,barcode_dirs_found) }
+
     }
+
     return Channel
         .fromPath(valid_dirs)
         .filter(~/.*barcode[0-9]{1,3}$/)  // up to 192
         .filter { barcode_in_range(it, min_barcode, max_barcode) }
         .map { path -> tuple(path.baseName, path) }
         .join(sample_sheet)
-        .map { barcode, path, sample, type -> tuple(path, sample, type) }
+        .map { barcode, path, sample, type -> tuple(path, create_metamap([sample_id:sample, type:type, barcode:barcode])) }
 }
 
 
@@ -261,27 +301,43 @@ def barcode_in_range(path, min_barcode, max_barcode)
 {
     pattern = ~/barcode(\d+)/
     matcher = "${path}" =~ pattern
-    value = matcher[0][1].toInteger()
+    def value = null
+    try{
+        value = matcher[0][1].toInteger()
+    }catch(ArrayIndexOutOfBoundsException ex){
+        print("${path} is not a barcoded directory")
+    }
     valid = ((value >= min_barcode) && (value <= max_barcode))
     return valid
 }
 
 
 /**
- * Take a list of non-barcode directories to return a channel 
+ * Take a list of non-barcode directories to return a channel
  * of named samples. Samples are named by directory baseName.
  *
  *
  * @param non_barcoded_dirs List of directories (mydir,...)
- * @return Channel of tuples (path, sample_id, type)
+ * @return Channel of tuples (path, map(sample_id, type, barcode))
  */
 def handle_non_barcoded_dirs(non_barcoded_dirs)
 {
     valid_dirs = get_valid_directories(non_barcoded_dirs)
     return Channel.fromPath(valid_dirs)
-        .map { path -> tuple(path, path.baseName, 'test_sample') }
+      .map { path -> tuple(path, create_metamap([sample_id:path.baseName])) }
 }
 
+def create_metamap(Map arguments) {
+    def parser = new ArgumentParser(
+        args:["sample_id"],
+        kwargs:[
+            "type": "test_sample",
+            "barcode": null,
+        ],
+        name:"create_metamap",
+    )
+    return parser.parse_args(arguments)
+}
 
 /**
  * Take an input (file or directory) and return a channel of
@@ -295,7 +351,7 @@ def handle_non_barcoded_dirs(non_barcoded_dirs)
  * @param min_barcode Minimum barcode to accept.
  * @param max_barcode Maximum (inclusive) barcode to accept.
  *
- * @return Channel of tuples (path, sample_id, type)
+ * @return Channel of tuples (path, map(sample_id, type, barcode))
  */
 def fastq_ingress(Map arguments)
 {
@@ -306,10 +362,11 @@ def fastq_ingress(Map arguments)
             "min_barcode":0, "max_barcode":Integer.MAX_VALUE],
         name:"fastq_ingress")
     Map margs = parser.parse_args(arguments)
-    
+
     if (margs.sanitize && margs.output == null) {
         throw new Exception("Argument 'output' required if 'sanitize' is true.")
     }
+
 
     println("Checking fastq input.")
     input = file(margs.input)
@@ -326,7 +383,7 @@ def fastq_ingress(Map arguments)
 
     // Handle directory input
     if (input.isDirectory()) {
-        // EPI2ME harness 
+        // EPI2ME harness
         if (margs.sanitize) {
             staging = file(margs.output).resolve("staging")
             input = sanitize_fastq(input, staging)

@@ -11,7 +11,7 @@ include {
     getVersions;
     getParams;
     report;
-} from "../modules/wf-human-sv.nf"
+} from "../modules/local/wf-human-sv.nf"
 
 workflow bam {
     take:
@@ -51,10 +51,10 @@ workflow variantCall {
     main:
 
         // tandom_repeat bed
-        if(params.tr_bedfile == null) {
+        if(params.tr_bed == null) {
             tr_bed = optional_file
         } else {
-            tr_bed = Channel.fromPath(params.tr_bedfile, checkIfExists: true)
+            tr_bed = Channel.fromPath(params.tr_bed, checkIfExists: true)
         }
 
         filterBam(bam, bai)
