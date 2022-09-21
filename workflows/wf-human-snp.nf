@@ -22,7 +22,7 @@ include {
 } from "../modules/local/wf-human-snp.nf"
 
 // workflow module
-workflow clair3 {
+workflow snp {
     take:
         bam
         bed
@@ -82,7 +82,7 @@ workflow clair3 {
                 y = x[1]; if(! (y instanceof java.util.ArrayList)){y = [y]}
                 // effectively duplicate chr for all beds - [chr, bed]
                 y.collect { [x[0], it] } }
-        // produce something emitting: [[chr, bam, bai, vcf], [chr20, bed], [ref, fai], model]
+        // produce something emitting: [[chr, bam, bai, vcf], [chr20, bed], [ref, fai, cache], model]
         bams_beds_and_stuff = phased_bam_and_vcf
             .cross(candidate_beds)
             .combine(ref.map {it->[it]})
@@ -158,14 +158,14 @@ workflow clair3 {
         read_stats = readStats(bam)
         software_versions = getVersions()
         workflow_params = getParams()
-        vcf_stats = vcfStats(clair_final)
-        read_depth = mosdepth(bam, bed)
+        vcf_stats = vcfStats(clair_final.final_vcf)
+        read_depth = mosdepth(bam, bed, ref)
         report = makeReport(
             read_stats.stats, mosdepth.out.mosdepth_dist, vcf_stats[0],
             software_versions.collect(), workflow_params)
         telemetry = workflow_params
 
     emit:
-        clair_final.concat(report)
+        clair_final.concat().concat(report).flatten()
         telemetry
 }

@@ -55,4 +55,4 @@ docker-run:
               NF_BEFORE_SCRIPT: "wget -qO gm24385_q20_2021.10-chr20.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-omni/gm24385_q20_2021.10-chr20.tar.gz && tar -xzvf gm24385_q20_2021.10-chr20.tar.gz && rm gm24385_q20_2021.10-chr20.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-sv.nf modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "hap,post_clair_phase_contig,getAllChromosomesBed,minimap2_ubam"
-              NF_WORKFLOW_OPTS: "--snp --sv --bam gm24385_q20_2021.10-chr20/chr20.bam --ref gm24385_q20_2021.10-chr20/chr20.fasta --bed gm24385_q20_2021.10-chr20/chr20.bed --model gm24385_q20_2021.10-chr20/ont_r104_e81_sup_g5015"
+              NF_WORKFLOW_OPTS: "--snp --sv --methyl --bam gm24385_q20_2021.10-chr20/chr20.bam --ref gm24385_q20_2021.10-chr20/chr20.fasta --bed gm24385_q20_2021.10-chr20/chr20.bed --model gm24385_q20_2021.10-chr20/ont_r104_e81_sup_g5015"

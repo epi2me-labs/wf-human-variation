@@ -8,7 +8,7 @@ process make_chunks {
     cpus 1
     input:
         tuple path(bam), path(bai)
-        tuple path(ref), path(fai)
+        tuple path(ref), path(fai), path(ref_cache)
         path bed
     output:
         path "clair_output/tmp/CONTIGS", emit: contigs_file
@@ -48,7 +48,7 @@ process pileup_variants {
     input:
         each region
         tuple path(bam), path(bai)
-        tuple path(ref), path(fai)
+        tuple path(ref), path(fai), path(ref_cache)
         path model
     output:
         // TODO: make this explicit, why is pileup VCF optional?
@@ -58,7 +58,9 @@ process pileup_variants {
         // note: the VCF output here is required to use the contig
         //       name since that's parsed in the SortVcf step
         // note: snp_min_af and indel_min_af have an impact on performance
+        // TODO Fix REF_PATH
         '''
+        export REF_PATH=!{ref_cache}/%2s/%2s/%s
         python $(which clair3.py) CallVariantsFromCffi \
             --chkpnt_fn !{model}/pileup \
             --bam_fn !{bam} \
@@ -88,7 +90,7 @@ process aggregate_pileup_variants {
     label "wf_human_snp"
     cpus 2
     input:
-        tuple path(ref), path(fai)
+        tuple path(ref), path(fai), path(ref_cache)
         // these need to be named as original, as program uses info from
         // contigs file to filter
         path "input_vcfs/*"
@@ -150,7 +152,7 @@ process phase_contig {
     label "wf_human_snp"
     cpus 4
     input:
-        tuple val(contig), path(het_snps), path(het_snps_tbi), path(bam), path(bai), path(ref), path(fai)
+        tuple val(contig), path(het_snps), path(het_snps_tbi), path(bam), path(bai), path(ref), path(fai), path(ref_cache)
     output:
         tuple val(contig), path(bam), path(bai), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
     shell:
@@ -211,7 +213,7 @@ process create_candidates {
     cpus 2
     input:
         each contig
-        tuple path(ref), path(fai)
+        tuple path(ref), path(fai), path(ref_cache)
         tuple path("pileup.vcf.gz"), path("pileup.vcf.gz.tbi")
         // this is used implicitely by the program
         // https://github.com/HKU-BAL/Clair3/blob/329d09b39c12b6d8d9097aeb1fe9ec740b9334f6/preprocess/SelectCandidates.py#L146
@@ -250,13 +252,15 @@ process evaluate_candidates {
     input:
         tuple val(contig), path(phased_bam), path(phased_bam_index), path(phased_vcf)
         tuple val(contig), path(candidate_bed)
-        tuple path(ref), path(fai)
+        tuple path(ref), path(fai), path(ref_cache)
         path(model)
     output:
         path "output/full_alignment_*.vcf", emit: full_alignment
     script:
         filename = candidate_bed.name
+        def ref_path = "${ref_cache}/%2s/%2s/%s:" + System.getenv("REF_PATH")
         """
+        export REF_PATH=${ref_path}
         mkdir output
         echo "[INFO] 6/7 Call low-quality variants using full-alignment model"
         python \$(which clair3.py) CallVariantsFromCffi \
@@ -284,7 +288,7 @@ process aggregate_full_align_variants {
     label "wf_human_snp"
     cpus 2
     input:
-        tuple path(ref), path(fai)
+        tuple path(ref), path(fai), path(ref_cache)
         path "full_alignment/*"
         path contigs
         path "gvcf_tmp_path/*"
@@ -306,7 +310,7 @@ process aggregate_full_align_variants {
         fi
 
         # TODO: this could be a separate process
-        if [ !{params.GVCF} == True ]; then
+        if [ "!{params.GVCF}" == "true" ]; then
             pypy $(which clair3.py) SortVcf \
                 --input_dir gvcf_tmp_path \
                 --vcf_fn_suffix .tmp.gvcf \
@@ -325,7 +329,7 @@ process merge_pileup_and_full_vars{
     cpus 2
     input:
         each contig
-        tuple path(ref), path(fai)
+        tuple path(ref), path(fai), path(ref_cache)
         tuple path(pile_up_vcf), path(pile_up_vcf_tbi)
         tuple path(full_aln_vcf), path(full_aln_vcf_tbi)
         path "non_var.gvcf"
@@ -363,7 +367,7 @@ process post_clair_phase_contig {
     label "wf_human_snp"
     cpus 4
     input:
-        tuple val(contig), path(vcf), path(vcf_tbi), path(bam), path(bai), path(ref), path(fai)
+        tuple val(contig), path(vcf), path(vcf_tbi), path(bam), path(bai), path(ref), path(fai), path(ref_cache)
     output:
         tuple val(contig), path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"), emit: vcf
     shell:
@@ -397,13 +401,14 @@ process aggregate_all_variants{
     label "wf_human_snp"
     cpus 4
     input:
-        tuple path(ref), path(fai)
+        tuple path(ref), path(fai), path(ref_cache)
         path "merge_output/*"
         path "merge_outputs_gvcf/*"
         val(phase_vcf)
         path contigs
     output:
-        tuple path("all.wf_snp.vcf.gz"), path("all.wf_snp.vcf.gz.tbi"), emit: final_vcf
+        tuple path("${params.sample_name}.wf_snp.vcf.gz"), path("${params.sample_name}.wf_snp.vcf.gz.tbi"), emit: final_vcf
+        tuple path("${params.sample_name}.wf_snp.gvcf.gz"), path("${params.sample_name}.wf_snp.gvcf.gz.tbi"), emit: final_gvcf, optional: true
     shell:
         '''
         prefix="merge"
@@ -416,23 +421,23 @@ process aggregate_all_variants{
         pypy $(which clair3.py) SortVcf \
             --input_dir merge_output \
             --vcf_fn_prefix $prefix \
-            --output_fn all.wf_snp.vcf \
+            --output_fn !{params.sample_name}.wf_snp.vcf \
             --sampleName !{params.sample_name} \
             --ref_fn !{ref} \
             --contigs_fn !{contigs}
 
-        if [ "$( bgzip -fdc all.wf_snp.vcf.gz | grep -v '#' | wc -l )" -eq 0 ]; then
+        if [ "$( bgzip -fdc !{params.sample_name}.wf_snp.vcf.gz | grep -v '#' | wc -l )" -eq 0 ]; then
             echo "[INFO] Exit in all contigs variant merging"
             exit 0
         fi
 
         # TODO: this could be a separate process
-        if [ !{params.GVCF} == True ]; then
+        if [ "!{params.GVCF}" == "true" ]; then
             pypy $(which clair3.py) SortVcf \
                 --input_dir merge_outputs_gvcf \
                 --vcf_fn_prefix merge \
                 --vcf_fn_suffix .gvcf \
-                --output_fn all.wf_snp.gvcf \
+                --output_fn !{params.sample_name}.wf_snp.gvcf \
                 --sampleName !{params.sample_name} \
                 --ref_fn !{ref} \
                 --contigs_fn !{contigs}
@@ -489,15 +494,14 @@ process readStats {
     label "wf_human_snp"
     cpus 1
     input:
-        tuple path("alignments.bam"), path("alignments.bam.bai")
+        tuple path(reads), path(reads_index)
     output:
         path "readstats.txt", emit: stats
     """
     # using multithreading inside docker container does strange things
-    bamstats --threads 2 alignments.bam > readstats.txt
+    bamstats --threads 2 ${reads} > readstats.txt
     """
 }
-
 
 process getVersions {
     label "wf_human_snp"
@@ -544,19 +548,20 @@ process mosdepth {
     input:
         tuple path(bam), path(bai)
         file target_bed
+        tuple path(ref), path(ref_idx), path(ref_cache)
     output:
         path "*.global.dist.txt", emit: mosdepth_dist
     script:
-        def name = bam.simpleName
         def bedargs = target_bed.name != 'OPTIONAL_FILE' ? "-b ${target_bed}" : ''
         """
+        export REF_PATH=${ref}
         export MOSDEPTH_PRECISION=3
         mosdepth \
         -x \
         -t $task.cpus \
         ${bedargs} \
         --no-per-base \
-        $name \
+        ${params.sample_name} \
         $bam
         """
 }

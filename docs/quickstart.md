@@ -53,8 +53,9 @@ nextflow run epi2me-labs/wf-human-variation \
 
 The primary outputs of the workflow include:
 
-* a gzipped VCF file containing SNPs found in the dataset
-* a gzipped VCF file containing the SVs called from the dataset
+* a gzipped VCF file containing SNPs found in the dataset (`--snp`)
+* a gzipped VCF file containing the SVs called from the dataset (`--sv`)
+* a gzipped [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file aggregating modified CpG base counts (`--methyl`)
 * an HTML report detailing the primary findings of the workflow, for both the SNP and SV calling
 * if unaligned reads were provided, a BAM file containing the alignments used to make the calls
 
@@ -63,3 +64,4 @@ The primary outputs of the workflow include:
 - Users familiar with `wf-human-snp` and `wf-human-sv` are recommended to familiarise themselves with any parameter changes by using `--help`, in particular:
     - All arms of the variation calling workflow use `--ref` (not `--reference`) and `--bed` (not `--target_bedfile`)
 - Specifying a suitable [tandem repeat BED for your reference](https://raw.githubusercontent.com/fritzsedlazeck/Sniffles/master/annotations/) with `--tr_bed` can improve the accuracy of SV calling.
+- Aggregation of methylation calls with `--methyl` requires data to be basecalled with a model that includes base modifications, providing the `MM` and `ML` BAM tags
