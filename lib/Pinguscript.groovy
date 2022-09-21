@@ -32,21 +32,21 @@ class Pinguscript {
         def meta = meta_json "error": errorMessage.toString(), "profile": profile.toString(),
             "agent": agent.toString()
         meta+=any_other_data
-        def ping_version = '2.0.0'
+        def ping_version = '2.0.1'
         def tracking_json = new JsonBuilder()
         def tracking_id = tracking_json "msg_id": msgId, "version": ping_version
         def data_json = new JsonBuilder()
-        def data = data_json "source": "workflow", "workflow": workflow_name.toString(),
+        def data = data_json "workflow": workflow_name.toString(),
                 "message": message, "meta": meta
         def body_json = new JsonBuilder()
         def root = body_json "tracking_id": tracking_id,  "hostname": hosthash.toString(), "os": opsys.toString(),
-                "session": session.toString(), "data": data
+                "session": session.toString(), "data": data,  "source": "workflow"
         String postResult
         ((HttpURLConnection)new URL('https://ping.oxfordnanoportal.com/epilaby').openConnection()).with({
             requestMethod = 'POST'
             doOutput = true
             setRequestProperty('Content-Type', 'application/json') 
-            setRequestProperty('accept', 'application/json') 
+            setRequestProperty('accept', 'application/json')
             outputStream.withPrintWriter({printWriter ->
                  printWriter.write(body_json.toString())
             })

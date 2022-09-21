@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.0]
+### Added
+* An experimental methylation subworkflow has been integrated, using [`modbam2bed`](https://github.com/epi2me-labs/modbam2bed) to aggregate modified base counts (input BAM should have `MM` and `ML` tags), enable this with `--methyl`
+### Changed
+* Workflow experimentally supports CRAM as input, uBAM input uses CRAM for intermediate files
+* Reference FAI is now created if it does not exist, rather than raising an error
+* `--sniffles_args` may be used to provide custom arguments to the `sniffles2` process
+* Output files are uniformly prefixed with `--sample_name`
+### Fixed
+* Existence of Clair3 model directory is checked before starting workflow
+* `--GVCF` and `--include_all_ctgs` are correctly typed as booleans
+    * `--GVCF` now outputs GVCF files to the output directory as intended
+    * `--include_all_ctgs` no longer needs to be set as `--include_all_ctgs y`
+
 ## [v0.1.1]
 ### Added
 * `--ubam_bam2fq_threads` and `--ubam_sort_threads` allow finer control over the resourcing of the alignment step

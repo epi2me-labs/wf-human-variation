@@ -44,7 +44,7 @@ def compareSampleSheetFastq(int sample_sheet_count, int valid_dir_count)
 {
 
     if (sample_sheet_count != valid_dir_count) {
-      log.warn """The number of samplesheet entries ({}) does not match the number of barcoded directories ({})""", sample_sheet_count, valid_dir_count
+      log.warn "The number of samplesheet entries ({}) does not match the number of barcoded directories ({})", sample_sheet_count, valid_dir_count
     }
 
 }
@@ -100,8 +100,8 @@ def find_fastq(pattern, maxdepth)
 def sanitize_fastq(input_folder, staging)
 {
     // TODO: this fails if input_folder is an S3 path
-    println("Running sanitization.")
-    println(" - Moving files: ${input_folder} -> ${staging}")
+    log.info "Running sanitization."
+    log.info  " - Moving files: ${input_folder} -> ${staging}"
     staging.mkdirs()
     files = find_fastq(input_folder.resolve("**"), 1)
     for (fastq in files) {
@@ -118,7 +118,7 @@ def sanitize_fastq(input_folder, staging)
             fastq.renameTo(staging.resolve("${matcher[0]}/${fname}"))
         }
     }
-    println(" - Finished sanitization.")
+    log.info " - Finished sanitization."
     return staging
 }
 
@@ -149,12 +149,12 @@ def get_subdirectories(input_directory)
  */
 def get_sample_sheet(sample_sheet)
 {
-    println("Checking sample sheet.")
+    log.info "Checking sample sheet."
     sample_sheet = file(sample_sheet);
     is_file = sample_sheet.isFile()
 
     if (!is_file) {
-        println('Error: `--samples` is not a file.')
+        log.error "`--samples` is not a file."
         exit 1
     }
 
@@ -200,20 +200,19 @@ def get_valid_directories(input_dirs)
         }
     }
     if (valid_dirs.size() == 0) {
-        error_message = "Error: None of the directories given contain .fastq(.gz) files."
-        println(error_message)
+        log.error "None of the directories given contain .fastq(.gz) files."
         exit 1
     }
     if (no_fastq_dirs.size() > 0) {
-        println("Warning: Excluding directories not containing .fastq(.gz) files:")
+        log.warn "Excluding directories not containing .fastq(.gz) files:"
         for (d in no_fastq_dirs) {
-            println("   - ${d}")
+            log.warn "   - ${d}"
         }
     }
     if (invalid_files_dirs.size() > 0) {
-        println("Warning: Excluding directories containing non .fastq(.gz) files:")
+        log.warn "Excluding directories containing non .fastq(.gz) files:"
         for (d in invalid_files_dirs) {
-            println("   - ${d}")
+            log.warn "   - ${d}"
         }
     }
     return valid_dirs
@@ -368,15 +367,15 @@ def fastq_ingress(Map arguments)
     }
 
 
-    println("Checking fastq input.")
+    log.info "Checking fastq input."
     input = file(margs.input)
 
     // Handle file input
     if (input.isFile()) {
         // Assume sample is a string at this point
-        println('Single file input detected.')
+        log.info "Single file input detected."
         if (margs.sample_sheet) {
-            println('Warning: `--sample_sheet` given but single file input found. Ignoring.')
+            log.warn "Warning: `--sample_sheet` given but single file input found. Ignoring."
         }
         return handle_single_file(input, margs.sample)
     }
@@ -394,22 +393,22 @@ def fastq_ingress(Map arguments)
 
         // Case 03: If no subdirectories, handle the single dir
         if (!barcoded && !non_barcoded) {
-            println("Single directory input detected.")
+            log.info "Single directory input detected."
             if (margs.sample_sheet) {
-                println('Warning: `--sample_sheet` given but single non-barcode directory found. Ignoring.')
+                log.warn "`--sample_sheet` given but single non-barcode directory found. Ignoring."
             }
             return handle_flat_dir(input, margs.sample)
         }
 
         if (margs.sample) {
-            println('Warning: `--sample` given but multiple directories found, ignoring.')
+            log.warn "`--sample` given but multiple directories found, ignoring."
         }
 
         // Case 01, 02, 04: Handle barcoded and non_barcoded dirs
         // Handle barcoded folders
         barcoded_samples = Channel.empty()
         if (barcoded) {
-            println("Barcoded directories detected.")
+            log.info "Barcoded directories detected."
             sample_sheet = null
             if (margs.sample_sheet) {
                 sample_sheet = get_sample_sheet(margs.sample_sheet)
@@ -419,9 +418,9 @@ def fastq_ingress(Map arguments)
 
         non_barcoded_samples = Channel.empty()
         if (non_barcoded) {
-            println("Non barcoded directories detected.")
+            log.info "Non barcoded directories detected."
             if (!barcoded && margs.sample_sheet) {
-                println('Warning: `--sample_sheet` given but no barcode directories found.')
+                log.warn "Warning: `--sample_sheet` given but no barcode directories found."
             }
             non_barcoded_samples = handle_non_barcoded_dirs(non_barcoded)
         }

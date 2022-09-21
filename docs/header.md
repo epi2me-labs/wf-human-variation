@@ -5,6 +5,7 @@ for analysing variation in human genomic data. Specifically this workflow perfor
 
 * diploid variant calling
 * structural variant calling
+* aggregation of modified base counts
 
 This first release of wf-human-variation consolidates the small variant calling
 from wf-human-snp with the structual variant calling from wf-human-sv. This pipeline

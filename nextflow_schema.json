@@ -15,6 +15,12 @@
                 "ref"
             ],
             "properties": {
+                "fast5_dir": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Directory containing fast5 for basecalling [not supported]",
+                    "hidden": true
+                },
                 "ubam": {
                     "type": "string",
                     "format": "file-path",
@@ -28,7 +34,7 @@
                 "ref": {
                     "type": "string",
                     "format": "file-path",
-                    "description": "Reference .fasta file. A corresponding .fai file must also be present."
+                    "description": "Reference .fasta file"
                 },
                 "bed": {
                     "type": "string",
@@ -37,6 +43,7 @@
                 },
                 "model": {
                     "type": "string",
+                    "format": "directory-path",
                     "description": "Clair3 Model directory. These can be obtained from http://www.bio8.cs.hku.hk/clair3/clair3_models/ and https://github.com/nanoporetech/rerio/tree/master/clair3_models."
                 },
                 "out_dir": {
@@ -87,6 +94,10 @@
                     "type": "number",
                     "default": 150.0,
                     "description": "Max. merging distance for insertions and deletions on the same read and cluster in non-repeat regions"
+                },
+                "sniffles_args": {
+                    "type": "string",
+                    "description": "Additional command line arguments to pass to the sniffles2 process"
                 }
             }
         },
@@ -160,7 +171,7 @@
                 "sample_name": {
                     "type": "string",
                     "default": "SAMPLE",
-                    "description": "Sample name to be displayed in VCF outputs."
+                    "description": "Sample name to be displayed in workflow outputs."
                 },
                 "ctg_name": {
                     "type": "string",
@@ -168,13 +179,13 @@
                     "description": "The name of the sequence to be processed"
                 },
                 "include_all_ctgs": {
-                    "type": "string",
-                    "default": "False",
+                    "type": "boolean",
+                    "default": false,
                     "description": "Call variants on all contigs, otherwise call in chr{1..22,X,Y}."
                 },
                 "GVCF": {
-                    "type": "string",
-                    "default": "False",
+                    "type": "boolean",
+                    "default": false,
                     "description": "Output a GVCF file. (Experimental)."
                 },
                 "call_retries": {
@@ -215,6 +226,38 @@
                     "hidden": true
                 }
             }
+        },
+        "basecalling_options": {
+            "title": "Basecalling options",
+            "type": "object",
+            "description": "Options related to guppy basecalling",
+            "help_text": "",
+            "properties": {
+                "fast5_chunk_size": {
+                    "type": "number",
+                    "default": 100,
+                    "description": "",
+                    "hidden": true
+                },
+                "guppy_args": {
+                    "type": "string",
+                    "description": "Additional command line arguments to pass to the guppy_basecaller process",
+                    "hidden": true
+                }
+            }
+        },
+        "methyl_options": {
+            "title": "Methylation calling options",
+            "type": "object",
+            "description": "Options related to calling methylation sites",
+            "help_text": "",
+            "properties": {
+                "methyl": {
+                    "type": "boolean",
+                    "description": "Enable methylation calling [requires input BAM with Ml and Mm tags]",
+                    "default": false
+                }
+            }
         }
     },
     "allOf": [
@@ -232,6 +275,12 @@
         },
         {
             "$ref": "#/definitions/generic_options"
+        },
+        {
+            "$ref": "#/definitions/basecalling_options"
+        },
+        {
+            "$ref": "#/definitions/methyl_options"
         }
     ],
     "properties": {
@@ -251,7 +300,7 @@
         },
         "wfversion": {
             "type": "string",
-            "default": "v0.1.1",
+            "default": "v0.2.0",
             "hidden": true
         },
         "monochrome_logs": {
@@ -266,7 +315,7 @@
         }
     },
     "docs": {
-        "intro": "## Introduction\n\nThis workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small\nvariants from long reads. Clair3 makes the best of two methods: pileup (for fast\ncalling of variant candidates in high confidence regions), and full-alignment\n(to improve precision of calls of more complex candidates).\n\nThis workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for\ncalling structural variants.\n\n",
+        "intro": "## Introduction\n\nThis workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small\nvariants from long reads. Clair3 makes the best of two methods: pileup (for fast\ncalling of variant candidates in high confidence regions), and full-alignment\n(to improve precision of calls of more complex candidates).\n\nThis workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for\ncalling structural variants.\n\nThis workflow uses [modbam2bed](https://github.com/epi2me-labs/modbam2bed) for\naggregate modified base counts into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.\n",
         "links": "## Useful links\n\n* [nextflow](https://www.nextflow.io/)\n* [docker](https://www.docker.com/products/docker-desktop)\n* [conda](https://docs.conda.io/en/latest/miniconda.html)\n"
     }
 }

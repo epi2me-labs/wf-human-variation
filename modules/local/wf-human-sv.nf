@@ -4,24 +4,25 @@ process minimap2_ubam {
     label "wf_human_sv"
     cpus {params.ubam_map_threads + params.ubam_sort_threads + params.ubam_bam2fq_threads}
     input:
-        file reference
+        path reference
         file reads
     output:
-        path "*.mm2.bam", emit: bam
-        path "*.mm2.bam.bai", emit: bam_index
+        path "*.mm2.cram", emit: cream
+        path "*.mm2.cram.crai", emit: cram_index
     script:
     """
     samtools bam2fq -@ ${params.ubam_bam2fq_threads} -T 1 ${reads} | minimap2 -y -t ${params.ubam_map_threads} -ax map-ont ${reference} - \
-    | samtools sort -@ ${params.ubam_sort_threads} --write-index -o ${reads.baseName}.mm2.bam##idx##${reads.baseName}.mm2.bam.bai -
+    | samtools sort -@ ${params.ubam_sort_threads} --write-index -o ${reads.baseName}.mm2.cram##idx##${reads.baseName}.mm2.cram.crai -O CRAM --reference ${reference} -
     """
 }
 
 
+// todo https://github.com/mdshw5/pyfaidx/pull/164
 process getAllChromosomesBed {
     label "wf_human_sv"
     cpus 1
     input:
-        file reference
+        tuple path(reference), path(ref_idx), path(ref_cache)
     output:
         path "allChromosomes.bed", emit: all_chromosomes_bed
     """
@@ -37,14 +38,13 @@ process filterBam {
     input:
         file bam
         file bam_index
+        tuple path(reference), path(ref_idx), path(ref_cache)
     output:
-        path "*filtered.bam", emit: bam
-        path "*filtered.bam.bai", emit: bam_index
+        path "*filtered.cram", emit: bam
+        path "*filtered.cram.crai", emit: bam_index
     script:
-        def name = bam.simpleName
     """
-    samtools view -@ $task.cpus -F 2308 -o ${name}.filtered.bam ${bam}
-    samtools index ${name}.filtered.bam
+    samtools view -@ $task.cpus -F 2308 -o ${params.sample_name}.filtered.cram -O CRAM --write-index ${bam} --reference ${reference}
     """
 }
 
@@ -58,21 +58,25 @@ process sniffles2 {
         file bam
         file bam_index
         file tr_bed
+        tuple path(reference), path(ref_idx), path(ref_cache)
     output:
         path "*.sniffles.vcf", emit: vcf
     script:
-        def name = bam.simpleName
         def tr_arg = tr_bed.name != 'OPTIONAL_FILE' ? "--tandem-repeats ${tr_bed}" : ''
+        def sniffles_args = params.sniffles_args ?: ''
+        def ref_path = "${ref_cache}/%2s/%2s/%s:" + System.getenv("REF_PATH")
     """
+    export REF_PATH=${ref_path}
     sniffles \
         --threads $task.cpus \
-        --sample-id $name \
+        --sample-id ${params.sample_name} \
         --output-rnames \
         --cluster-merge-pos $params.cluster_merge_pos \
         --input $bam \
         $tr_arg \
-        --vcf ${name}.sniffles.vcf
-    sed -i '/.:0:0:0:NULL/d' ${name}.sniffles.vcf
+        $sniffles_args \
+        --vcf ${params.sample_name}.sniffles.vcf
+    sed -i '/.:0:0:0:NULL/d' ${params.sample_name}.sniffles.vcf
     """
 }
 
@@ -83,17 +87,20 @@ process mosdepth {
         file bam
         file bam_index
         file target_bed
+        tuple path(reference), path(ref_idx), path(ref_cache)
     output:
         path "*.regions.bed.gz", emit: mosdepth_bed
         path "*.global.dist.txt", emit: mosdepth_dist
     script:
-        def name = bam.simpleName
     """
+    export REF_PATH=${reference}
+    export MOSDEPTH_PRECISION=3
     mosdepth \
         -x \
         -t $task.cpus \
         -b $target_bed \
-        $name \
+        --no-per-base \
+        ${params.sample_name} \
         $bam
     """
 }
@@ -109,7 +116,6 @@ process filterCalls {
     output:
         path "*.filtered.vcf", emit: vcf
     script:
-        def name = vcf.simpleName
         def sv_types_joined = params.sv_types.split(',').join(" ")
     """
     get_filter_calls_command.py \
@@ -122,7 +128,7 @@ process filterCalls {
         --min_read_support $params.min_read_support \
         --min_read_support_limit $params.min_read_support_limit > filter.sh
 
-    bash filter.sh > ${name}.filtered.vcf
+    bash filter.sh > ${params.sample_name}.filtered.vcf
     """
 }
 
@@ -137,9 +143,8 @@ process sortVCF {
     output:
         path "*.wf_sv.vcf", emit: vcf
     script:
-        def name = vcf.simpleName
     """
-    vcfsort $vcf > ${name}.wf_sv.vcf
+    vcfsort $vcf > ${params.sample_name}.wf_sv.vcf
     """
 }
 
@@ -208,7 +213,6 @@ process report {
     output:
         path "wf-human-sv-*.html", emit: html
     script:
-        def name = vcf.simpleName
         def report_name = "wf-human-sv-" + params.report_name + '.html'
         def readStats = read_stats ? "--reads_summary ${read_stats}" : ""
         def evalResults = eval_json.name != 'OPTIONAL_FILE' ? "--eval_results ${eval_json}" : ""

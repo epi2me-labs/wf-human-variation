@@ -44,7 +44,7 @@ workflow bam {
 workflow variantCall {
     take:
         bam
-        bai
+        bam_idx
         reference
         target_bed
         optional_file
@@ -57,9 +57,9 @@ workflow variantCall {
             tr_bed = Channel.fromPath(params.tr_bed, checkIfExists: true)
         }
 
-        filterBam(bam, bai)
-        sniffles2(filterBam.out.bam, filterBam.out.bam_index, tr_bed)
-        mosdepth(filterBam.out.bam, filterBam.out.bam_index, target_bed)
+        filterBam(bam, bam_idx, reference)
+        sniffles2(filterBam.out.bam, filterBam.out.bam_index, tr_bed, reference)
+        mosdepth(filterBam.out.bam, filterBam.out.bam_index, target_bed, reference)
         filterCalls(sniffles2.out.vcf, mosdepth.out.mosdepth_bed, target_bed)
         sortVCF(filterCalls.out.vcf)
         indexVCF(sortVCF.out.vcf)

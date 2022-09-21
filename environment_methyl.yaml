@@ -1,0 +1,7 @@
+name: epi2melabs-nf-human-variation-common
+channels:
+    - conda-forge
+    - bioconda
+    - epi2melabs
+dependencies:
+    - modbam2bed==0.6.2
