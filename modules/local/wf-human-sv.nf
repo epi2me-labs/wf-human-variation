@@ -1,5 +1,6 @@
 import groovy.json.JsonBuilder
 
+// TODO bam2fq_ref is probably a bit silly here, we should just prevent minimap2_ubam working with referenced CRAM
 process minimap2_ubam {
     label "wf_human_sv"
     cpus {params.ubam_map_threads + params.ubam_sort_threads + params.ubam_bam2fq_threads}

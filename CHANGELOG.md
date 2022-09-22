@@ -4,10 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.2.1]
+## [v0.2.2]
 ### Fixed
 * "No such property" when using the `minimap2_ubam` alignment step
-* Slow performance on `minimap2_ubam` step when providing uCRAM
+* Slow performance on `minimap2_ubam` step when providing CRAM as `--ubam`
+* Slow performance on `snp:readStats` process
 ### Removed
 * "Missing reference index" warning was unnecessary
 

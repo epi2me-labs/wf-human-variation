@@ -155,7 +155,7 @@ workflow snp {
             make_chunks.out.contigs_file)
 
         // reporting
-        read_stats = readStats(bam)
+        read_stats = readStats(bam, ref)
         software_versions = getVersions()
         workflow_params = getParams()
         vcf_stats = vcfStats(clair_final.final_vcf)
