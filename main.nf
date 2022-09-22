@@ -43,7 +43,7 @@ workflow {
         ref_index_fp = file(params.ref + ".fai")
     }
 
-    output_bam = false
+    output_bam = false // BAM/CRAM as artifact to out_dir
 
     if (params.fast5_dir) {
         // Basecall fast5 input
@@ -55,6 +55,7 @@ workflow {
         guppy_out = fast5(params.fast5_dir, file(params.ref)) // TODO fix ref
         bam = guppy_out.cram
         idx = guppy_out.crai
+        output_bam = true // output merged CRAM to out_dir
     }
     else {
         // Otherwise handle (u)BAM/CRAM
@@ -96,7 +97,6 @@ workflow {
 
         // Create ref index if required
         if (!ref_index_fp || !ref_index_fp.exists()) {
-            log.warn ("Creating missing reference index for ${params.ref}")
             index_ref = index_ref_fai(ref)
             ref_index = index_ref.reference_index
         }

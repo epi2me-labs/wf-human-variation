@@ -7,11 +7,12 @@ process minimap2_ubam {
         path reference
         file reads
     output:
-        path "*.mm2.cram", emit: cream
+        path "*.mm2.cram", emit: cram
         path "*.mm2.cram.crai", emit: cram_index
     script:
+    def bam2fq_ref = reads.name.toLowerCase().endsWith("cram") ? "--reference ${reference}" : ''
     """
-    samtools bam2fq -@ ${params.ubam_bam2fq_threads} -T 1 ${reads} | minimap2 -y -t ${params.ubam_map_threads} -ax map-ont ${reference} - \
+    samtools bam2fq -@ ${params.ubam_bam2fq_threads} -T 1 ${bam2fq_ref} ${reads} | minimap2 -y -t ${params.ubam_map_threads} -ax map-ont ${reference} - \
     | samtools sort -@ ${params.ubam_sort_threads} --write-index -o ${reads.baseName}.mm2.cram##idx##${reads.baseName}.mm2.cram.crai -O CRAM --reference ${reference} -
     """
 }
