@@ -4,9 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [v0.2.3]
+### Added
+* [`mapula`](https://github.com/epi2me-labs/mapula) used to generate basic alignment QC statistics in both CSV and JSON
+### Changed
+* Updated Clair3 to 0.1.12 (build 6) which bundles Longphase 1.3 to enable CRAM support and small improvement to accuracy
+* `mosdepth` artifacts are now written to the output directory
+    * Additionally outputs read counts at 1,10,20,30X coverage thresholds for each region in the input BAM (or each sequence of the reference if no BED is provided)
+* Simplified `wf-human-sv` Docker image and conda definition
 ### Fixed
 * Outdated conda environment definitions
+* Docker based profiles no longer requires an internet connection to fetch the `cram_cache` cache building script
 
 ## [v0.2.2]
 ### Fixed
@@ -24,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Reference FAI is now created if it does not exist, rather than raising an error
 * `--sniffles_args` may be used to provide custom arguments to the `sniffles2` process
 * Output files are uniformly prefixed with `--sample_name`
+* Output alignment from `--ubam` is now CRAM formatted
 ### Fixed
 * Existence of Clair3 model directory is checked before starting workflow
 * `--GVCF` and `--include_all_ctgs` are correctly typed as booleans

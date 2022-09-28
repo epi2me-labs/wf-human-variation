@@ -1,4 +1,4 @@
-name: epi2melabs-nf-human-variation-common
+name: epi2melabs-nf-human-variation-methyl
 channels:
     - conda-forge
     - bioconda
