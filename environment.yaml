@@ -9,5 +9,10 @@ dependencies:
     - epi2melabs==0.0.22
     - mosdepth==0.3.3
     - samtools>=1.15
-    - perl-digest-md5
+    - mapula==2.1.2
     - gzip
+    - ucsc-bedgraphtobigwig # required for bigwig #WHALEFISHIGNORE
+    - perl #WHALEFISHIGNORE
+    - perl-digest-md5
+    - pip:
+        - pyfaidx

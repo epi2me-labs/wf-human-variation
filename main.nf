@@ -8,7 +8,16 @@ include { output_snp } from './modules/local/wf-human-snp'
 include { bam as sv } from './workflows/wf-human-sv'
 include { minimap2_ubam; output_sv } from './modules/local/wf-human-sv'
 
-include { index_ref_gzi; index_ref_fai; cram_cache; decompress_ref } from './modules/local/common'
+include {
+    index_ref_gzi;
+    index_ref_fai;
+    cram_cache;
+    decompress_ref;
+    mosdepth;
+    mapula;
+    getAllChromosomesBed;
+    publish_artifact; } from './modules/local/common'
+
 include { fast5 } from './workflows/guppy'
 include { methyl; output_methyl } from './workflows/methyl'
 
@@ -82,50 +91,68 @@ workflow {
         }
     }
 
-    bed = null
-    if(params.bed){
-        bed = Channel.fromPath(params.bed, checkIfExists: true)
+
+    // Bail from the workflow for a reason we should have already specified
+    if (!can_start){
+        throw new Exception("The workflow could not be started.")
     }
+
 
     // Dummy optional file
     // TODO should be a channel?
     OPTIONAL = file("$projectDir/data/OPTIONAL_FILE")
 
-    if (can_start) {
-        // Build ref cache for CRAM steps that do not take a reference
-        ref_cache = cram_cache(ref)
+    // Build ref cache for CRAM steps that do not take a reference
+    ref_cache = cram_cache(ref)
 
-        // Create ref index if required
-        if (!ref_index_fp || !ref_index_fp.exists()) {
-            index_ref = index_ref_fai(ref)
-            ref_index = index_ref.reference_index
-        }
-        else {
-            ref_index = Channel.of(ref_index_fp)
-        }
+    // Create ref index if required
+    if (!ref_index_fp || !ref_index_fp.exists()) {
+        index_ref = index_ref_fai(ref)
+        ref_index = index_ref.reference_index
+    }
+    else {
+        ref_index = Channel.of(ref_index_fp)
+    }
 
-        if (params.disable_ping == false) {
-            try {
-                Pinguscript.ping_post(workflow, "start", "none", params.out_dir, params)
-            } catch(RuntimeException e1) {
-            }
+    if (params.disable_ping == false) {
+        try {
+            Pinguscript.ping_post(workflow, "start", "none", params.out_dir, params)
+        } catch(RuntimeException e1) {
         }
     }
 
     ref_channel = ref.concat(ref_index).concat(ref_cache).buffer(size: 3)
     bam_channel = bam.concat(idx).buffer(size: 2)
 
+    // Set BED (and create the default all chrom BED if necessary)
+    bed = null
+    default_bed_set = false
+    if(params.bed){
+        bed = Channel.fromPath(params.bed, checkIfExists: true)
+    }
+    else {
+        default_bed_set = true
+        bed = getAllChromosomesBed(ref_channel).all_chromosomes_bed
+    }
+
+    // mosdepth and mapula
+    mosdepth(bam_channel, bed, ref_channel)
+    mosdepth_stats = mosdepth.out
+    mapula(bam_channel, bed, ref_channel)
+    mapula_stats = mapula.out
+
     // wf-human-methyl
-    if (params.methyl && can_start ) {
+    if (params.methyl) {
         results = methyl(bam_channel, ref_channel)
         artifacts = results[0].flatten()
         output_methyl(artifacts)
     }
 
     // wf-human-snp
-    if (params.snp && can_start) {
+    if (params.snp) {
 
-        if(bed == null) {
+        if(default_bed_set) {
+            // wf-human-snp uses OPTIONAL_FILE for empty bed for legacy reasons
             snp_bed = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
         }
         else {
@@ -137,15 +164,23 @@ workflow {
             bam_channel,
             snp_bed,
             ref_channel,
+            mosdepth_stats,
             model
         )
         output_snp(clair_vcf[0].flatten())
     }
 
     // wf-human-sv
-    if(params.sv && can_start) {
+    if(params.sv) {
 
-        results = sv(bam, idx, ref_channel, bed, OPTIONAL)
+        results = sv(
+            bam,
+            idx,
+            ref_channel,
+            bed,
+            mosdepth_stats,
+            OPTIONAL
+        )
         artifacts = results[0].flatten()
 
         if(!output_bam) {
@@ -155,6 +190,11 @@ workflow {
 
         output_sv(artifacts)
     }
+
+    publish_artifact(
+        mosdepth_stats.flatten() \
+        .concat(mapula_stats.flatten())
+    )
 }
 
 

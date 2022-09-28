@@ -1,10 +1,8 @@
 import groovy.json.JsonBuilder
 
 include {
-    getAllChromosomesBed;
     filterBam;
     sniffles2;
-    mosdepth;
     filterCalls;
     sortVCF;
     indexVCF;
@@ -13,23 +11,21 @@ include {
     report;
 } from "../modules/local/wf-human-sv.nf"
 
+
 workflow bam {
     take:
         bam
         bam_index
         reference
         target
+        mosdepth_stats
         optional_file
     main:
-        if(!target) {
-            target = getAllChromosomesBed(reference).all_chromosomes_bed
-        }
-
-        called = variantCall(bam, bam_index, reference, target, optional_file)
+        called = variantCall(bam, bam_index, reference, target, mosdepth_stats, optional_file)
         report = runReport(
             called.vcf.collect(),
             [],
-            called.read_depth.collect(),
+            mosdepth_stats,
             optional_file)
     emit:
         report.html.concat(
@@ -47,6 +43,7 @@ workflow variantCall {
         bam_idx
         reference
         target_bed
+        mosdepth_stats
         optional_file
     main:
 
@@ -58,15 +55,13 @@ workflow variantCall {
         }
 
         filterBam(bam, bam_idx, reference)
-        sniffles2(filterBam.out.bam, filterBam.out.bam_index, tr_bed, reference)
-        mosdepth(filterBam.out.bam, filterBam.out.bam_index, target_bed, reference)
-        filterCalls(sniffles2.out.vcf, mosdepth.out.mosdepth_bed, target_bed)
+        sniffles2(filterBam.out.cram, tr_bed, reference)
+        filterCalls(sniffles2.out.vcf, mosdepth_stats, target_bed)
         sortVCF(filterCalls.out.vcf)
         indexVCF(sortVCF.out.vcf)
     emit:
         vcf = indexVCF.out.vcf_gz
         vcf_index = indexVCF.out.vcf_tbi
-        read_depth = mosdepth.out.mosdepth_dist
 }
 
 workflow runReport {

@@ -57,7 +57,14 @@ The primary outputs of the workflow include:
 * a gzipped VCF file containing the SVs called from the dataset (`--sv`)
 * a gzipped [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file aggregating modified CpG base counts (`--methyl`)
 * an HTML report detailing the primary findings of the workflow, for both the SNP and SV calling
-* if unaligned reads were provided, a BAM file containing the alignments used to make the calls
+* if unaligned reads were provided, a CRAM file containing the alignments used to make the calls
+
+The secondary outputs of the workflow include:
+* `{sample_name}.mapula.csv` and `{sample_name}.mapula.json` provide basic alignment metrics (primary and secondary counts, read N50, median accuracy)
+* `mosdepth` outputs include:
+    * `{sample_name}.mosdepth.global.dist.txt`: a cumulative distribution indicating the proportion of total bases for each and all reference sequences [more info](https://github.com/brentp/mosdepth#distribution-output)
+    * `{sample_name}.regions.bed.gz`: reports the mean coverage for each region in the provided BED file
+    * `{sample_name}.thresholds.bed.gz`: reports the number of bases in each region that are covered at or above each threshold value (1, 10, 20, 30X) [more info](https://github.com/brentp/mosdepth#thresholds)
 
 **Workflow tips**
 

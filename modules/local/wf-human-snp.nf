@@ -546,36 +546,11 @@ process vcfStats {
 }
 
 
-process mosdepth {
-    label "wf_human_snp"
-    cpus 2
-    input:
-        tuple path(bam), path(bai)
-        file target_bed
-        tuple path(ref), path(ref_idx), path(ref_cache)
-    output:
-        path "*.global.dist.txt", emit: mosdepth_dist
-    script:
-        def bedargs = target_bed.name != 'OPTIONAL_FILE' ? "-b ${target_bed}" : ''
-        """
-        export REF_PATH=${ref}
-        export MOSDEPTH_PRECISION=3
-        mosdepth \
-        -x \
-        -t $task.cpus \
-        ${bedargs} \
-        --no-per-base \
-        ${params.sample_name} \
-        $bam
-        """
-}
-
-
 process makeReport {
     label "wf_human_snp"
     input:
         file read_summary
-        file read_depth
+        tuple path(mosdepth_bed), path(mosdepth_dist), path(mosdepth_threshold) // MOSDEPTH_TUPLE
         file vcfstats
         path versions
         path "params.json"
@@ -593,7 +568,7 @@ process makeReport {
         --versions $versions \
         --params params.json \
         --read_stats $read_summary \
-        --read_depth $read_depth \
+        --read_depth $mosdepth_dist \
         --vcf_stats $vcfstats \
         --revision $wfversion \
         --commit $workflow.commitId

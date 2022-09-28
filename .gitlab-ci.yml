@@ -54,13 +54,13 @@ docker-run:
               NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-methyl/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: ""
-              NF_WORKFLOW_OPTS: "--methyl --ubam demo_data/demo.cram --bed demo_data/demo.bed --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1"
+              NF_WORKFLOW_OPTS: "--methyl --ubam demo_data/demo.cram --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1"
 
 
         #TODO tr_bed in test data
         - if: ($MATRIX_NAME == "omni" && $CI_COMMIT_BRANCH == "dev-omni")
           variables:
-              NF_BEFORE_SCRIPT: "wget -qO gm24385_q20_2021.10-chr20.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-omni/gm24385_q20_2021.10-chr20.tar.gz && tar -xzvf gm24385_q20_2021.10-chr20.tar.gz && rm gm24385_q20_2021.10-chr20.tar.gz"
+              NF_BEFORE_SCRIPT: "wget -qO demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/demo_data.tar.gz && tar -xzvf demo_data.tar.gz && cat demo_data/VERSION && rm demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-sv.nf modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "hap,post_clair_phase_contig,getAllChromosomesBed,minimap2_ubam"
-              NF_WORKFLOW_OPTS: "--snp --sv --methyl --bam gm24385_q20_2021.10-chr20/chr20.bam --ref gm24385_q20_2021.10-chr20/chr20.fasta --bed gm24385_q20_2021.10-chr20/chr20.bed --model gm24385_q20_2021.10-chr20/ont_r104_e81_sup_g5015"
+              NF_WORKFLOW_OPTS: "--snp --sv --methyl --bam demo_data/demo.bam --ref demo_data/demo.fasta --bed demo_data/demo.bed --model demo_data/ont_r104_e81_sup_g5015 --sample_name OMNI"

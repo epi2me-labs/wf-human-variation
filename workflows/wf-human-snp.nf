@@ -13,7 +13,6 @@ include {
     post_clair_phase_contig;
     aggregate_all_variants;
     hap;
-    mosdepth;
     readStats;
     getParams;
     getVersions;
@@ -21,12 +20,14 @@ include {
     makeReport;
 } from "../modules/local/wf-human-snp.nf"
 
+
 // workflow module
 workflow snp {
     take:
         bam
         bed
         ref
+        mosdepth_stats
         model
     main:
 
@@ -159,9 +160,8 @@ workflow snp {
         software_versions = getVersions()
         workflow_params = getParams()
         vcf_stats = vcfStats(clair_final.final_vcf)
-        read_depth = mosdepth(bam, bed, ref)
         report = makeReport(
-            read_stats.stats, mosdepth.out.mosdepth_dist, vcf_stats[0],
+            read_stats.stats, mosdepth_stats, vcf_stats[0],
             software_versions.collect(), workflow_params)
         telemetry = workflow_params
 

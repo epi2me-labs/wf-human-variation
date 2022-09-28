@@ -6,21 +6,11 @@ channels:
     - defaults
 dependencies:
     - python==3.8.*
-    - gcc_linux-64
-    - make
     - aplanat >=0.6.5
-    - pysam
-    - nanoplot
-    - fastcat==0.4.11
-    - seqtk
+    - fastcat>=0.4.11
     - samtools >=1.8
-    - bedtools
-    - bcftools
-    - vcftools
-    - vcflib
-    - mosdepth
     - minimap2==2.24
     - sniffles=2.0.3
-    - pip:
-        - pyfaidx
-        - Truvari
+    - Truvari==3.5.0
+    - bcftools==1.15.1 # filterCalls
+    - vcflib==1.0.3 # sortVcf

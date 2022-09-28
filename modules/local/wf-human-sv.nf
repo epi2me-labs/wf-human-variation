@@ -19,20 +19,6 @@ process minimap2_ubam {
 }
 
 
-// todo https://github.com/mdshw5/pyfaidx/pull/164
-process getAllChromosomesBed {
-    label "wf_human_sv"
-    cpus 1
-    input:
-        tuple path(reference), path(ref_idx), path(ref_cache)
-    output:
-        path "allChromosomes.bed", emit: all_chromosomes_bed
-    """
-    faidx --transform bed $reference > allChromosomes.bed
-    """
-}
-
-
 // Remove unmapped (4), non-primary (256) and supplemental (2048) alignments
 process filterBam {
     label "wf_human_sv"
@@ -42,8 +28,7 @@ process filterBam {
         file bam_index
         tuple path(reference), path(ref_idx), path(ref_cache)
     output:
-        path "*filtered.cram", emit: bam
-        path "*filtered.cram.crai", emit: bam_index
+        tuple path("${params.sample_name}.filtered.cram"), path("${params.sample_name}.filtered.cram.crai"), emit: cram
     script:
     """
     samtools view -@ $task.cpus -F 2308 -o ${params.sample_name}.filtered.cram -O CRAM --write-index ${bam} --reference ${reference}
@@ -57,8 +42,7 @@ process sniffles2 {
     label "wf_human_sv"
     cpus params.threads
     input:
-        file bam
-        file bam_index
+        tuple path(bam), path(bam_index)
         file tr_bed
         tuple path(reference), path(ref_idx), path(ref_cache)
     output:
@@ -82,38 +66,13 @@ process sniffles2 {
     """
 }
 
-process mosdepth {
-    label "wf_human_sv"
-    cpus params.threads
-    input:
-        file bam
-        file bam_index
-        file target_bed
-        tuple path(reference), path(ref_idx), path(ref_cache)
-    output:
-        path "*.regions.bed.gz", emit: mosdepth_bed
-        path "*.global.dist.txt", emit: mosdepth_dist
-    script:
-    """
-    export REF_PATH=${reference}
-    export MOSDEPTH_PRECISION=3
-    mosdepth \
-        -x \
-        -t $task.cpus \
-        -b $target_bed \
-        --no-per-base \
-        ${params.sample_name} \
-        $bam
-    """
-}
-
 
 process filterCalls {
     label "wf_human_sv"
     cpus 1
     input:
         file vcf
-        file mosdepth_bed
+        tuple path(mosdepth_bed), path(mosdepth_dist), path(mosdepth_threshold) // MOSDEPTH_TUPLE
         file target_bed
     output:
         path "*.filtered.vcf", emit: vcf
@@ -176,11 +135,9 @@ process getVersions {
     python -c "import pysam; print(f'pysam,{pysam.__version__}')" >> versions.txt
     TRUVARI=\$(which truvari)
     python \$TRUVARI version | sed 's/ /,/' >> versions.txt
-    mosdepth --version | sed 's/ /,/' >> versions.txt
     fastcat --version | sed 's/^/fastcat,/' >> versions.txt
     sniffles --version | head -n 1 | sed 's/ Version //' >> versions.txt
     bcftools --version | head -n 1 | sed 's/ /,/' >> versions.txt
-    bedtools --version | head -n 1 | sed 's/ /,/' >> versions.txt
     samtools --version | head -n 1 | sed 's/ /,/' >> versions.txt
     minimap2 --version | head -n 1 | sed 's/^/minimap2,/' >> versions.txt
     echo `seqtk 2>&1 | head -n 3 | tail -n 1 | cut -d ':' -f 2 | sed 's/ /seqtk,/'` >> versions.txt
@@ -208,7 +165,7 @@ process report {
     input:
         file vcf
         file read_stats
-        file read_depth
+        tuple path(mosdepth_bed), path(mosdepth_dist), path(mosdepth_threshold) // MOSDEPTH_TUPLE
         file eval_json
         file versions
         path "params.json"
@@ -223,7 +180,7 @@ process report {
         $report_name \
         --vcf $vcf \
         $readStats \
-        --read_depth $read_depth \
+        --read_depth $mosdepth_dist \
         --params params.json \
         --params-hidden 'help,schema_ignore_params,${params.schema_ignore_params}' \
         --versions $versions \
