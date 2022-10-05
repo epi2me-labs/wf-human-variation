@@ -125,3 +125,24 @@ process getAllChromosomesBed {
     faidx --transform bed $reference > allChromosomes.bed
     """
 }
+
+
+process check_for_alignment {
+
+    input:
+        tuple path(reference), path(ref_idx)
+        tuple path(xam), path(xam_idx)
+    output:
+        tuple env(realign), path(xam), path(xam_idx)
+    script:
+        """
+        realign=0
+        check_sq_ref.py --xam ${xam} --ref ${reference} || realign=\$?
+
+        # Allow EX_OK and EX_DATAERR, otherwise explode
+        if [ \$realign -ne 0 ] && [ \$realign -ne 65 ]; then
+            exit 1
+        fi
+        """
+
+}

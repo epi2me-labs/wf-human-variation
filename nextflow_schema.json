@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/epi2me-labs/wf-human-variation/master/nextflow_schema.json",
-    "title": "epi2me-labs/wf-human-variation pipeline parameters",
+    "title": "epi2me-labs/wf-human-variation",
     "description": "consolidated human variation calling pipeline for ONT data",
     "url": "https://github.com/epi2me-labs/wf-human-variation",
     "type": "object",
@@ -18,23 +18,23 @@
                 "fast5_dir": {
                     "type": "string",
                     "format": "directory-path",
-                    "description": "Directory containing fast5 for basecalling [not supported]",
-                    "hidden": true
-                },
-                "ubam": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "unaligned BAM file of reads to be aligned to --ref"
+                    "description": "Directory containing fast5 for basecalling"
                 },
                 "bam": {
                     "type": "string",
                     "format": "file-path",
-                    "description": "BAM alignment file of reads to genomic reference. A corresponding .bai file must also be present."
+                    "description": "a BAM (or CRAM) containing aligned or unaligned reads, if the --ref disagrees with the SQ lines (or the file contains no alignments), alignment will be performed automatically"
                 },
                 "ref": {
                     "type": "string",
                     "format": "file-path",
                     "description": "Reference .fasta file"
+                },
+                "old_ref": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Reference .fasta file for CRAM input (only required if the CRAM requires realignment)",
+                    "hidden": true
                 },
                 "bed": {
                     "type": "string",
@@ -246,8 +246,22 @@
                 },
                 "guppy_cfg": {
                     "type": "string",
-                    "default": "dna_r10.4.1_e8.2_400bps_modbases_5mc_cg_hac_prom.cfg",
-                    "hidden": true
+                    "description": "guppy --config profile parameter (see `guppy_basecaller --print_workflows`)"
+                },
+                "guppy_device": {
+                    "type": "string",
+                    "default": "cuda:all",
+                    "description": "guppy basecalling --device [cuda:all]"
+                },
+                "guppy_map_threads": {
+                    "type": "number",
+                    "default": 12,
+                    "description": "Number of threads to use for guppy_aligner [12]"
+                },
+                "guppy_basemod_threads": {
+                    "type": "number",
+                    "default": 0,
+                    "description": "Number of threads to use for base modification calling, you must set this to > 0 when using a modbase aware model [0]"
                 }
             }
         },
@@ -305,7 +319,7 @@
         },
         "wfversion": {
             "type": "string",
-            "default": "v0.2.3",
+            "default": "v0.3.0",
             "hidden": true
         },
         "monochrome_logs": {

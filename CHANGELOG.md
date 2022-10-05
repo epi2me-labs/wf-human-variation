@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.0]
+### Added
+* Experimental guppy subworkflow
+    * We do not provide a Docker container for Guppy at this time, users will need to override `process.withLabel:wf_guppy.container`
+### Changed
+* `--ubam` option removed, users can now pass unaligned or aligned BAM (or CRAM) to `--bam`
+    * If the input BAM is aligned and the provided `--ref` does not match the SQ lines (exact match to name and size) the file will be realigned to `--ref`
+    * If the input CRAM is aligned and the provided `--ref` does not match the SQ lines (exact match to name and size) the file will be realigned to `--ref`, but will also require the old reference to be provided with `--old_ref` to avoid reference lookups
+    * If the input is not aligned, the file will be aligned to `--ref`
+### Fixed
+* Chunks without variants will no longer terminate the workflow at the `create_candidates` step
+
 ## [v0.2.3]
 ### Added
 * [`mapula`](https://github.com/epi2me-labs/mapula) used to generate basic alignment QC statistics in both CSV and JSON

@@ -16,7 +16,8 @@ include {
     mosdepth;
     mapula;
     getAllChromosomesBed;
-    publish_artifact; } from './modules/local/common'
+    publish_artifact;
+    check_for_alignment; } from './modules/local/common'
 
 include { fast5 } from './workflows/guppy'
 include { methyl; output_methyl } from './workflows/methyl'
@@ -38,6 +39,19 @@ workflow {
         can_start = false
     }
 
+    if (params.containsKey("ubam")) {
+        log.error (colors.red + "--ubam is deprecated as this workflow can determine whether (re)alignment is required automatically, use --bam instead." + colors.reset)
+        can_start = false
+    }
+
+
+    if(params.snp) {
+        if(!params.model) {
+            throw new Exception(colors.red + "Clair3 --model required for --snp" + colors.reset)
+        }
+    }
+
+
     // Check ref and decompress if needed
     ref = null
     ref_index_fp = null
@@ -53,57 +67,58 @@ workflow {
     }
 
     output_bam = false // BAM/CRAM as artifact to out_dir
+    is_cram = false
 
     if (params.fast5_dir) {
         // Basecall fast5 input
-        if (params.bam || params.ubam ) {
-            throw new Exception(colors.red + "Cannot use --fast5_dir with --bam or --ubam." + colors.reset)
+        if (params.bam) {
+            throw new Exception(colors.red + "Cannot use --fast5_dir with --bam." + colors.reset)
+        }
+        if (!params.guppy_cfg) {
+            throw new Exception(colors.red + "You must provide a guppy profile with --guppy_cfg <profile>" + colors.reset)
+        }
+        if (params.guppy_cfg.contains("modbase") && params.guppy_basemod_threads == 0) {
+            throw new Exception(colors.red + "modbase aware guppy config requires --guppy_basemod_threads > 0" + colors.reset)
         }
         log.warn ("* Using basecalling subworkflow!")
-        log.warn ("  This subworkflow is not officially supported. Please do not open Github issues or raise support tickets for errors encountered attempting to use this workflow before release.")
+        log.warn ("  This subworkflow is experimental and we do not provide an official guppy image at this time.")
         guppy_out = fast5(params.fast5_dir, file(params.ref)) // TODO fix ref
         bam = guppy_out.cram
         idx = guppy_out.crai
         output_bam = true // output merged CRAM to out_dir
+
+        // construct canonical bam channel (no need for check_bam_channel here)
+        bam_channel = bam.concat(idx).buffer(size: 2)
     }
     else {
         // Otherwise handle (u)BAM/CRAM
-        if ((params.bam && params.ubam) || (!params.bam && !params.ubam)) {
-            throw new Exception(colors.red + "Must provide one of --bam or --ubam." + colors.reset)
+        if (!params.bam) {
+            throw new Exception(colors.red + "Missing required argument --bam." + colors.reset)
         }
-        else if (params.bam) {
-            bam = Channel.fromPath(params.bam, checkIfExists: true)
-            if (params.bam.toLowerCase().endsWith("cram")) {
-                idx = Channel.fromPath(params.bam + ".crai", checkIfExists: true)
-            }
-            else {
-                // Just assume BAM/BAI
-                idx = Channel.fromPath(params.bam + ".bai", checkIfExists: true)
-            }
+
+        check_bam = Channel.fromPath(params.bam, checkIfExists: true)
+        if (params.bam.toLowerCase().endsWith("cram")) {
+            is_cram = true
+            check_idx = Channel.fromPath(params.bam + ".crai", checkIfExists: true)
         }
-        else if (params.ubam && can_start) {
-            // Align uBAM with minimap2
-            output_bam = true // output alignment BAM as artifact
-            ubam = Channel.fromPath(params.ubam, checkIfExists: true)
-            mapped = minimap2_ubam(ref, ubam)
-            bam = mapped.cram
-            idx = mapped.cram_index
+        else {
+            // Just assume BAM/BAI
+            check_idx = Channel.fromPath(params.bam + ".bai", checkIfExists: true)
         }
+        check_bam_channel = check_bam.concat(check_idx).buffer(size: 2)
     }
 
 
+    // ************************************************************************
     // Bail from the workflow for a reason we should have already specified
     if (!can_start){
         throw new Exception("The workflow could not be started.")
     }
-
+    // ************************************************************************
 
     // Dummy optional file
     // TODO should be a channel?
     OPTIONAL = file("$projectDir/data/OPTIONAL_FILE")
-
-    // Build ref cache for CRAM steps that do not take a reference
-    ref_cache = cram_cache(ref)
 
     // Create ref index if required
     if (!ref_index_fp || !ref_index_fp.exists()) {
@@ -114,15 +129,52 @@ workflow {
         ref_index = Channel.of(ref_index_fp)
     }
 
-    if (params.disable_ping == false) {
+    if (!params.disable_ping) {
         try {
             Pinguscript.ping_post(workflow, "start", "none", params.out_dir, params)
-        } catch(RuntimeException e1) {
-        }
+        } catch(RuntimeException e1) {}
     }
 
+    // Determine if (re)alignment is required for input BAM
+    if(!params.fast5_dir){
+        check_ref = ref.concat(ref_index).buffer(size: 2) // don't wait for cram_cache to perform check_for_alignment
+        checked_alignments = check_for_alignment(check_ref, check_bam_channel)
+
+        // non-zero exit code from realignment step will be interpreted as alignment required
+        // fork BAMs into realign (for (re)alignment) and noalign subchannels
+        checked_alignments.branch {
+            realign: it[0] == '65'
+            noalign: it[0] == '0'
+        }.set{alignment_fork}
+
+        already_aligned_bams = alignment_fork.noalign.map{ it -> tuple(it[1], it[2]) }
+
+        // Check old ref
+        int to_realign = 0
+        alignment_fork.realign.subscribe onNext: { to_realign++ }, onComplete: {
+            if(to_realign > 0 && is_cram && !params.old_ref) {
+                log.error(colors.red + "Input CRAM requires (re)alignment. You must provide a path to the original reference with '--old_ref <path>'" + colors.reset)
+                throw new Exception("--old_ref not provided.")
+            }
+        }
+        old_ref = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
+        if(is_cram && to_realign > 0) {
+            old_ref = Channel.fromPath(params.old_ref, checkIfExists: true)
+        }
+
+        // call minimap on bams that require (re)alignment
+        new_mapped_bams = minimap2_ubam(ref, old_ref, alignment_fork.realign.map{ it -> tuple(it[1], it[2]) })
+        newly_aligned_bams = new_mapped_bams.alignment
+
+        // mix realign and noalign forks back to canonical bam_channel with (reads, reads_idx) format
+        bam_channel = already_aligned_bams.mix(newly_aligned_bams)
+    }
+
+    // Build ref cache for CRAM steps that do not take a reference
+    ref_cache = cram_cache(ref)
+
+    // canonical ref and BAM channels to pass around to all processes
     ref_channel = ref.concat(ref_index).concat(ref_cache).buffer(size: 3)
-    bam_channel = bam.concat(idx).buffer(size: 2)
 
     // Set BED (and create the default all chrom BED if necessary)
     bed = null
@@ -158,6 +210,7 @@ workflow {
         else {
             snp_bed = bed
         }
+
         model = Channel.fromPath(params.model, type: "dir", checkIfExists: true)
 
         clair_vcf = snp(
@@ -174,8 +227,7 @@ workflow {
     if(params.sv) {
 
         results = sv(
-            bam,
-            idx,
+            bam_channel,
             ref_channel,
             bed,
             mosdepth_stats,
@@ -198,7 +250,7 @@ workflow {
 }
 
 
-if (params.disable_ping == false) {
+if (!params.disable_ping) {
     workflow.onComplete {
         try{
             Pinguscript.ping_post(workflow, "end", "none", params.out_dir, params)

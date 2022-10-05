@@ -1,17 +1,16 @@
 import groovy.json.JsonBuilder
 
-// TODO bam2fq_ref is probably a bit silly here, we should just prevent minimap2_ubam working with referenced CRAM
 process minimap2_ubam {
     label "wf_human_sv"
     cpus {params.ubam_map_threads + params.ubam_sort_threads + params.ubam_bam2fq_threads}
     input:
         path reference
-        file reads
+        path old_reference
+        tuple path(reads), path(reads_idx)
     output:
-        path "*.mm2.cram", emit: cram
-        path "*.mm2.cram.crai", emit: cram_index
+        tuple path("${reads.baseName}.mm2.cram"), path("${reads.baseName}.mm2.cram.crai"), emit: alignment
     script:
-    def bam2fq_ref = reads.name.toLowerCase().endsWith("cram") ? "--reference ${reference}" : ''
+    def bam2fq_ref = old_reference.name != "OPTIONAL_FILE" ? "--reference ${old_reference}" : ''
     """
     samtools bam2fq -@ ${params.ubam_bam2fq_threads} -T 1 ${bam2fq_ref} ${reads} | minimap2 -y -t ${params.ubam_map_threads} -ax map-ont ${reference} - \
     | samtools sort -@ ${params.ubam_sort_threads} --write-index -o ${reads.baseName}.mm2.cram##idx##${reads.baseName}.mm2.cram.crai -O CRAM --reference ${reference} -
@@ -24,8 +23,7 @@ process filterBam {
     label "wf_human_sv"
     cpus params.threads
     input:
-        file bam
-        file bam_index
+        tuple path(bam), path(bam_idx)
         tuple path(reference), path(ref_idx), path(ref_cache)
     output:
         tuple path("${params.sample_name}.filtered.cram"), path("${params.sample_name}.filtered.cram.crai"), emit: cram

@@ -25,6 +25,12 @@ docker-run:
     #   which options to apply as part of the rules block below
     # NOTE There is a slightly cleaner way to define this matrix to include
     #   the variables, but it is broken when using long strings! See CW-756
+    artifacts:
+        when: on_failure
+        paths:
+            - ${CI_PROJECT_NAME}
+            - .nextflow.log
+        exclude: [] # give me everything pal
     parallel:
         matrix:
             - MATRIX_NAME: ["wf-human-snp", "wf-human-sv", "gzref-ubam-methyl", "omni"]
@@ -37,10 +43,10 @@ docker-run:
 
         - if: $MATRIX_NAME == "wf-human-snp"
           variables:
-              NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "hap"
-              NF_WORKFLOW_OPTS: "--snp --bam demo_data/chr6_chr20.bam --bed demo_data/chr6_chr20.bed --ref demo_data/chr6_chr20.fasta --model demo_data/ont_r104_e81_sup_g5015 --phase_vcf"
+              NF_WORKFLOW_OPTS: "--snp --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --model snp_demo/ont_r104_e81_sup_g5015 --phase_vcf"
 
         - if: $MATRIX_NAME == "wf-human-sv"
           variables:
@@ -54,7 +60,7 @@ docker-run:
               NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-methyl/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: ""
-              NF_WORKFLOW_OPTS: "--methyl --ubam demo_data/demo.cram --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1"
+              NF_WORKFLOW_OPTS: "--methyl --bam demo_data/demo.cram --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1"
 
 
         #TODO tr_bed in test data
