@@ -219,7 +219,7 @@ process create_candidates {
         // https://github.com/HKU-BAL/Clair3/blob/329d09b39c12b6d8d9097aeb1fe9ec740b9334f6/preprocess/SelectCandidates.py#L146
         path "candidate_bed/qual"
     output:
-        tuple val(contig), path("candidate_bed/${contig}.*"), emit: candidate_bed
+        tuple val(contig), path("candidate_bed/${contig}.*"), emit: candidate_bed, optional: true
     shell:
         // This creates BED files as candidate_bed/<ctg>.0_14 with candidates
         // along with a file the FULL_ALN_FILE_<ctg> listing all of the BED

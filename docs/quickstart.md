@@ -34,7 +34,7 @@ wget -O demo_data.tar.gz \
 tar -xzvf demo_data.tar.gz
 ```
 
-The workflow can be run with the demonstration data using:
+The SNP and SV workflows can be run with the demonstration data using:
 
 ```
 OUTPUT=output
@@ -46,6 +46,66 @@ nextflow run epi2me-labs/wf-human-variation \
     --bed demo_data/demo.bed \
     --ref demo_data/demo.fasta \
     --model demo_data/ont_r104_e81_sup_g5015 \
+    --sample_name MY_SAMPLE \
+    --out_dir ${OUTPUT}
+```
+
+**Additional examples**
+
+***SNP only***
+```
+OUTPUT=output
+nextflow run epi2me-labs/wf-human-variation \
+    -w ${OUTPUT}/workspace \
+    -profile standard \
+    --snp \
+    --bam path/to.bam \
+    --bed path/to.bed \
+    --ref path/to.fasta \
+    --model path/to/clair3/model/dir \
+    --out_dir ${OUTPUT}
+```
+
+***SV only***
+```
+OUTPUT=output
+nextflow run epi2me-labs/wf-human-variation \
+    -w ${OUTPUT}/workspace \
+    -profile standard \
+    --sv \
+    --bam path/to.bam \
+    --bed path/to.bed \
+    --ref path/to.fasta \
+    --tr_bed path/to/tandem_repeat.bed
+    --out_dir ${OUTPUT}
+```
+
+***Methyl***
+```
+OUTPUT=output
+nextflow run epi2me-labs/wf-human-variation \
+    -w ${OUTPUT}/workspace \
+    -profile standard \
+    --methyl \
+    --bam path/to.bam \
+    --ref path/to.fasta \
+    --out_dir ${OUTPUT}
+```
+
+***Basecalling, SNP and SV***
+```
+OUTPUT=output
+nextflow run epi2me-labs/wf-human-variation \
+    -w ${OUTPUT}/workspace \
+    -profile standard \
+    --snp --sv \
+    --fast5_dir path/to/fast5/dir \
+    --guppy_cfg profile.cfg \
+    --guppy_map_threads 12 \
+    --guppy_basemod_threads 24 \
+    --bed path/to.bed \
+    --ref path/to.fasta \
+    --model path/to/clair3/model/dir \
     --out_dir ${OUTPUT}
 ```
 
@@ -72,3 +132,4 @@ The secondary outputs of the workflow include:
     - All arms of the variation calling workflow use `--ref` (not `--reference`) and `--bed` (not `--target_bedfile`)
 - Specifying a suitable [tandem repeat BED for your reference](https://raw.githubusercontent.com/fritzsedlazeck/Sniffles/master/annotations/) with `--tr_bed` can improve the accuracy of SV calling.
 - Aggregation of methylation calls with `--methyl` requires data to be basecalled with a model that includes base modifications, providing the `MM` and `ML` BAM tags
+- Use `guppy_basecaller --print_workflows` to pick an appropriate basecaller model for your data

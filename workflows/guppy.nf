@@ -10,18 +10,17 @@ process guppy {
     output:
         tuple val(chunk_idx), path("guppy_out/pass/*.${chunk_idx}.bam"), path(ref)
 
-    // TODO Selectable config
-    // TODO --device cuda:${device}
     script:
     def guppy_args = params.guppy_args ?: ''
     def aligner_args = params.guppy_no_align ? '' : "-a ${ref}" // RB4F testing guppy perf on alignment
+    def num_base_mod_threads = params.guppy_basemod_threads > 0 ? "--num_base_mod_threads ${params.guppy_basemod_threads}" : ''
     """
     guppy_basecaller \
         ${aligner_args} \
         -q 0 \
-        --device cuda:all \
+        --device ${params.guppy_device} \
         --num_alignment_threads ${params.guppy_map_threads} \
-        --num_base_mod_threads ${params.guppy_basemod_threads} \
+        ${num_base_mod_threads} \
         --config ${params.guppy_cfg} \
         --bam_out \
         ${guppy_args} \

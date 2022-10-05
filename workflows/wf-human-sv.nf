@@ -15,13 +15,12 @@ include {
 workflow bam {
     take:
         bam
-        bam_index
         reference
         target
         mosdepth_stats
         optional_file
     main:
-        called = variantCall(bam, bam_index, reference, target, mosdepth_stats, optional_file)
+        called = variantCall(bam, reference, target, mosdepth_stats, optional_file)
         report = runReport(
             called.vcf.collect(),
             [],
@@ -32,7 +31,6 @@ workflow bam {
             called.vcf,
             called.vcf_index,
             bam,
-            bam_index,
         )
 }
 
@@ -40,7 +38,6 @@ workflow bam {
 workflow variantCall {
     take:
         bam
-        bam_idx
         reference
         target_bed
         mosdepth_stats
@@ -54,7 +51,7 @@ workflow variantCall {
             tr_bed = Channel.fromPath(params.tr_bed, checkIfExists: true)
         }
 
-        filterBam(bam, bam_idx, reference)
+        filterBam(bam, reference)
         sniffles2(filterBam.out.cram, tr_bed, reference)
         filterCalls(sniffles2.out.vcf, mosdepth_stats, target_bed)
         sortVCF(filterCalls.out.vcf)
