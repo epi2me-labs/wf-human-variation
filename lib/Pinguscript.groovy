@@ -5,9 +5,9 @@ import groovy.json.JsonSlurper
 
 class Pinguscript {
       public static String ping_post(workflow, message, error_message, out_dir, params) {
-        def msgId = UUID.randomUUID().toString();
-        def hosthash = null;
-        try { 
+        def msgId = UUID.randomUUID().toString()
+        def hosthash = null
+        try {
             hosthash = InetAddress.getLocalHost().getHostName().md5()
         } catch(Exception e) {
             hosthash = "Unavailable"
@@ -17,7 +17,7 @@ class Pinguscript {
             opsys = "WSL"
         }
         def workflow_name = "$workflow.manifest.name"
-        def session = "$workflow.sessionId" 
+        def session = "$workflow.sessionId"
         def errorMessage = "$error_message"
         def profile = "$workflow.profile"
         def filename =  "$out_dir/params.json"
@@ -26,7 +26,7 @@ class Pinguscript {
         if (fileb.exists() && "$message" != "start") {
             def jsonSlurper = new JsonSlurper()
             any_other_data = jsonSlurper.parse(fileb)
-        } 
+        }
         def meta_json = new JsonBuilder()
         def agent = "$params.wf.agent"
         def meta = meta_json "error": errorMessage.toString(), "profile": profile.toString(),
@@ -41,17 +41,32 @@ class Pinguscript {
         def body_json = new JsonBuilder()
         def root = body_json "tracking_id": tracking_id,  "hostname": hosthash.toString(), "os": opsys.toString(),
                 "session": session.toString(), "data": data,  "source": "workflow"
+
+        // Attempt to send payload and absorb any possible Exception gracefully
         String postResult
-        ((HttpURLConnection)new URL('https://ping.oxfordnanoportal.com/epilaby').openConnection()).with({
-            requestMethod = 'POST'
-            doOutput = true
-            setRequestProperty('Content-Type', 'application/json') 
-            setRequestProperty('accept', 'application/json')
-            outputStream.withPrintWriter({printWriter ->
-                 printWriter.write(body_json.toString())
+        boolean raise_exception = false
+        try {
+            ((HttpURLConnection)new URL('https://ping.oxfordnanoportal.com/epilaby').openConnection()).with({
+                requestMethod = 'POST'
+                doOutput = true
+                setConnectTimeout(5000)
+                setReadTimeout(10000)
+                setRequestProperty('Content-Type', 'application/json')
+                setRequestProperty('accept', 'application/json')
+                outputStream.withPrintWriter({printWriter ->
+                    printWriter.write(body_json.toString())
+                })
+
+                // Rethrow exceptions that imply we're not using this endpoint properly
+                if(responseCode >= 400 && agent.toString() == "cw-ci") {
+                    raise_exception = true
+                }
+                // Accessing inputStream.text will raise an Exception for failed requests
+                postResult = inputStream.text
             })
-            postResult = inputStream.text
-        })
+        } catch(Exception e) {
+            if(raise_exception) { throw e }
+        }
         return (postResult)
     }
 }
