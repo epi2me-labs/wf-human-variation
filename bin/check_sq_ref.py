@@ -10,6 +10,9 @@ import sys
 
 import pysam
 
+# NOTE Both OK and DATAERR are permissible exits from this script so
+#      if you want to raise an error to stop Nextflow, it better be
+#      something else!
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
@@ -23,21 +26,28 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    xam = pysam.AlignmentFile(args.xam)
-    ref = pysam.FastaFile(args.ref)
+    try:
+        xam = pysam.AlignmentFile(args.xam, check_sq=False)
+        ref = pysam.FastaFile(args.ref)
+    except ValueError:
+        sys.stderr.write(
+            "[FAIL] One (or both) of the input files could not be"
+            " read. Are they the right format?"
+        )
+        sys.exit(os.EX_NOINPUT)
 
     ref_reflen = set(zip(ref.references, ref.lengths))
     xam_reflen = set(zip(xam.references, xam.lengths))
     diff = ref_reflen ^ xam_reflen
 
     if len(diff) > 0:
+        print(" ".join([
+            "sequence_name",
+            "sequence_length",
+            "in_ref",
+            "in_xam",
+        ]))
         for reflen in diff:
-            print(" ".join([
-                "sequence_name",
-                "sequence_length",
-                "in_ref",
-                "in_xam",
-            ]))
             print(
                 reflen[0],
                 reflen[1],
