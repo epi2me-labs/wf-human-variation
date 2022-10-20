@@ -144,5 +144,29 @@ process check_for_alignment {
             exit 1
         fi
         """
+}
 
+//TODO reference is later copied to out_dir to save us a lot of trouble but is wasteful
+//     additionally, --reference is hacked to allow the actual_ref to be opened
+//     (as it cannot be guaranteed to exist in the out_dir at this point)
+//TODO alignment track only output when alignment has been done, for now
+//TODO --variant locations should be constructed legitimately instead of guessed
+process configure_jbrowse {
+    input:
+        tuple path(reference), path(ref_idx), path(ref_cache)
+        tuple path(xam), path(xam_idx)
+        val(output_bam)
+    output:
+        path("jbrowse.json")
+    script:
+    def snp_variant = params.snp ? "--variant snp ${params.out_dir}/${params.sample_name}.wf_snp.vcf.gz ${params.out_dir}/${params.sample_name}.wf_snp.vcf.gz.tbi" : ''
+    def sv_variant = params.sv ? "--variant sv ${params.out_dir}/${params.sample_name}.wf_sv.vcf.gz ${params.out_dir}/${params.sample_name}.wf_sv.vcf.gz.tbi" : ''
+    def alignment = output_bam ? "--alignment ${params.out_dir}/${xam.name} ${params.out_dir}/${xam_idx.name}" : ''
+    """
+    configure_jbrowse.py \
+        --reference ${reference} ${params.out_dir}/${reference.name} ${params.out_dir}/${ref_idx.name} \
+        ${alignment} \
+        ${snp_variant} \
+        ${sv_variant} > jbrowse.json
+    """
 }

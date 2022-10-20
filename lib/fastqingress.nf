@@ -88,42 +88,6 @@ def find_fastq(pattern, maxdepth)
 
 
 /**
- * Rework EPI2ME flattened directory structure into standard form
- * files are matched on barcode\d+ and moved into corresponding
- * subdirectories ready for processing.
- *
- * @param input_folder Top-level input directory.
- * @param staging Top-level output_directory.
- * @return A File object representating the staging directory created
- *     under output
- */
-def sanitize_fastq(input_folder, staging)
-{
-    // TODO: this fails if input_folder is an S3 path
-    log.info "Running sanitization."
-    log.info  " - Moving files: ${input_folder} -> ${staging}"
-    staging.mkdirs()
-    files = find_fastq(input_folder.resolve("**"), 1)
-    for (fastq in files) {
-        fname = fastq.getFileName()
-        // find barcode
-        pattern = ~/barcode\d+/
-        matcher = fname =~ pattern
-        if (!matcher.find()) {
-            // not barcoded - leave alone
-            fastq.renameTo(staging.resolve(fname))
-        } else {
-            bc_dir = file(staging.resolve(matcher[0]))
-            bc_dir.mkdirs()
-            fastq.renameTo(staging.resolve("${matcher[0]}/${fname}"))
-        }
-    }
-    log.info " - Finished sanitization."
-    return staging
-}
-
-
-/**
  * Take an input directory return the barcode and non barcode
  * sub directories contained within.
  *
@@ -345,8 +309,6 @@ def create_metamap(Map arguments) {
  * @param input Top level input file or folder to locate fastq data.
  * @param sample string to name single sample data.
  * @param sample_sheet Path to sample sheet CSV file.
- * @param sanitize regularize inputs from EPI2ME platform.
- * @param output output location, required if sanitize==true
  * @param min_barcode Minimum barcode to accept.
  * @param max_barcode Maximum (inclusive) barcode to accept.
  *
@@ -357,14 +319,10 @@ def fastq_ingress(Map arguments)
     def parser = new ArgumentParser(
         args:["input"],
         kwargs:[
-            "sample":null, "sample_sheet":null, "sanitize":false, "output":null,
+            "sample":null, "sample_sheet":null,
             "min_barcode":0, "max_barcode":Integer.MAX_VALUE],
         name:"fastq_ingress")
     Map margs = parser.parse_args(arguments)
-
-    if (margs.sanitize && margs.output == null) {
-        throw new Exception("Argument 'output' required if 'sanitize' is true.")
-    }
 
 
     log.info "Checking fastq input."
@@ -382,12 +340,6 @@ def fastq_ingress(Map arguments)
 
     // Handle directory input
     if (input.isDirectory()) {
-        // EPI2ME harness
-        if (margs.sanitize) {
-            staging = file(margs.output).resolve("staging")
-            input = sanitize_fastq(input, staging)
-        }
-
         // Get barcoded and non barcoded subdirectories
         (barcoded, non_barcoded) = get_subdirectories(input)
 

@@ -17,7 +17,8 @@ include {
     mapula;
     getAllChromosomesBed;
     publish_artifact;
-    check_for_alignment; } from './modules/local/common'
+    check_for_alignment;
+    configure_jbrowse; } from './modules/local/common'
 
 include { fast5 } from './workflows/guppy'
 include { methyl; output_methyl } from './workflows/methyl'
@@ -241,9 +242,17 @@ workflow {
         output_sv(artifacts)
     }
 
+    jb_conf = configure_jbrowse(
+        ref_channel,
+        bam_channel,
+        output_bam,
+    )
+
     publish_artifact(
         mosdepth_stats.flatten() \
-        .concat(mapula_stats.flatten())
+        .concat(mapula_stats.flatten()) \
+        .concat(jb_conf.flatten()) \
+        .concat(ref_channel.flatten())
     )
 }
 
