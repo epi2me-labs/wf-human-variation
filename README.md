@@ -3,11 +3,12 @@
 This repository contains a [nextflow](https://www.nextflow.io/) workflow
 for analysing variation in human genomic data. Specifically this workflow performs:
 
+* basecalling of FAST5 (or POD5) sequencing data
 * diploid variant calling
 * structural variant calling
 * aggregation of modified base counts
 
-This first release of wf-human-variation consolidates the small variant calling
+The wf-human-variation workflow consolidates the small variant calling
 from wf-human-snp with the structual variant calling from wf-human-sv. This pipeline
 performs the steps of the two pipelines simultaneously and the results are generated
 and output in the same way as they would have been had the pipelines been run separately.
@@ -24,6 +25,9 @@ calling structural variants.
 
 This workflow uses [modbam2bed](https://github.com/epi2me-labs/modbam2bed) for
 aggregate modified base counts into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.
+
+This workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)
+for basecalling `pod5` or `fast5` signal data.
 ## Quickstart
 
 The workflow uses [nextflow](https://www.nextflow.io/) to manage compute and 
@@ -126,9 +130,9 @@ nextflow run epi2me-labs/wf-human-variation \
     -profile standard \
     --snp --sv \
     --fast5_dir path/to/fast5/dir \
-    --guppy_cfg profile.cfg \
-    --guppy_map_threads 12 \
-    --guppy_basemod_threads 24 \
+    --basecaller_cfg 'dna_r10.4.1_e8.2_400bps_hac@v3.5.2'  \
+    --remora_cfg 'dna_r10.4.1_e8.2_400bps_hac@v3.5.2_5mCG@v2' \
+    --basecaller_basemod_threads 2 \
     --bed path/to.bed \
     --ref path/to.fasta \
     --model path/to/clair3/model/dir \
@@ -158,7 +162,7 @@ The secondary outputs of the workflow include:
     - All arms of the variation calling workflow use `--ref` (not `--reference`) and `--bed` (not `--target_bedfile`)
 - Specifying a suitable [tandem repeat BED for your reference](https://raw.githubusercontent.com/fritzsedlazeck/Sniffles/master/annotations/) with `--tr_bed` can improve the accuracy of SV calling.
 - Aggregation of methylation calls with `--methyl` requires data to be basecalled with a model that includes base modifications, providing the `MM` and `ML` BAM tags
-- Use `guppy_basecaller --print_workflows` to pick an appropriate basecaller model for your data
+- Refer to the [Dorado documentation](https://github.com/nanoporetech/dorado#available-basecalling-models) for a list of available basecalling models
 ## Useful links
 
 * [nextflow](https://www.nextflow.io/)

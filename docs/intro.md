@@ -10,3 +10,6 @@ calling structural variants.
 
 This workflow uses [modbam2bed](https://github.com/epi2me-labs/modbam2bed) for
 aggregate modified base counts into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.
+
+This workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)
+for basecalling `pod5` or `fast5` signal data.
