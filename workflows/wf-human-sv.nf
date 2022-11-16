@@ -14,12 +14,15 @@ include {
 
 workflow bam {
     take:
-        bam
+        bam_channel
         reference
         target
         mosdepth_stats
         optional_file
     main:
+        // truncate bam channel to remove meta to keep compat with sv pipe
+        bam = bam_channel.map{ it -> tuple(it[0], it[1]) }
+
         called = variantCall(bam, reference, target, mosdepth_stats, optional_file)
         report = runReport(
             called.vcf.collect(),
@@ -30,7 +33,6 @@ workflow bam {
         report.html.concat(
             called.vcf,
             called.vcf_index,
-            bam,
         )
 }
 

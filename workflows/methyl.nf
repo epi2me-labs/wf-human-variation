@@ -2,7 +2,7 @@ process modbam2bed {
     label "wf_human_methyl"
     cpus params.threads
     input:
-        tuple path(alignment), path(alignment_index)
+        tuple path(alignment), path(alignment_index), val(alignment_meta)
         tuple path(reference), path(reference_index), path(reference_cache)
     output:
         path "${params.sample_name}.cpg.bed.gz", emit: methyl_bed

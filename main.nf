@@ -6,7 +6,7 @@ include { snp } from './workflows/wf-human-snp'
 include { output_snp } from './modules/local/wf-human-snp'
 
 include { bam as sv } from './workflows/wf-human-sv'
-include { minimap2_ubam; output_sv } from './modules/local/wf-human-sv'
+include { output_sv } from './modules/local/wf-human-sv'
 
 include {
     index_ref_gzi;
@@ -17,10 +17,13 @@ include {
     mapula;
     getAllChromosomesBed;
     publish_artifact;
-    check_for_alignment;
     configure_jbrowse; } from './modules/local/common'
 
-include { fast5 } from './workflows/guppy'
+include {
+    bam_ingress;
+} from './lib/bamingress'
+
+include { basecalling } from './workflows/basecalling'
 include { methyl; output_methyl } from './workflows/methyl'
 
 // entrypoint workflow
@@ -66,47 +69,40 @@ workflow {
         ref = Channel.fromPath(params.ref, checkIfExists: true)
         ref_index_fp = file(params.ref + ".fai")
     }
-
-    output_bam = false // BAM/CRAM as artifact to out_dir
-    is_cram = false
-
     if (params.fast5_dir) {
+
+        if (workflow.profile.contains("conda")) {
+            throw new Exception(colors.red + "Sorry, basecalling is not compatible with --profile conda, please use --profile standard (Docker) or --profile singularity." + colors.reset)
+        }
+
         // Basecall fast5 input
         if (params.bam) {
             throw new Exception(colors.red + "Cannot use --fast5_dir with --bam." + colors.reset)
         }
-        if (!params.guppy_cfg) {
-            throw new Exception(colors.red + "You must provide a guppy profile with --guppy_cfg <profile>" + colors.reset)
+        // Ensure a valid basecaller is set
+        if (params.basecaller != "dorado"){
+            throw new Exception(colors.red + "Basecaller ${params.basecaller} is not supported. Use --basecaller dorado." + colors.reset)
         }
-        if (params.guppy_cfg.contains("modbase") && params.guppy_basemod_threads == 0) {
-            throw new Exception(colors.red + "modbase aware guppy config requires --guppy_basemod_threads > 0" + colors.reset)
+        // Ensure basecaller config is set
+        if (!params.basecaller_cfg) {
+            throw new Exception(colors.red + "You must provide a basecaller profile with --basecaller_cfg <profile>" + colors.reset)
         }
-        log.warn ("* Using basecalling subworkflow!")
-        log.warn ("  This subworkflow is experimental and we do not provide an official guppy image at this time.")
-        guppy_out = fast5(params.fast5_dir, file(params.ref)) // TODO fix ref
-        bam = guppy_out.cram
-        idx = guppy_out.crai
-        output_bam = true // output merged CRAM to out_dir
+        // Ensure modbase threads are set if calling them
+        if (params.remora_cfg && params.basecaller_basemod_threads == 0) {
+            throw new Exception(colors.red + "--remora_cfg modbase aware config requires setting --basecaller_basemod_threads > 0" + colors.reset)
+        }
 
-        // construct canonical bam channel (no need for check_bam_channel here)
-        bam_channel = bam.concat(idx).buffer(size: 2)
+        // ring ring it's for you
+        bam_channel = basecalling(params.fast5_dir, file(params.ref)) // TODO fix file calls
+
     }
     else {
         // Otherwise handle (u)BAM/CRAM
         if (!params.bam) {
-            throw new Exception(colors.red + "Missing required argument --bam." + colors.reset)
+            throw new Exception(colors.red + "Missing required input argument, use --bam or --fast5_dir." + colors.reset)
         }
 
-        check_bam = Channel.fromPath(params.bam, checkIfExists: true)
-        if (params.bam.toLowerCase().endsWith("cram")) {
-            is_cram = true
-            check_idx = Channel.fromPath(params.bam + ".crai", checkIfExists: true)
-        }
-        else {
-            // Just assume BAM/BAI
-            check_idx = Channel.fromPath(params.bam + ".bai", checkIfExists: true)
-        }
-        check_bam_channel = check_bam.concat(check_idx).buffer(size: 2)
+        check_bam = params.bam
     }
 
 
@@ -136,37 +132,11 @@ workflow {
 
     // Determine if (re)alignment is required for input BAM
     if(!params.fast5_dir){
-        check_ref = ref.concat(ref_index).buffer(size: 2) // don't wait for cram_cache to perform check_for_alignment
-        checked_alignments = check_for_alignment(check_ref, check_bam_channel)
-
-        // non-zero exit code from realignment step will be interpreted as alignment required
-        // fork BAMs into realign (for (re)alignment) and noalign subchannels
-        checked_alignments.branch {
-            realign: it[0] == '65'
-            noalign: it[0] == '0'
-        }.set{alignment_fork}
-
-        already_aligned_bams = alignment_fork.noalign.map{ it -> tuple(it[1], it[2]) }
-
-        // Check old ref
-        int to_realign = 0
-        alignment_fork.realign.subscribe onNext: { to_realign++ }, onComplete: {
-            if(to_realign > 0 && is_cram && !params.old_ref) {
-                log.error(colors.red + "Input CRAM requires (re)alignment. You must provide a path to the original reference with '--old_ref <path>'" + colors.reset)
-                throw new Exception("--old_ref not provided.")
-            }
-        }
-        old_ref = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
-        if(is_cram && to_realign > 0) {
-            old_ref = Channel.fromPath(params.old_ref, checkIfExists: true)
-        }
-
-        // call minimap on bams that require (re)alignment
-        new_mapped_bams = minimap2_ubam(ref, old_ref, alignment_fork.realign.map{ it -> tuple(it[1], it[2]) })
-        newly_aligned_bams = new_mapped_bams.alignment
-
-        // mix realign and noalign forks back to canonical bam_channel with (reads, reads_idx) format
-        bam_channel = already_aligned_bams.mix(newly_aligned_bams)
+        bam_channel = bam_ingress(
+            ref,
+            ref_index,
+            check_bam,
+        )
     }
 
     // Build ref cache for CRAM steps that do not take a reference
@@ -189,8 +159,14 @@ workflow {
     // mosdepth and mapula
     mosdepth(bam_channel, bed, ref_channel)
     mosdepth_stats = mosdepth.out
-    mapula(bam_channel, bed, ref_channel)
-    mapula_stats = mapula.out
+
+    if (params.mapula) {
+        mapula(bam_channel, bed, ref_channel)
+        mapula_stats = mapula.out
+    }
+    else {
+        mapula_stats = Channel.empty()
+    }
 
     // wf-human-methyl
     if (params.methyl) {
@@ -233,26 +209,20 @@ workflow {
             OPTIONAL
         )
         artifacts = results[0].flatten()
-
-        if(!output_bam) {
-            // filter files ending with .bam and .bam.bai, or .cram and .crai
-            artifacts = artifacts.filter( { !(it.name =~ /bam($|.bai$)/) } ).filter( { !(it.name =~ /cram($|.crai$)/) } )
-        }
-
         output_sv(artifacts)
     }
 
     jb_conf = configure_jbrowse(
         ref_channel,
         bam_channel,
-        output_bam,
     )
 
     publish_artifact(
         mosdepth_stats.flatten() \
         .concat(mapula_stats.flatten()) \
         .concat(jb_conf.flatten()) \
-        .concat(ref_channel.flatten())
+        .concat(ref_channel.flatten()) \
+        .concat(bam_channel.filter( { it[2].output } )) // emit bams with the "output" meta tag
     )
 }
 

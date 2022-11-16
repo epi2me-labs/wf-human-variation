@@ -3,6 +3,7 @@
 
 import argparse
 import gzip
+import sys
 
 threshold_lookup = ['0'] + ['2'] * 10 + ['3'] * 9 + ['5'] * 20 + ['8'] * 100
 
@@ -99,7 +100,7 @@ def main():
     args = parse_arguments()
 
     # Get SV type filters
-    sv_type_filters: list[str] = []
+    sv_type_filters = []
     for svtype in args.sv_types:
         sv_type_filters.append(f'SVTYPE = \"{svtype}\"')
     filter_sv_types = f"( {(' || ').join(sv_type_filters)} )"
@@ -136,7 +137,7 @@ def main():
 
     # Print command to stdout
     command = f"bcftools view {filter_string} {args.vcf}"
-    print(command)
+    sys.stdout.write(command)
 
 
 if __name__ == '__main__':

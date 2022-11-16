@@ -2,6 +2,7 @@
 """configure_jbrowse."""
 import json
 import os
+import sys
 
 import pysam
 
@@ -313,4 +314,4 @@ if __name__ == "__main__":
             track.index_fp
         )
 
-    print(config.as_json())
+    sys.stdout.write(config.as_json())
