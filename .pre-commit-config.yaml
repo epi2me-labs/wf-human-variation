@@ -17,13 +17,18 @@ repos:
         pass_filenames: false
         additional_dependencies:
           - epi2melabs
-  - repo: https://gitlab.com/pycqa/flake8
+  - repo: https://github.com/pycqa/flake8
     rev: 3.7.9
     hooks:
       - id: flake8
         additional_dependencies:
-          - flake8-import-order==0.18.1
-          - flake8-docstrings==1.6.0
-          - flake8-rst-docstrings==0.2.5
-          - flake8-forbid-visual-indent==0.0.2
+          - flake8-rst-docstrings
+          - flake8-docstrings
+          - flake8-import-order
+          - flake8-forbid-visual-indent
+          - pep8-naming
+          - flake8-no-types
+          - flake8-builtins
+          - flake8-absolute-import
+          - flake8-print
         entry: flake8 bin --import-order-style google --statistics

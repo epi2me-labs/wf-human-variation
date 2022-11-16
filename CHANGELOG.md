@@ -4,9 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [next]
+## [0.4.0]
 ### Added
 * Workflow will now output a JBrowse2 `jbrowse.json` configuration
+* Workflow reports will be visible in the Nextflow Tower reports tab
+### Changed
+* wf-basecalling 0.0.1 has been integrated to wf-human-variation
+    * Basecalling is now conducted with Dorado
+    * Basecalling options have changed, users are advised to check the basecalling options in `--help` for guidance
+* GPU accelerated processes can now have their process directives generically modified in downstream user profiles using `withLabel:gpu`
+* `mapula` will no longer run by default due to performance issues on large data sets and must be enabled with `--mapula`
+    * This step will be deprecated and replaced with an equivalent in a future release
+### Fixed
+* uBAM input no longer requires an index
+* CRAM is written to the output directory in all cases where alignment was completed
 
 ## [v0.3.1]
 ### Fixed

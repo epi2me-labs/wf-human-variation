@@ -71,6 +71,11 @@
                     "type": "integer",
                     "default": 4,
                     "description": "Set max number of threads to use for uncompressing uBAM and generating FASTQ for alignment (limited by config executor cpus)"
+                },
+                "mapula": {
+                    "type": "boolean",
+                    "description": "Enable mapula to generate basic alignment QC statistics (can be slow on very large data sets)",
+                    "default": false
                 }
             }
         },
@@ -230,40 +235,57 @@
         "basecalling_options": {
             "title": "Basecalling options",
             "type": "object",
-            "description": "Options related to guppy basecalling",
-            "help_text": "",
+            "description": "Basecalling model selection.",
+            "help_text": "This section contains options that should be checked before basecalling.",
             "properties": {
-                "fast5_chunk_size": {
-                    "type": "number",
-                    "default": 100,
-                    "description": "",
+                "basecaller": {
+                    "type": "string",
+                    "default": "dorado",
                     "hidden": true
                 },
-                "guppy_args": {
+                "basecaller_cfg": {
                     "type": "string",
-                    "description": "Additional command line arguments to pass to the guppy_basecaller process",
-                    "hidden": true
+                    "description": "Name of the model to use for converting signal.",
+                    "help_text": "Refer to the model table on the Dorado repository for selecting a simplex basecalling model: https://github.com/nanoporetech/dorado#available-basecalling-models"
                 },
-                "guppy_cfg": {
+                "remora_cfg": {
                     "type": "string",
-                    "description": "guppy --config profile parameter (see `guppy_basecaller --print_workflows`)"
+                    "description": "Name of the model to use for calling modified bases.",
+                    "help_text": "Refer to the model table on the Dorado repository for selecting a modified basecalling model: https://github.com/nanoporetech/dorado#available-basecalling-models"
                 },
-                "guppy_device": {
+                "dorado_ext": {
                     "type": "string",
-                    "default": "cuda:all",
-                    "description": "guppy basecalling --device [cuda:all]"
+                    "description": "File extension for Dorado input. Set this to fast5 if you have not converted your fast5 to pod5.",
+                    "help_text": "It is recommended to convert existing fast5 files to pod5 for use with Dorado. See instructions here: https://github.com/nanoporetech/pod5-file-format/blob/master/python/README.md#pod5-convert-from-fast5.",
+                    "default": "pod5"
                 },
-                "guppy_map_threads": {
-                    "type": "number",
-                    "default": 12,
-                    "description": "Number of threads to use for guppy_aligner [12]"
-                },
-                "guppy_basemod_threads": {
+                "basecaller_basemod_threads": {
                     "type": "number",
                     "default": 0,
                     "description": "Number of threads to use for base modification calling, you must set this to > 0 when using a modbase aware model [0]"
                 }
-            }
+            },
+            "required": []
+        },
+        "advanced_basecalling_options": {
+            "title": "Advanced basecalling options",
+            "type": "object",
+            "description": "Basecaller performance and load settings.",
+            "help_text": "These basecalling options do not typically need to be changed.",
+            "properties": {
+                "basecaller_chunk_size": {
+                    "type": "number",
+                    "default": 25,
+                    "description": "Number of input files to basecall in each basecalling process.",
+                    "hidden": true
+                },
+                "cuda_device": {
+                    "type": "string",
+                    "default": "cuda:all",
+                    "description": "GPU device to use for basecalling [cuda:all]"
+                }
+            },
+            "required": []
         },
         "methyl_options": {
             "title": "Methylation calling options",
@@ -282,6 +304,12 @@
     "allOf": [
         {
             "$ref": "#/definitions/basic_input_output_options"
+        },
+        {
+            "$ref": "#/definitions/basecalling_options"
+        },
+        {
+            "$ref": "#/definitions/advanced_basecalling_options"
         },
         {
             "$ref": "#/definitions/snp_options"
@@ -319,7 +347,7 @@
         },
         "wfversion": {
             "type": "string",
-            "default": "v0.3.1",
+            "default": "v0.4.0",
             "hidden": true
         },
         "monochrome_logs": {

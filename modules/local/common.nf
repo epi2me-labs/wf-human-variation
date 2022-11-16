@@ -57,7 +57,7 @@ process decompress_ref {
 process mosdepth {
     cpus 2
     input:
-        tuple path(bam), path(bai)
+        tuple path(xam), path(xam_idx), val(xam_meta)
         file target_bed
         tuple path(ref), path(ref_idx), path(ref_cache)
     output:
@@ -76,14 +76,14 @@ process mosdepth {
         --thresholds 1,10,20,30 \
         --no-per-base \
         ${params.sample_name} \
-        $bam
+        $xam
         """
 }
 
 
 process mapula {
     input:
-        tuple path(xam), path(xam_idx)
+        tuple path(xam), path(xam_idx), val(xam_meta)
         file target_bed
         tuple path(ref), path(ref_idx), path(ref_cache)
     output:
@@ -127,25 +127,6 @@ process getAllChromosomesBed {
 }
 
 
-process check_for_alignment {
-
-    input:
-        tuple path(reference), path(ref_idx)
-        tuple path(xam), path(xam_idx)
-    output:
-        tuple env(realign), path(xam), path(xam_idx)
-    script:
-        """
-        realign=0
-        check_sq_ref.py --xam ${xam} --ref ${reference} || realign=\$?
-
-        # Allow EX_OK and EX_DATAERR, otherwise explode
-        if [ \$realign -ne 0 ] && [ \$realign -ne 65 ]; then
-            exit 1
-        fi
-        """
-}
-
 //TODO reference is later copied to out_dir to save us a lot of trouble but is wasteful
 //     additionally, --reference is hacked to allow the actual_ref to be opened
 //     (as it cannot be guaranteed to exist in the out_dir at this point)
@@ -154,11 +135,11 @@ process check_for_alignment {
 process configure_jbrowse {
     input:
         tuple path(reference), path(ref_idx), path(ref_cache)
-        tuple path(xam), path(xam_idx)
-        val(output_bam)
+        tuple path(xam), path(xam_idx), val(xam_meta)
     output:
         path("jbrowse.json")
     script:
+    boolean output_bam = xam_meta.output
     def snp_variant = params.snp ? "--variant snp ${params.out_dir}/${params.sample_name}.wf_snp.vcf.gz ${params.out_dir}/${params.sample_name}.wf_snp.vcf.gz.tbi" : ''
     def sv_variant = params.sv ? "--variant sv ${params.out_dir}/${params.sample_name}.wf_sv.vcf.gz ${params.out_dir}/${params.sample_name}.wf_sv.vcf.gz.tbi" : ''
     def alignment = output_bam ? "--alignment ${params.out_dir}/${xam.name} ${params.out_dir}/${xam_idx.name}" : ''
@@ -170,3 +151,21 @@ process configure_jbrowse {
         ${sv_variant} > jbrowse.json
     """
 }
+
+
+process minimap2_ubam {
+    cpus {params.ubam_map_threads + params.ubam_sort_threads + params.ubam_bam2fq_threads}
+    input:
+        path reference
+        path old_reference
+        tuple path(reads), path(reads_idx)
+    output:
+        tuple path("${params.sample_name}.cram"), path("${params.sample_name}.cram.crai"), emit: alignment
+    script:
+    def bam2fq_ref = old_reference.name != "OPTIONAL_FILE" ? "--reference ${old_reference}" : ''
+    """
+    samtools bam2fq -@ ${params.ubam_bam2fq_threads} -T 1 ${bam2fq_ref} ${reads} | minimap2 -y -t ${params.ubam_map_threads} -ax map-ont ${reference} - \
+    | samtools sort -@ ${params.ubam_sort_threads} --write-index -o ${params.sample_name}.cram##idx##${params.sample_name}.cram.crai -O CRAM --reference ${reference} -
+    """
+}
+

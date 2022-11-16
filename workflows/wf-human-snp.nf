@@ -24,12 +24,15 @@ include {
 // workflow module
 workflow snp {
     take:
-        bam
+        bam_channel
         bed
         ref
         mosdepth_stats
         model
     main:
+
+        // truncate bam channel to remove meta to keep compat with snp pipe
+        bam = bam_channel.map{ it -> tuple(it[0], it[1]) }
 
         // Run preliminaries to find contigs and generate regions to process in
         // parallel.
@@ -135,7 +138,7 @@ workflow snp {
 
         if (params.phase_vcf) {
             data = merge_pileup_and_full_vars.out.merged_vcf
-                .combine(bam).combine(ref).view()
+                .combine(bam).combine(ref)
             post_clair_phase_contig(data)
                 .map { it -> [it[1]] }
                 .set { final_vcfs }

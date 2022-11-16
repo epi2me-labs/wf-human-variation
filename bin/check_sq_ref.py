@@ -41,19 +41,19 @@ if __name__ == "__main__":
     diff = ref_reflen ^ xam_reflen
 
     if len(diff) > 0:
-        print(" ".join([
+        sys.stdout.write(" ".join([
             "sequence_name",
             "sequence_length",
             "in_ref",
             "in_xam",
-        ]))
+        ]) + '\n')
         for reflen in diff:
-            print(
-                reflen[0],
-                reflen[1],
+            sys.stdout.write(" ".join([
+                f"{reflen[0]}",
+                f"{reflen[1]}",
                 '1' if reflen in ref_reflen else '0',
                 '1' if reflen in xam_reflen else '0',
-            )
+            ]) + '\n')
 
         # honestly flake8 why
         sys.stderr.write(
