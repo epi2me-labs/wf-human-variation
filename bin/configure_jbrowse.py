@@ -148,7 +148,11 @@ class JbConfig:
                 "craiLocation": {
                     "uri": index_fp,
                     "locationType": "UriLocation"
-                }
+                },
+                # sequenceAdapter key copied from self.assembly to avoid
+                # "could not determine adapter type from adapter config
+                # snapshot" error in client
+                "sequenceAdapter": self.assembly["sequence"]["adapter"],
             }
         else:
             adapter = {
