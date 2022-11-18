@@ -490,23 +490,6 @@ process output_snp {
 }
 
 
-process readStats {
-    label "wf_human_snp"
-    cpus 1
-    input:
-        tuple path(reads), path(reads_index)
-        tuple path(ref), path(ref_idx), path(ref_cache)
-    output:
-        path "readstats.txt", emit: stats
-    script:
-        def ref_path = "${ref_cache}/%2s/%2s/%s:" + System.getenv("REF_PATH")
-        """
-        export REF_PATH=${ref_path}
-        # using multithreading inside docker container does strange things
-        bamstats --threads 2 ${reads} > readstats.txt
-        """
-}
-
 process getVersions {
     label "wf_human_snp"
     cpus 1

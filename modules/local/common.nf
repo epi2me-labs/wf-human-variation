@@ -84,7 +84,7 @@ process mosdepth {
 process mapula {
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
-        file target_bed
+        path target_bed
         tuple path(ref), path(ref_idx), path(ref_cache)
     output:
         tuple \
@@ -95,6 +95,24 @@ process mapula {
         """
         export REF_PATH=${ref_path}
         mapula count -r ${ref} -f all -n '${params.sample_name}.mapula' ${xam}
+        """
+}
+
+
+process readStats {
+    label "wf_human_snp"
+    cpus 4
+    input:
+        tuple path(xam), path(xam_idx), val(xam_meta)
+        path target_bed
+        tuple path(ref), path(ref_idx), path(ref_cache)
+    output:
+        path "${params.sample_name}.readstats.tsv.gz"
+    script:
+        def ref_path = "${ref_cache}/%2s/%2s/%s:" + System.getenv("REF_PATH")
+        """
+        export REF_PATH="${ref_path}"
+        bamstats --threads 3 "${xam}" | gzip > "${params.sample_name}.readstats.tsv.gz"
         """
 }
 

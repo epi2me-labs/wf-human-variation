@@ -13,7 +13,6 @@ include {
     post_clair_phase_contig;
     aggregate_all_variants;
     hap;
-    readStats;
     getParams;
     getVersions;
     vcfStats;
@@ -28,6 +27,7 @@ workflow snp {
         bed
         ref
         mosdepth_stats
+        read_stats
         model
     main:
 
@@ -159,12 +159,11 @@ workflow snp {
             make_chunks.out.contigs_file)
 
         // reporting
-        read_stats = readStats(bam, ref)
         software_versions = getVersions()
         workflow_params = getParams()
         vcf_stats = vcfStats(clair_final.final_vcf)
         report = makeReport(
-            read_stats.stats, mosdepth_stats, vcf_stats[0],
+            read_stats, mosdepth_stats, vcf_stats[0],
             software_versions.collect(), workflow_params)
         telemetry = workflow_params
 

@@ -14,6 +14,7 @@ include {
     cram_cache;
     decompress_ref;
     mosdepth;
+    readStats;
     mapula;
     getAllChromosomesBed;
     publish_artifact;
@@ -156,9 +157,13 @@ workflow {
         bed = getAllChromosomesBed(ref_channel).all_chromosomes_bed
     }
 
-    // mosdepth and mapula
+    // mosdepth for depth traces -- passed into wf-snp :/
     mosdepth(bam_channel, bed, ref_channel)
     mosdepth_stats = mosdepth.out
+
+    // readStats for alignment and QC -- passed into wf-snp :/
+    readStats(bam_channel, bed, ref_channel)
+    bam_stats = readStats.out
 
     if (params.mapula) {
         mapula(bam_channel, bed, ref_channel)
@@ -166,13 +171,6 @@ workflow {
     }
     else {
         mapula_stats = Channel.empty()
-    }
-
-    // wf-human-methyl
-    if (params.methyl) {
-        results = methyl(bam_channel, ref_channel)
-        artifacts = results[0].flatten()
-        output_methyl(artifacts)
     }
 
     // wf-human-snp
@@ -193,6 +191,7 @@ workflow {
             snp_bed,
             ref_channel,
             mosdepth_stats,
+            bam_stats,
             model
         )
         output_snp(clair_vcf[0].flatten())
@@ -212,6 +211,13 @@ workflow {
         output_sv(artifacts)
     }
 
+    // wf-human-methyl
+    if (params.methyl) {
+        results = methyl(bam_channel, ref_channel)
+        artifacts = results[0].flatten()
+        output_methyl(artifacts)
+    }
+
     jb_conf = configure_jbrowse(
         ref_channel,
         bam_channel,
@@ -220,6 +226,7 @@ workflow {
     publish_artifact(
         mosdepth_stats.flatten() \
         .concat(mapula_stats.flatten()) \
+        .concat(bam_stats.flatten()) \
         .concat(jb_conf.flatten()) \
         .concat(ref_channel.flatten()) \
         .concat(bam_channel.filter( { it[2].output } )) // emit bams with the "output" meta tag
