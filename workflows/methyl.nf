@@ -5,17 +5,23 @@ process modbam2bed {
         tuple path(alignment), path(alignment_index), val(alignment_meta)
         tuple path(reference), path(reference_index), path(reference_cache)
     output:
-        path "${params.sample_name}.cpg.bed.gz", emit: methyl_bed
+        path "${params.sample_name}.methyl.*", emit: methyl_outputs
 
     script:
     def ref_path = "${reference_cache}/%2s/%2s/%s:" + System.getenv("REF_PATH")
+    def modbam2bed_args = params.modbam2bed_args ?: ''
     """
     export REF_PATH=${ref_path}
     modbam2bed \
         -e -m 5mC --cpg -t ${task.cpus} \
         ${reference} \
         ${alignment} \
-        | bgzip -c > ${params.sample_name}.cpg.bed.gz
+        --aggregate \
+        --prefix ${params.sample_name}.methyl \
+        ${modbam2bed_args} \
+        | bgzip -c > ${params.sample_name}.methyl.cpg.bed.gz
+    # also compress the aggregate
+    bgzip ${params.sample_name}.methyl.cpg.acc.bed
     """
 }
 
@@ -58,6 +64,6 @@ workflow methyl {
         out = modbam2bed(alignment, reference)
         //bw = bigwig(out.methyl_bed, reference)
     emit:
-        bed = out.methyl_bed
+        modbam2bed = out
         //bw = bw.methyl_bigwig
 }

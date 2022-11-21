@@ -24,7 +24,7 @@ workflow basecalling {
         // pass args straight to actual basecalling workflow
         // returns: (cram), (crai), map to ([cram, crai])
         out = wf_dorado(input_path, ref)
-        bam_channel = create_bam_channel(out.cram.concat(out.crai).toList()).view()
+        bam_channel = create_bam_channel(out.cram.concat(out.crai).toList())
     emit:
         bam_channel
 }
