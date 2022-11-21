@@ -33,6 +33,10 @@ workflow {
 
     Map colors = NfcoreTemplate.logColours(params.monochrome_logs)
 
+    if (workflow.profile.contains("conda")) {
+        throw new Exception(colors.red + "Sorry, wf-human-variation is not compatible with --profile conda, please use --profile standard (Docker) or --profile singularity." + colors.reset)
+    }
+
     can_start = true
     if (!params.snp && !params.sv && !params.methyl) {
         log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --methyl]" + colors.reset)
@@ -72,9 +76,6 @@ workflow {
     }
     if (params.fast5_dir) {
 
-        if (workflow.profile.contains("conda")) {
-            throw new Exception(colors.red + "Sorry, basecalling is not compatible with --profile conda, please use --profile standard (Docker) or --profile singularity." + colors.reset)
-        }
 
         // Basecall fast5 input
         if (params.bam) {
