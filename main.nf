@@ -215,7 +215,7 @@ workflow {
     // wf-human-methyl
     if (params.methyl) {
         results = methyl(bam_channel, ref_channel)
-        artifacts = results[0].flatten()
+        artifacts = results.modbam2bed.flatten()
         output_methyl(artifacts)
     }
 

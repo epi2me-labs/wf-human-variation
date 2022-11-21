@@ -297,6 +297,11 @@
                     "type": "boolean",
                     "description": "Enable methylation calling [requires input BAM with Ml and Mm tags]",
                     "default": false
+                },
+                "modbam2bed_args": {
+                    "type": "string",
+                    "description": "Additional command line arguments to pass to the modbam2bed process",
+                    "hidden": true
                 }
             }
         }

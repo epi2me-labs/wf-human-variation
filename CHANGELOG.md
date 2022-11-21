@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [next]
+### Changed
+* `--modbam2bed_args` can be used to further configure the wf-methylation `modbam2bed` process
+* `modbam2bed` outputs are now prefixed with `<sample_name>.methyl`
+
 ## [v0.4.1]
 ### Fixed
 * JBrowse2 configuration failed to load AlignmentTrack for CRAM output
