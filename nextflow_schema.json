@@ -229,6 +229,12 @@
                     "description": "Display help text.",
                     "fa_icon": "fas fa-question-circle",
                     "hidden": true
+                },
+                "version": {
+                    "type": "boolean",
+                    "description": "Display version and exit.",
+                    "fa_icon": "fas fa-question-circle",
+                    "hidden": true
                 }
             }
         },
