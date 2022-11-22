@@ -51,12 +51,11 @@ body:
   - type: dropdown
     id: profile
     attributes:
-      label: Workflow Execution - Execution Profile
+      label: Workflow Execution - CLI Execution Profile
       description: If you're using the CLI to run the workflow, what profile are you using?
       options:
         - Docker
         - Singularity
-        - Conda
     validations:
       required: false
   - type: input

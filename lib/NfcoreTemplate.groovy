@@ -67,6 +67,25 @@ class NfcoreTemplate {
     }
 
     //
+    // Generate version string
+    //
+    public static String version(workflow) {
+        String version_string = ""
+
+        if (workflow.manifest.version) {
+            def prefix_v = workflow.manifest.version[0] != 'v' ? 'v' : ''
+            version_string += "${prefix_v}${workflow.manifest.version}"
+        }
+
+        if (workflow.commitId) {
+            def git_shortsha = workflow.commitId.substring(0, 7)
+            version_string += "-g${git_shortsha}"
+        }
+
+        return version_string
+    }
+
+    //
     // Construct and send completion email
     //
     public static void email(workflow, params, summary_params, projectDir, log, multiqc_report=[], fail_mapped_reads=[:]) {
@@ -98,7 +117,7 @@ class NfcoreTemplate {
         misc_fields['Nextflow Compile Timestamp'] = workflow.nextflow.timestamp
 
         def email_fields = [:]
-        email_fields['version']           = workflow.manifest.version
+        email_fields['version']           = NfcoreTemplate.version(workflow)
         email_fields['runName']           = workflow.runName
         email_fields['success']           = workflow.success
         email_fields['dateComplete']      = workflow.complete
@@ -297,24 +316,23 @@ class NfcoreTemplate {
     //
     public static String dashedLine(monochrome_logs) {
         Map colors = logColours(monochrome_logs)
-        return "-${colors.dim}----------------------------------------------------${colors.reset}-"
+        return "${colors.dim}--------------------------------------------------------------------------------${colors.reset}"
     }
 
-    //
-    // nf-core logo
-    //
+    // epi2me-labs logo
     public static String logo(workflow, monochrome_logs) {
-        Map colors = logColours(monochrome_logs)
+        Map colors = NfcoreTemplate.logColours(monochrome_logs)
+        String workflow_name = workflow.manifest.name.split("/")[1]
+        String workflow_version = version(workflow)
         String.format(
-            """\n
-            ${dashedLine(monochrome_logs)}
-                                                    ${colors.green},--.${colors.black}/${colors.green},-.${colors.reset}
-            ${colors.blue}        ___     __   __   __   ___     ${colors.green}/,-._.--~\'${colors.reset}
-            ${colors.blue}  |\\ | |__  __ /  ` /  \\ |__) |__         ${colors.yellow}}  {${colors.reset}
-            ${colors.blue}  | \\| |       \\__, \\__/ |  \\ |___     ${colors.green}\\`-._,-`-,${colors.reset}
-                                                    ${colors.green}`._,._,\'${colors.reset}
-            ${colors.purple}  ${workflow.manifest.name} v${workflow.manifest.version}${colors.reset}
-            ${dashedLine(monochrome_logs)}
+            """
+            ${colors.igreen}||||||||||   ${colors.white}_____ ____ ___ ____  __  __ _____      _       _
+            ${colors.igreen}||||||||||  ${colors.white}| ____|  _ \\_ _|___ \\|  \\/  | ____|    | | __ _| |__  ___
+            ${colors.yellow}|||||       ${colors.white}|  _| | |_) | |  __) | |\\/| |  _| _____| |/ _` | '_ \\/ __|
+            ${colors.yellow}|||||       ${colors.white}| |___|  __/| | / __/| |  | | |__|_____| | (_| | |_) \\__ \\
+            ${colors.iblue}||||||||||  ${colors.white}|_____|_|  |___|_____|_|  |_|_____|    |_|\\__,_|_.__/|___/
+            ${colors.iblue}||||||||||  ${colors.biwhite}${workflow_name} ${workflow_version}${colors.reset}
+            ${NfcoreTemplate.dashedLine(monochrome_logs)}
             """.stripIndent()
         )
     }
