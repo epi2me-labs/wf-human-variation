@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * `--modbam2bed_args` can be used to further configure the wf-methylation `modbam2bed` process
 * `modbam2bed` outputs are now prefixed with `<sample_name>.methyl`
+* `--basecall_cfg` is now required by the SNP calling subworkflow to automatically pick a suitable Clair3 model
+    * Users no longer have to provide `--model` for the SNP calling subworkflow
 ### Removed
 * `-profile conda` is no longer supported, users should use `-profile standard` (Docker) or `-profile singularity` instead
 

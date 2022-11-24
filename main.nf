@@ -3,7 +3,7 @@
 nextflow.enable.dsl = 2
 
 include { snp } from './workflows/wf-human-snp'
-include { output_snp } from './modules/local/wf-human-snp'
+include { lookup_clair3_model; output_snp } from './modules/local/wf-human-snp'
 
 include { bam as sv } from './workflows/wf-human-sv'
 include { output_sv } from './modules/local/wf-human-sv'
@@ -53,10 +53,10 @@ workflow {
         can_start = false
     }
 
-
+    // check snp has basecaller config for clair3 model lookup
     if(params.snp) {
-        if(!params.model) {
-            throw new Exception(colors.red + "Clair3 --model required for --snp" + colors.reset)
+        if(!params.basecaller_cfg && !params.clair3_model_path) {
+            throw new Exception(colors.red + "You must provide a basecaller profile with --basecaller_cfg <profile> to ensure the right Clair3 model is chosen!" + colors.reset)
         }
     }
 
@@ -185,7 +185,15 @@ workflow {
             snp_bed = bed
         }
 
-        model = Channel.fromPath(params.model, type: "dir", checkIfExists: true)
+        if(params.clair3_model_path) {
+            log.warn "Overriding Clair3 model with ${params.clair3_model_path}."
+            clair3_model = Channel.fromPath(params.clair3_model_path, type: "dir", checkIfExists: true)
+        }
+        else {
+            // map basecalling model to clair3 model
+            lookup_table = Channel.fromPath("${projectDir}/data/clair3_models.tsv", checkIfExists: true)
+            clair3_model = lookup_clair3_model(lookup_table, params.basecaller_cfg)
+        }
 
         clair_vcf = snp(
             bam_channel,
@@ -193,7 +201,7 @@ workflow {
             ref_channel,
             mosdepth_stats,
             bam_stats,
-            model
+            clair3_model,
         )
         output_snp(clair_vcf[0].flatten())
     }

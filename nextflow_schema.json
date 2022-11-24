@@ -41,11 +41,6 @@
                     "format": "file-path",
                     "description": "A BED file describing regions to process."
                 },
-                "model": {
-                    "type": "string",
-                    "format": "directory-path",
-                    "description": "Clair3 Model directory. These can be obtained from http://www.bio8.cs.hku.hk/clair3/clair3_models/ and https://github.com/nanoporetech/rerio/tree/master/clair3_models."
-                },
                 "out_dir": {
                     "type": "string",
                     "format": "directory-path",
@@ -116,6 +111,13 @@
                     "type": "boolean",
                     "description": "Call for small variants",
                     "default": false
+                },
+                "clair3_model_path": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Clair3 model directory.",
+                    "help_text": "The workflow will attempt to map the basecalling model used to a suitable Clair3 model. You can override this by providing the path to a model with this option instead. Models can be obtained from https://cdn.oxfordnanoportal.com/software/analysis/models/clair3/index.html.",
+                    "hidden": true
                 },
                 "ref_pct_full": {
                     "type": "number",
