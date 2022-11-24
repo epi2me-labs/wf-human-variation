@@ -79,7 +79,7 @@ nextflow run epi2me-labs/wf-human-variation \
     --bam demo_data/demo.bam \
     --bed demo_data/demo.bed \
     --ref demo_data/demo.fasta \
-    --model demo_data/ont_r104_e81_sup_g5015 \
+    --basecaller_cfg 'dna_r10.4.1_e8.2_400bps_hac@v3.5.2'  \
     --sample_name MY_SAMPLE \
     --out_dir ${OUTPUT}
 ```
@@ -95,7 +95,6 @@ Subworkflows where the relevant option is omitted will not be run.
 
 Some subworkflows have additional required options:
 
-* The `--model` option in the above is specific to the SNP workflow.
 * The SV workflow takes optional a `--tr_bed` option to specificy tandem
 repeats in the reference sequence --- see the [sniffles](https://github.com/fritzsedlazeck/Sniffles)
 documentation for more information.
@@ -119,7 +118,6 @@ nextflow run epi2me-labs/wf-human-variation \
     --basecaller_basemod_threads 2 \
     --bed path/to.bed \
     --ref path/to.fasta \
-    --model path/to/clair3/model/dir \
     --out_dir ${OUTPUT}
 ```
 

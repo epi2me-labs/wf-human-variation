@@ -557,3 +557,21 @@ process makeReport {
         --commit $workflow.commitId
         """
 }
+
+
+// This is a hilarious trick from CW to present models inside the container as
+// outside the container, by exporting them out of the container back to workdir.
+// This saves us passing around tuples of val(inside) and path(outside).
+process lookup_clair3_model {
+    label "wf_human_snp"
+    input:
+        path("lookup_table")
+        val basecall_model
+    output:
+        path("model/")
+    shell:
+    '''
+    clair3_model=$(resolve_clair3_model.py lookup_table '!{basecall_model}')
+    cp -r ${CLAIR_MODELS_PATH}/${clair3_model} model
+    '''
+}

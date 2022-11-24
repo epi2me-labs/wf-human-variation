@@ -33,7 +33,13 @@ docker-run:
         exclude: [] # give me everything pal
     parallel:
         matrix:
-            - MATRIX_NAME: ["wf-human-snp", "wf-human-sv", "gzref-ubam-methyl", "omni"]
+            - MATRIX_NAME: [
+                "wf-human-snp_modelint",
+                "wf-human-snp_modelext",
+                "wf-human-sv",
+                "gzref-ubam-methyl",
+                "omni"
+              ]
     rules:
         # NOTE As we're overriding the rules block for the included docker-run
         #   we must redefine this CI_COMMIT_BRANCH rule to prevent docker-run
@@ -41,12 +47,19 @@ docker-run:
         - if: ($CI_COMMIT_BRANCH == null || $CI_COMMIT_BRANCH == "dev-template")
           when: never
 
-        - if: $MATRIX_NAME == "wf-human-snp"
+        - if: $MATRIX_NAME == "wf-human-snp_modelint"
           variables:
               NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "hap"
-              NF_WORKFLOW_OPTS: "--snp --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --model snp_demo/ont_r104_e81_sup_g5015 --phase_vcf"
+              NF_WORKFLOW_OPTS: "--snp --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom --phase_vcf"
+
+        - if: $MATRIX_NAME == "wf-human-snp_modelext"
+          variables:
+              NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
+              NF_IGNORE_PROCESSES: "hap,lookup_clair3_model"
+              NF_WORKFLOW_OPTS: "--snp --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --phase_vcf"
 
         - if: $MATRIX_NAME == "wf-human-sv"
           variables:
@@ -69,4 +82,4 @@ docker-run:
               NF_BEFORE_SCRIPT: "wget -qO demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/demo_data.tar.gz && tar -xzvf demo_data.tar.gz && cat demo_data/VERSION && rm demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-sv.nf modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "hap,post_clair_phase_contig,getAllChromosomesBed,minimap2_ubam"
-              NF_WORKFLOW_OPTS: "--snp --sv --methyl --bam demo_data/demo.bam --ref demo_data/demo.fasta --bed demo_data/demo.bed --model demo_data/ont_r104_e81_sup_g5015 --sample_name OMNI"
+              NF_WORKFLOW_OPTS: "--snp --sv --methyl --bam demo_data/demo.bam --ref demo_data/demo.fasta --bed demo_data/demo.bed --clair3_model_path demo_data/ont_r104_e81_sup_g5015 --sample_name OMNI"

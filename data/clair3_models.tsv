@@ -1,0 +1,26 @@
+basecaller	basecall_model_name	clair3_model_name	clair3_nomodel_reason
+dorado	dna_r10.4.1_e8.2_260bps_fast@v3.5.2	-	260bps models are not supported for variant calling with Clair3
+dorado	dna_r10.4.1_e8.2_260bps_hac@v3.5.2	-	260bps models are not supported for variant calling with Clair3
+dorado	dna_r10.4.1_e8.2_260bps_sup@v3.5.2	-	260bps models are not supported for variant calling with Clair3
+dorado	dna_r10.4.1_e8.2_400bps_fast@v3.5.2	-	data called with fast models is not suitable for variant calling
+dorado	dna_r10.4.1_e8.2_400bps_hac@v3.5.2	r1041_e82_400bps_hac_g632	-
+dorado	dna_r10.4.1_e8.2_400bps_sup@v3.5.2	r1041_e82_400bps_sup_g615	-
+dorado	dna_r9.4.1_e8_fast@v3.4	-	data called with fast models is not suitable for variant calling
+dorado	dna_r9.4.1_e8_hac@v3.3	r941_prom_sup_g5014	-
+dorado	dna_r9.4.1_e8_sup@v3.3	r941_prom_sup_g5014	-
+guppy	dna_r10.4.1_e8.2_400bps_hac_prom	r1041_e82_400bps_hac_g632	-
+guppy	dna_r9.4.1_450bps_hac_prom	r941_prom_sup_g5014	-
+guppy	dna_r10.3_450bps_hac	-	Clair3 has not been trained on this basecalling configuration
+guppy	dna_r10.3_450bps_hac_prom	-	Clair3 has not been trained on this basecalling configuration
+guppy	dna_r10.4.1_e8.2_260bps_hac	-	260bps models are not supported for variant calling with Clair3
+guppy	dna_r10.4.1_e8.2_260bps_hac_prom	-	260bps models are not supported for variant calling with Clair3
+guppy	dna_r10.4.1_e8.2_400bps_hac	r1041_e82_400bps_hac_g632	-
+guppy	dna_r10.4_e8.1_hac	-	Clair3 has not been trained on this basecalling configuration
+guppy	dna_r10.4_e8.1_hac_prom	-	Clair3 has not been trained on this basecalling configuration
+guppy	dna_r10_450bps_hac	-	Clair3 has not been trained on this basecalling configuration
+guppy	dna_r9.4.1_450bps_hac	r941_prom_sup_g5014	-
+guppy	dna_r9.4.1_e8.1_hac	-	Clair3 has not been trained on this basecalling configuration
+guppy	dna_r9.4.1_e8.1_hac_prom	-	Clair3 has not been trained on this basecalling configuration
+guppy	dna_r9.5_450bps	-	Clair3 has not been trained on this basecalling configuration
+guppy	rna_r9.4.1_70bps_hac	-	RNA data is not suitable for this workflow
+guppy	rna_r9.4.1_70bps_hac_prom	-	RNA data is not suitable for this workflow
