@@ -14,9 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * Users no longer have to provide `--model` for the SNP calling subworkflow
 * Tidied workflow parameter schema
     * Some advanced options that are primarily used for benchmarking are now hidden but can be listed with `--help --show_hidden_params`
+* Updated wf-human-variation-snp container to use Sniffles v2.0.7
 ### Removed
 * `-profile conda` is no longer supported, users should use `-profile standard` (Docker) or `-profile singularity` instead
-* `--report_name` is no longer required and will use the provided `--sample_name` instead
+* `--report_name` is no longer required and reports will be prefixed with `--sample_name` instead
 
 ## [v0.4.1]
 ### Fixed
