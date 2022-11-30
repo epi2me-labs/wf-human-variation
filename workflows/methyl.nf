@@ -41,21 +41,6 @@ process modbam2bed {
 //}
 
 
-// See https://github.com/nextflow-io/nextflow/issues/1636
-// This is the only way to publish files from a workflow whilst
-// decoupling the publish from the process steps.
-process output_methyl {
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "*"
-    input:
-        path fname
-    output:
-        path fname
-    """
-    echo "Writing output files"
-    """
-}
-
-
 workflow methyl {
     take:
         alignment

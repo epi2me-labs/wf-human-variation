@@ -25,7 +25,7 @@ include {
 } from './lib/bamingress'
 
 include { basecalling } from './workflows/basecalling'
-include { methyl; output_methyl } from './workflows/methyl'
+include { methyl; } from './workflows/methyl'
 
 // entrypoint workflow
 WorkflowMain.initialise(workflow, params, log)
@@ -86,19 +86,24 @@ workflow {
             throw new Exception(colors.red + "Basecaller ${params.basecaller} is not supported. Use --basecaller dorado." + colors.reset)
         }
         // Ensure basecaller config is set
-        if (!params.basecaller_cfg) {
+        if (!params.basecaller_cfg && !params.basecaller_model_path) {
             throw new Exception(colors.red + "You must provide a basecaller profile with --basecaller_cfg <profile>" + colors.reset)
         }
         // Ensure modbase threads are set if calling them
-        if (params.remora_cfg && params.basecaller_basemod_threads == 0) {
+        if ((params.remora_cfg || params.remora_model_path) && params.basecaller_basemod_threads == 0) {
             throw new Exception(colors.red + "--remora_cfg modbase aware config requires setting --basecaller_basemod_threads > 0" + colors.reset)
         }
 
         // ring ring it's for you
-        bam_channel = basecalling(params.fast5_dir, file(params.ref)) // TODO fix file calls
+        crams = basecalling(params.fast5_dir, file(params.ref)) // TODO fix file calls
+        bam_channel = crams.pass
+        bam_fail = crams.fail
 
     }
     else {
+        // Set-up any non basecalling structs
+        bam_fail = Channel.empty()
+
         // Otherwise handle (u)BAM/CRAM
         if (!params.bam) {
             throw new Exception(colors.red + "Missing required input argument, use --bam or --fast5_dir." + colors.reset)
@@ -223,8 +228,10 @@ workflow {
     // wf-human-methyl
     if (params.methyl) {
         results = methyl(bam_channel, ref_channel)
-        artifacts = results.modbam2bed.flatten()
-        output_methyl(artifacts)
+        methyl_stats = results.modbam2bed.flatten()
+    }
+    else {
+        methyl_stats = Channel.empty()
     }
 
     jb_conf = configure_jbrowse(
@@ -233,12 +240,17 @@ workflow {
     )
 
     publish_artifact(
-        mosdepth_stats.flatten() \
-        .concat(mapula_stats.flatten()) \
-        .concat(bam_stats.flatten()) \
-        .concat(jb_conf.flatten()) \
-        .concat(ref_channel.flatten()) \
-        .concat(bam_channel.filter( { it[2].output } )) // emit bams with the "output" meta tag
+        ref_channel.flatten().mix(
+            // emit bams with the "output" meta tag
+            bam_channel.filter( { it[2].output } ),
+            // bam_fail can only exist if basecalling was performed
+            bam_fail.flatten(),
+            bam_stats.flatten(),
+            mosdepth_stats.flatten(),
+            methyl_stats.flatten(),
+            mapula_stats.flatten(),
+            jb_conf.flatten()
+        )
     )
 }
 
