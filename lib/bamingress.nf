@@ -101,6 +101,7 @@ workflow bam_ingress {
         }
 
         // Check old ref
+        // TODO unaligned CRAM will trigger a request for old_ref which doesn't really make sense
         int to_realign = 0
         alignment_fork.realign.subscribe onNext: { to_realign++ }, onComplete: {
             if(to_realign > 0 && is_cram && !params.old_ref) {

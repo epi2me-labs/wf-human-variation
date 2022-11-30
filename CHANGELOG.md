@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [next]
+## [v1.0.0]
 ### Added
 * `nextflow run epi2me-labs/wf-human-variation --version` will now print the workflow version number and exit
 ### Changed
@@ -12,8 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `modbam2bed` outputs are now prefixed with `<sample_name>.methyl`
 * `--basecall_cfg` is now required by the SNP calling subworkflow to automatically pick a suitable Clair3 model
     * Users no longer have to provide `--model` for the SNP calling subworkflow
+* Tidied workflow parameter schema
+    * Some advanced options that are primarily used for benchmarking are now hidden but can be listed with `--help --show_hidden_params`
 ### Removed
 * `-profile conda` is no longer supported, users should use `-profile standard` (Docker) or `-profile singularity` instead
+* `--report_name` is no longer required and will use the provided `--sample_name` instead
 
 ## [v0.4.1]
 ### Fixed

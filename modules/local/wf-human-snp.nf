@@ -44,7 +44,6 @@ process pileup_variants {
     label "wf_human_snp"
     cpus 1
     errorStrategy 'retry'
-    maxRetries params.call_retries
     input:
         each region
         tuple path(bam), path(bai)
@@ -248,7 +247,6 @@ process evaluate_candidates {
     label "wf_human_snp"
     cpus 1
     errorStrategy 'retry'
-    maxRetries params.call_retries
     input:
         tuple val(contig), path(phased_bam), path(phased_bam_index), path(phased_vcf)
         tuple val(contig), path(candidate_bed)
@@ -538,9 +536,9 @@ process makeReport {
         path versions
         path "params.json"
     output:
-        path "wf-human-snp-*.html"
+        path "*report.html"
     script:
-        report_name = "wf-human-snp-" + params.report_name + '.html'
+        report_name = "${params.sample_name}.wf-human-snp-report.html"
         wfversion = params.wfversion
         if( workflow.commitId ){
             wfversion = workflow.commitId
