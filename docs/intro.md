@@ -8,7 +8,7 @@ calling of variant candidates in high confidence regions), and full-alignment
 This workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for
 calling structural variants.
 
-This workflow uses [modbam2bed](https://github.com/epi2me-labs/modbam2bed) for
+This workflow uses [modbam2bed](https://github.com/epi2me-labs/modbam2bed) to
 aggregate modified base counts into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.
 
 This workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)

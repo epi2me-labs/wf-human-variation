@@ -150,9 +150,9 @@ process report {
         file versions
         path "params.json"
     output:
-        path "wf-human-sv-*.html", emit: html
+        path "*report.html", emit: html
     script:
-        def report_name = "wf-human-sv-" + params.report_name + '.html'
+        def report_name = "${params.sample_name}.wf-human-sv-report.html"
         def readStats = read_stats ? "--reads_summary ${read_stats}" : ""
         def evalResults = eval_json.name != 'OPTIONAL_FILE' ? "--eval_results ${eval_json}" : ""
     """

@@ -2,254 +2,215 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/epi2me-labs/wf-human-variation/master/nextflow_schema.json",
     "title": "epi2me-labs/wf-human-variation",
-    "description": "consolidated human variation calling pipeline for ONT data",
+    "description": "Consolidated human variation calling pipeline for ONT data.",
+    "demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo.tar.gz",
     "url": "https://github.com/epi2me-labs/wf-human-variation",
     "type": "object",
     "definitions": {
-        "basic_input_output_options": {
-            "title": "Basic Input/Output Options",
+        "workflow": {
+            "title": "Workflow Options",
             "type": "object",
-            "fa_icon": "fas fa-terminal",
-            "description": "Define where the pipeline should find input data and save output data.",
-            "required": [
-                "ref"
-            ],
+            "fa_icon": "fas fa-arrow-right",
+            "description": "Select which sub-workflows of wf-human-variation you wish to run. Parameters for each sub-workflow can be changed using the sections below. Basecalling is run if you provide a FAST5 directory instead of a BAM in the Input Options.",
             "properties": {
-                "fast5_dir": {
-                    "type": "string",
-                    "format": "directory-path",
-                    "description": "Directory containing fast5 for basecalling"
+                "sv": {
+                    "type": "boolean",
+                    "description": "Call for structural variants.",
+                    "help_text": "If this option is selected, structural variant calling will be carried out using Sniffles2.",
+                    "default": false
                 },
-                "bam": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "a BAM (or CRAM) containing aligned or unaligned reads, if the --ref disagrees with the SQ lines (or the file contains no alignments), alignment will be performed automatically"
+                "snp": {
+                    "type": "boolean",
+                    "description": "Call for small variants",
+                    "help_text": "If this option is selected, small variant calling will be carried out using Clair3.",
+                    "default": false
                 },
-                "ref": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "Reference .fasta file"
-                },
-                "old_ref": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "Reference .fasta file for CRAM input (only required if the CRAM requires realignment)",
-                    "hidden": true
-                },
-                "bed": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "A BED file describing regions to process."
-                },
-                "out_dir": {
-                    "type": "string",
-                    "format": "directory-path",
-                    "default": "output",
-                    "description": "Directory for output of all user-facing files."
-                },
-                "threads": {
-                    "type": "integer",
-                    "default": 4,
-                    "description": "Set max number of threads to use for more intense processes (limited by config executor cpus)"
-                },
-                "ubam_map_threads": {
-                    "type": "integer",
-                    "default": 12,
-                    "description": "Set max number of threads to use for aligning reads from uBAM (limited by config executor cpus)"
-                },
-                "ubam_sort_threads": {
-                    "type": "integer",
-                    "default": 8,
-                    "description": "Set max number of threads to use for sorting and indexing aligned reads from uBAM (limited by config executor cpus)"
-                },
-                "ubam_bam2fq_threads": {
-                    "type": "integer",
-                    "default": 4,
-                    "description": "Set max number of threads to use for uncompressing uBAM and generating FASTQ for alignment (limited by config executor cpus)"
-                },
-                "basecaller_model_path": {
-                    "type": "string",
-                    "format": "directory-path",
-                    "description": "Override the inferred model with a custom basecalling model",
-                    "help_text": "For typical use, users should set --basecaller_cfg which will use a named model from inside the container. Experimental or custom basecallers will not be available in the container and can be loaded from the host with --basecaller_model_path.",
-                    "hidden": true
-                },
-                "remora_model_path": {
-                    "type": "string",
-                    "format": "directory-path",
-                    "description": "Override the inferred model with a custom remora model",
-                    "help_text": "For typical use, users should set --remora_cfg which will use a named model from inside the container. Experimental or custom models will not be available in the container and can be loaded from the host with --remora_model_path.",
-                    "hidden": true
+                "methyl": {
+                    "type": "boolean",
+                    "description": "Enable output of methylation calls to a bedMethyl file [requires input BAM with Ml and Mm tags]",
+                    "help_text": "If this option is selected, aggregation of methylation calls with be carried out using modbam2bed.",
+                    "default": false
                 },
                 "mapula": {
                     "type": "boolean",
                     "description": "Enable mapula to generate basic alignment QC statistics (can be slow on very large data sets)",
+                    "help_text": "Mapula is a tool that is able to parse alignments and produce a range of useful stats. In most cases the other outputs are sufficient and this does not need to be enabled.",
+                    "hidden": true,
                     "default": false
                 }
             }
         },
-        "sv_options": {
-            "title": "wf-human-sv options",
+        "input": {
+            "title": "Input Options",
             "type": "object",
-            "description": "",
-            "default": "",
+            "fa_icon": "fas fa-arrow-right",
+            "description": "Parameters for finding and handling input data for analysis.",
             "properties": {
-                "sv": {
-                    "type": "boolean",
-                    "description": "Call for structural variants",
-                    "default": false
+                "fast5_dir": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Directory containing FAST5 signal for basecalling.",
+                    "help_text": "This directory will be searched recursively. All FAST5 or POD5 files (depending on which extension you select in the Basecalling Options) in this directory or any subdirectory (no matter how deep) will be basecalled. You may choose to provide a FAST5 directory, or a BAM/CRAM, but not both."
                 },
+                "bam": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to a BAM (or CRAM) containing aligned or unaligned reads.",
+                    "help_text": "You may choose to provide a BAM/CRAM, or a FAST5 directory for basecalling, but not both."
+                },
+                "ref": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to a reference FASTA file.",
+                    "help_text": "Reference against which to compare reads for variant calling."
+                },
+                "old_ref": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Reference FASTA file for CRAM input (only required if the CRAM requires realignment)",
+                    "help_text": "You do not need to provide this unless the workflow specifically asks you to. If your input CRAM headers do not match the metadata of the input reference, the workflow will assume you want to realign your reads to the new input reference. CRAM files are compressed using the reference, so the read sequences cannot be realigned without the old reference."
+                },
+                "bed": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "A BED file enumerating regions to process for variant calling.",
+                    "help_text": ""
+                }
+            },
+            "required": [
+                "ref"
+            ]
+        },
+        "sv_options": {
+            "title": "Structural variant calling options",
+            "type": "object",
+            "description": "Options specific to the SV calling subworkflow.",
+            "properties": {
                 "tr_bed": {
                     "type": "string",
                     "format": "path",
-                    "description": "Input .bed file containing tandem repeat annotations for the reference genome. Improves accuracy in our benchmarking."
+                    "description": "Input BED file containing tandem repeat annotations for the reference genome.",
+                    "help_text": "Providing a tandem repeat BED can improve calling in repetitive regions. An appropriate tandem repeat BED can be downloaded for your reference genome [from the Sniffles2 repository](https://github.com/fritzsedlazeck/Sniffles/tree/master/annotations)."
                 },
                 "cluster_merge_pos": {
                     "type": "number",
                     "default": 150.0,
-                    "description": "Max. merging distance for insertions and deletions on the same read and cluster in non-repeat regions"
+                    "description": "Maximum merging distance for insertions and deletions on the same read and cluster in non-repeat regions.",
+                    "hidden": true
                 },
                 "sniffles_args": {
                     "type": "string",
-                    "description": "Additional command line arguments to pass to the sniffles2 process"
+                    "description": "Additional command line arguments to pass to the Sniffles2 process",
+                    "hidden": true
                 }
             }
         },
         "snp_options": {
-            "title": "wf-human-snp options",
+            "title": "Small variant calling options",
             "type": "object",
-            "description": "",
-            "default": "",
+            "description": "Options specific to the small variant calling subworkflow.",
             "properties": {
-                "snp": {
+                "phase_vcf": {
                     "type": "boolean",
-                    "description": "Call for small variants",
-                    "default": false
+                    "default": false,
+                    "description": "Enable to output phasing information in the output VCF.",
+                    "help_text": "By default the final VCF output by the workflow is not phased, although some intermediates are approximately phased."
+                },
+                "include_all_ctgs": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Call for variants on all sequences in the reference, otherwise small variants will only be called on chr{1..22,X,Y}.",
+                    "help_text": ""
+                },
+                "GVCF": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable to output a gVCF file in addition to the VCF outputs (experimental).",
+                    "help_text": "By default the the workflow outputs a VCF file containing only records where a variant has been detected. Enabling this option will output additionally a gVCF with records spanning all reference positions regardless of whether a variant was detected in the sample."
+                },
+                "use_longphase": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Use longphase for final phasing of output variants (experimental).",
+                    "hidden": true
+                },
+                "use_longphase_intermediate": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Use longphase for intermediate phasing.",
+                    "hidden": true
                 },
                 "clair3_model_path": {
                     "type": "string",
                     "format": "directory-path",
                     "description": "Clair3 model directory.",
-                    "help_text": "The workflow will attempt to map the basecalling model used to a suitable Clair3 model. You can override this by providing the path to a model with this option instead. Models can be obtained from https://cdn.oxfordnanoportal.com/software/analysis/models/clair3/index.html.",
+                    "help_text": "The workflow will attempt to map the basecalling model used to a suitable Clair3 model. You can override this by providing the path to a model with this option instead. Models can be obtained from [this page](https://cdn.oxfordnanoportal.com/software/analysis/models/clair3/index.html).",
                     "hidden": true
                 },
                 "ref_pct_full": {
                     "type": "number",
                     "default": 0.1,
-                    "description": "Expected percentage of low quality 0/0 variants called in the pileup mode for full-alignment mode calling."
+                    "description": "Expected percentage of low quality 0/0 variants called in the pileup mode for full-alignment mode calling.",
+                    "hidden": true
                 },
                 "var_pct_full": {
                     "type": "number",
                     "default": 0.7,
-                    "description": "Expected percentage of low quality 0/1 and 1/1 variants called in the pileup mode for full-alignment mode calling."
+                    "description": "Expected percentage of low quality 0/1 and 1/1 variants called in the pileup mode for full-alignment mode calling.",
+                    "hidden": true
                 },
                 "snp_min_af": {
                     "type": "number",
                     "default": 0.08,
-                    "description": "Minimum SNP AF required for a candidate variant."
+                    "description": "Minimum SNP AF required for a candidate variant.",
+                    "hidden": true
                 },
                 "indel_min_af": {
                     "type": "number",
                     "default": 0.15,
-                    "description": "Minimum Indel AF required for a candidate variant."
+                    "description": "Minimum Indel AF required for a candidate variant.",
+                    "hidden": true
                 },
                 "vcf_fn": {
                     "type": "string",
                     "default": "EMPTY",
-                    "hidden": true,
-                    "description": "Candidate sites VCF file input, variants will only be called at the sites in the VCF file if provided."
-                },
-                "phase_vcf": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Phase output VCF."
-                },
-                "use_longphase": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Use longphase for final phasing of output variants (experimental)."
-                },
-                "use_longphase_intermediate": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Use longphase for intermediate phasing."
+                    "description": "Candidate sites VCF file input, variants will only be called at the sites in the VCF file if provided.",
+                    "hidden": true
                 },
                 "min_cov": {
                     "type": "number",
                     "default": 2.0,
-                    "description": "Minimum coverage required to call a variant (experimental)."
+                    "description": "Minimum coverage required to call a variant (experimental).",
+                    "hidden": true
                 },
                 "min_mq": {
                     "type": "number",
                     "default": 5.0,
-                    "description": "Reads with mapping quality < min_mq are filtered (experimental)."
+                    "description": "Reads with mapping quality < min_mq are filtered (experimental).",
+                    "hidden": true
                 },
                 "min_contig_size": {
                     "type": "number",
                     "default": 0.0,
-                    "description": "Contigs with contig size < min_contig_size are filtered (experimental)."
-                },
-                "sample_name": {
-                    "type": "string",
-                    "default": "SAMPLE",
-                    "description": "Sample name to be displayed in workflow outputs."
+                    "description": "Contigs with contig size < min_contig_size are filtered (experimental).",
+                    "hidden": true
                 },
                 "ctg_name": {
                     "type": "string",
                     "default": "EMPTY",
-                    "description": "The name of the sequence to be processed"
-                },
-                "include_all_ctgs": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Call variants on all contigs, otherwise call in chr{1..22,X,Y}."
-                },
-                "GVCF": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Output a GVCF file. (Experimental)."
-                },
-                "call_retries": {
-                    "type": "integer",
-                    "default": 5
-                }
-            }
-        },
-        "meta_data": {
-            "title": "Meta Data",
-            "type": "object",
-            "description": "",
-            "default": "",
-            "properties": {
-                "report_name": {
-                    "type": "string",
-                    "default": "report",
-                    "description": "Output report filename suffix."
-                },
-                "disable_ping": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Enable to prevent sending a workflow ping."
-                }
-            }
-        },
-        "generic_options": {
-            "title": "Generic options",
-            "type": "object",
-            "fa_icon": "far fa-question-circle",
-            "description": "Less common options for the pipeline, typically set in a config file.",
-            "help_text": "These options are common to all nf-core pipelines and allow you to customise some of the core preferences for how the pipeline runs.\n\nTypically these options would be set in a Nextflow config file loaded for all pipeline runs, such as `~/.nextflow/config`.",
-            "properties": {
-                "help": {
-                    "type": "boolean",
-                    "description": "Display help text.",
-                    "fa_icon": "fas fa-question-circle",
+                    "description": "The name of the sequence to be processed.",
                     "hidden": true
-                },
-                "version": {
-                    "type": "boolean",
-                    "description": "Display version and exit.",
-                    "fa_icon": "fas fa-question-circle",
+                }
+            }
+        },
+        "methyl_options": {
+            "title": "Modified base calling options",
+            "type": "object",
+            "description": "Options related to the methylation aggregation subworkflow.",
+            "properties": {
+                "modbam2bed_args": {
+                    "type": "string",
+                    "description": "Additional command line arguments to pass to the modbam2bed process",
                     "hidden": true
                 }
             }
@@ -257,7 +218,7 @@
         "basecalling_options": {
             "title": "Basecalling options",
             "type": "object",
-            "description": "Basecalling model selection.",
+            "description": "Basecalling model selection and performance options.",
             "help_text": "This section contains options that should be checked before basecalling.",
             "properties": {
                 "basecaller": {
@@ -268,23 +229,24 @@
                 "basecaller_cfg": {
                     "type": "string",
                     "description": "Name of the model to use for converting signal.",
-                    "help_text": "Refer to the model table on the Dorado repository for selecting a simplex basecalling model: https://github.com/nanoporetech/dorado#available-basecalling-models"
+                    "help_text": "Required for basecalling. Refer to the [model table on the Dorado repository for selecting a simplex basecalling model](https://github.com/nanoporetech/dorado#available-basecalling-models)."
                 },
                 "remora_cfg": {
                     "type": "string",
                     "description": "Name of the model to use for calling modified bases.",
-                    "help_text": "Refer to the model table on the Dorado repository for selecting a modified basecalling model: https://github.com/nanoporetech/dorado#available-basecalling-models"
+                    "help_text": "Required for calling modified bases while basecalling. Refer to the [model table on the Dorado repository for selecting a modified basecalling model](https://github.com/nanoporetech/dorado#available-basecalling-models)."
                 },
                 "dorado_ext": {
                     "type": "string",
-                    "description": "File extension for Dorado input. Set this to fast5 if you have not converted your fast5 to pod5.",
-                    "help_text": "It is recommended to convert existing fast5 files to pod5 for use with Dorado. See instructions here: https://github.com/nanoporetech/pod5-file-format/blob/master/python/README.md#pod5-convert-from-fast5.",
-                    "default": "pod5"
+                    "description": "File extension for Dorado input.",
+                    "help_text": "Set this to fast5 if you have not converted your fast5 to pod5. It is recommended to [convert existing fast5 files to pod5 for use with Dorado](https://github.com/nanoporetech/pod5-file-format/blob/master/python/README.md#pod5-convert-from-fast5).",
+                    "default": "fast5"
                 },
                 "basecaller_basemod_threads": {
                     "type": "number",
-                    "default": 0,
-                    "description": "Number of threads to use for base modification calling, you must set this to > 0 when using a modbase aware model [0]"
+                    "default": 2,
+                    "description": "Number of threads to use for base modification calling.",
+                    "help_text": "You must set this to > 0 when using a modbase aware model. Modbase calling does not require much additional CPU and should be set carefully when using GPU servers with a small number of CPUs per GPU."
                 }
             },
             "required": []
@@ -305,30 +267,101 @@
                     "type": "number",
                     "default": 25,
                     "description": "Number of input files to basecall in each basecalling process.",
-                    "hidden": true
+                    "help_text": ""
                 },
                 "cuda_device": {
                     "type": "string",
                     "default": "cuda:all",
-                    "description": "GPU device to use for basecalling [cuda:all]"
+                    "description": "GPU device to use for basecalling [cuda:all]",
+                    "help_text": "For local execution this can be used to pin GPU tasks to one (or more) specific GPU devices. Use cuda:all to use all available GPU devices, or cuda:<idx>[,idx,...] where idx is an index number of the GPU device to use."
+                },
+                "basecaller_model_path": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Override the inferred model with a custom basecalling model",
+                    "help_text": "For typical use, users should set --basecaller_cfg which will use a named model from inside the container. Experimental or custom basecallers will not be available in the container and can be loaded from the host with --basecaller_model_path.",
+                    "hidden": true
+                },
+                "remora_model_path": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Override the inferred model with a custom remora model",
+                    "help_text": "For typical use, users should set --remora_cfg which will use a named model from inside the container. Experimental or custom models will not be available in the container and can be loaded from the host with --remora_model_path.",
+                    "hidden": true
                 }
             },
             "required": []
         },
-        "methyl_options": {
-            "title": "Methylation calling options",
+        "output": {
+            "title": "Output Options",
             "type": "object",
-            "description": "Options related to calling methylation sites",
-            "help_text": "",
+            "fa_icon": "fas fa-arrow-left",
+            "description": "Parameters for saving and naming workflow outputs.",
             "properties": {
-                "methyl": {
-                    "type": "boolean",
-                    "description": "Enable methylation calling [requires input BAM with Ml and Mm tags]",
-                    "default": false
-                },
-                "modbam2bed_args": {
+                "sample_name": {
                     "type": "string",
-                    "description": "Additional command line arguments to pass to the modbam2bed process",
+                    "default": "SAMPLE",
+                    "description": "Sample name to be displayed in workflow outputs.",
+                    "help_text": ""
+                },
+                "out_dir": {
+                    "type": "string",
+                    "default": "output",
+                    "format": "directory-path",
+                    "description": "Directory for output of all workflow results."
+                }
+            }
+        },
+        "multiprocessing_options": {
+            "title": "Multiprocessing Options",
+            "type": "object",
+            "fa_icon": "far fa-question-circle",
+            "description": "Options for configuring the common processes across the different subworkflows.",
+            "help_text": "These options do not need to be changed for typical use, but allow fine tuning of workflows for users who want more control over the workflow.",
+            "properties": {
+                "threads": {
+                    "type": "integer",
+                    "default": 4,
+                    "description": "Set max number of threads to use for more intense processes (limited by config executor cpus)"
+                },
+                "ubam_map_threads": {
+                    "type": "integer",
+                    "default": 12,
+                    "description": "Set max number of threads to use for aligning reads from uBAM (limited by config executor cpus)"
+                },
+                "ubam_sort_threads": {
+                    "type": "integer",
+                    "default": 8,
+                    "description": "Set max number of threads to use for sorting and indexing aligned reads from uBAM (limited by config executor cpus)"
+                },
+                "ubam_bam2fq_threads": {
+                    "type": "integer",
+                    "default": 4,
+                    "description": "Set max number of threads to use for uncompressing uBAM and generating FASTQ for alignment (limited by config executor cpus)"
+                }
+            }
+        },
+        "misc": {
+            "title": "Miscellaneous Options",
+            "type": "object",
+            "description": "Everything else.",
+            "default": "",
+            "properties": {
+                "disable_ping": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable to prevent sending a workflow ping."
+                },
+                "help": {
+                    "type": "boolean",
+                    "description": "Display help text.",
+                    "fa_icon": "fas fa-question-circle",
+                    "hidden": true
+                },
+                "version": {
+                    "type": "boolean",
+                    "description": "Display version and exit.",
+                    "fa_icon": "fas fa-question-circle",
                     "hidden": true
                 }
             }
@@ -336,13 +369,10 @@
     },
     "allOf": [
         {
-            "$ref": "#/definitions/basic_input_output_options"
+            "$ref": "#/definitions/workflow"
         },
         {
-            "$ref": "#/definitions/basecalling_options"
-        },
-        {
-            "$ref": "#/definitions/advanced_basecalling_options"
+            "$ref": "#/definitions/input"
         },
         {
             "$ref": "#/definitions/snp_options"
@@ -351,16 +381,22 @@
             "$ref": "#/definitions/sv_options"
         },
         {
-            "$ref": "#/definitions/meta_data"
-        },
-        {
-            "$ref": "#/definitions/generic_options"
-        },
-        {
             "$ref": "#/definitions/basecalling_options"
         },
         {
+            "$ref": "#/definitions/advanced_basecalling_options"
+        },
+        {
             "$ref": "#/definitions/methyl_options"
+        },
+        {
+            "$ref": "#/definitions/output"
+        },
+        {
+            "$ref": "#/definitions/multiprocessing_options"
+        },
+        {
+            "$ref": "#/definitions/misc"
         }
     ],
     "properties": {
@@ -380,7 +416,7 @@
         },
         "wfversion": {
             "type": "string",
-            "default": "v0.4.1",
+            "default": "v1.0.0",
             "hidden": true
         },
         "monochrome_logs": {
@@ -395,7 +431,7 @@
         }
     },
     "docs": {
-        "intro": "## Introduction\n\nThis workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small\nvariants from long reads. Clair3 makes the best of two methods: pileup (for fast\ncalling of variant candidates in high confidence regions), and full-alignment\n(to improve precision of calls of more complex candidates).\n\nThis workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for\ncalling structural variants.\n\nThis workflow uses [modbam2bed](https://github.com/epi2me-labs/modbam2bed) for\naggregate modified base counts into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.\n\nThis workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)\nfor basecalling `pod5` or `fast5` signal data.\n\n",
+        "intro": "## Introduction\n\nThis workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small\nvariants from long reads. Clair3 makes the best of two methods: pileup (for fast\ncalling of variant candidates in high confidence regions), and full-alignment\n(to improve precision of calls of more complex candidates).\n\nThis workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for\ncalling structural variants.\n\nThis workflow uses [modbam2bed](https://github.com/epi2me-labs/modbam2bed) to\naggregate modified base counts into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.\n\nThis workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)\nfor basecalling `pod5` or `fast5` signal data.\n\n",
         "links": "## Useful links\n\n* [nextflow](https://www.nextflow.io/)\n* [docker](https://www.docker.com/products/docker-desktop)\n* [singularity](https://sylabs.io/singularity/)\n\n"
     }
 }
