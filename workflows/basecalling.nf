@@ -5,8 +5,8 @@ include {
 include { wf_dorado } from './_basecalling'
 
 def create_bam_channel(def merge_out){
+    // map basecalled cram to (xam_path, xam_index, xam_meta) tuple
     merge_out.map{
-        // map basecalled cram to (xam_path, xam_index, xam_meta) tuple
         it -> tuple(it[0], it[1], create_metamap([
             output: true, // write this to out_dir
             is_cram: true, // we know we basecalled it to cram
@@ -22,9 +22,16 @@ workflow basecalling {
         ref
     main:
         // pass args straight to actual basecalling workflow
-        // returns: (cram), (crai), map to ([cram, crai])
-        out = wf_dorado(input_path, ref)
-        bam_channel = create_bam_channel(out.cram.concat(out.crai).toList())
+        crams = wf_dorado(
+            input_path,
+            ref,
+            params.basecaller_cfg, params.basecaller_model_path,
+            params.remora_cfg, params.remora_model_path,
+        )
+        // annotate results and emit
+        pass = create_bam_channel(crams.pass)
+        fail = create_bam_channel(crams.fail)
     emit:
-        bam_channel
+        pass = pass
+        fail = fail
 }

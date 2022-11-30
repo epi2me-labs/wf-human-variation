@@ -67,6 +67,20 @@
                     "default": 4,
                     "description": "Set max number of threads to use for uncompressing uBAM and generating FASTQ for alignment (limited by config executor cpus)"
                 },
+                "basecaller_model_path": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Override the inferred model with a custom basecalling model",
+                    "help_text": "For typical use, users should set --basecaller_cfg which will use a named model from inside the container. Experimental or custom basecallers will not be available in the container and can be loaded from the host with --basecaller_model_path.",
+                    "hidden": true
+                },
+                "remora_model_path": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Override the inferred model with a custom remora model",
+                    "help_text": "For typical use, users should set --remora_cfg which will use a named model from inside the container. Experimental or custom models will not be available in the container and can be loaded from the host with --remora_model_path.",
+                    "hidden": true
+                },
                 "mapula": {
                     "type": "boolean",
                     "description": "Enable mapula to generate basic alignment QC statistics (can be slow on very large data sets)",
@@ -281,6 +295,12 @@
             "description": "Basecaller performance and load settings.",
             "help_text": "These basecalling options do not typically need to be changed.",
             "properties": {
+                "qscore_filter": {
+                    "type": "number",
+                    "default": 10,
+                    "description": "Mean qscore by which to filter reads. Inclusive such that reads with score >= qscore_filter are kept.",
+                    "help_text": "The mean qscore of reads is calculated by dorado and rounded to an integer by dorado and stored as a tag in dorado's SAM output. The pipeline separates reads into pass and fail categories based on this SAM tag."
+                },
                 "basecaller_chunk_size": {
                     "type": "number",
                     "default": 25,
