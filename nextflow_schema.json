@@ -223,6 +223,7 @@
         },
         "basecalling_options": {
             "title": "Basecalling options",
+            "fa_icon": "fas fa-gear",
             "type": "object",
             "description": "Basecalling model selection and performance options.",
             "help_text": "This section contains options that should be checked before basecalling.",
@@ -263,6 +264,7 @@
         },
         "advanced_basecalling_options": {
             "title": "Advanced basecalling options",
+            "fa_icon": "fas fa-gears",
             "type": "object",
             "description": "Basecaller performance and load settings.",
             "help_text": "These basecalling options do not typically need to be changed.",
@@ -325,7 +327,7 @@
         "multiprocessing_options": {
             "title": "Multiprocessing Options",
             "type": "object",
-            "fa_icon": "far fa-question-circle",
+            "fa_icon": "far fa-gauge-high",
             "description": "Options for configuring the common processes across the different subworkflows.",
             "help_text": "These options do not need to be changed for typical use, but allow fine tuning of workflows for users who want more control over the workflow.",
             "properties": {

@@ -95,7 +95,7 @@ workflow wf_dorado {
 
         Integer chunk_idx = 0
         pod5_chunks = Channel
-            .fromPath(input_path + "**.${params.dorado_ext}")
+            .fromPath(input_path + "**.${params.dorado_ext}", checkIfExists: true)
             .buffer(size:params.basecaller_chunk_size, remainder:true)
             .map { tuple(chunk_idx++, it) }
         called_bams = dorado(

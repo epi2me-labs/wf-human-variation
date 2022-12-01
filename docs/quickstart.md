@@ -97,7 +97,10 @@ The primary outputs of the workflow include:
 * a gzipped VCF file containing the SVs called from the dataset (`--sv`)
 * a gzipped [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file aggregating modified CpG base counts (`--methyl`)
 * an HTML report detailing the primary findings of the workflow, for both the SNP and SV calling
-* if unaligned reads were provided, a CRAM file containing the alignments used to make the calls
+* if basecalling and alignment was conducted, the workflow will output two sorted, indexed CRAMs of basecalls aligned to the provided references, with reads separated by their quality score:
+    * `<sample_name>.pass.cram` contains reads with `qscore >= threshold` (only pass reads are used to make downstream variant cals)
+    * `<sample_name>.fail.cram` contains reads with `qscore < threshold`
+* if unaligned reads were provided, the workflow will output a CRAM file containing the alignments used to make the downstream variant calls
 
 The secondary outputs of the workflow include:
 * `{sample_name}.mapula.csv` and `{sample_name}.mapula.json` provide basic alignment metrics (primary and secondary counts, read N50, median accuracy)
