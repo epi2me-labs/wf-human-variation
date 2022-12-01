@@ -73,7 +73,7 @@
                 "bed": {
                     "type": "string",
                     "format": "file-path",
-                    "description": "A BED file enumerating regions to process for variant calling.",
+                    "description": "An optional BED file enumerating regions to process for variant calling.",
                     "help_text": ""
                 }
             },
@@ -120,7 +120,7 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Call for variants on all sequences in the reference, otherwise small variants will only be called on chr{1..22,X,Y}.",
-                    "help_text": ""
+                    "help_text": "Enabling this option will call for variants on all contigs of the input reference sequence. Typically this option is not required as standard human reference sequences contain decoy and unplaced contigs that are usually omitted for the purpose of variant calling. This option might be useful for non-standard reference sequence databases."
                 },
                 "GVCF": {
                     "type": "boolean",
@@ -240,7 +240,11 @@
                     "type": "string",
                     "description": "File extension for Dorado input.",
                     "help_text": "Set this to fast5 if you have not converted your fast5 to pod5. It is recommended to [convert existing fast5 files to pod5 for use with Dorado](https://github.com/nanoporetech/pod5-file-format/blob/master/python/README.md#pod5-convert-from-fast5).",
-                    "default": "fast5"
+                    "default": "fast5",
+                    "enum": [
+                        "fast5",
+                        "pod5"
+                    ]
                 },
                 "basecaller_basemod_threads": {
                     "type": "number",
