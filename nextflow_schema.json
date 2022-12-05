@@ -2,7 +2,7 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/epi2me-labs/wf-human-variation/master/nextflow_schema.json",
     "title": "epi2me-labs/wf-human-variation",
-    "description": "Consolidated human variation calling pipeline for ONT data.",
+    "description": "Basecalling, SNV calling, SV calling, methylation calling of human samples.",
     "demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo.tar.gz",
     "url": "https://github.com/epi2me-labs/wf-human-variation",
     "type": "object",

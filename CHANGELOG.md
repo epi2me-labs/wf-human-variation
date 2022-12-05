@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v1.0.1]
 ### Changed
 * Default `basecaller_cfg` set to `dna_r10.4.1_e8.2_400bps_sup@v3.5.2`
+* Updated description in manifest
 
 ## [v1.0.0]
 ### Added
