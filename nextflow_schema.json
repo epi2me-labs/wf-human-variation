@@ -70,6 +70,12 @@
                     "description": "Reference FASTA file for CRAM input (only required if the CRAM requires realignment)",
                     "help_text": "You do not need to provide this unless the workflow specifically asks you to. If your input CRAM headers do not match the metadata of the input reference, the workflow will assume you want to realign your reads to the new input reference. CRAM files are compressed using the reference, so the read sequences cannot be realigned without the old reference."
                 },
+                "basecaller_cfg": {
+                    "type": "string",
+                    "description": "Name of the model to use for converting signal and selecting a small variant calling model.",
+                    "help_text": "Required for basecalling and small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. Refer to the [model table on the Dorado repository for selecting a simplex basecalling model](https://github.com/nanoporetech/dorado#available-basecalling-models).",
+                    "default": "dna_r10.4.1_e8.2_400bps_sup@v3.5.2"
+                },
                 "bed": {
                     "type": "string",
                     "format": "file-path",
@@ -232,11 +238,6 @@
                     "type": "string",
                     "default": "dorado",
                     "hidden": true
-                },
-                "basecaller_cfg": {
-                    "type": "string",
-                    "description": "Name of the model to use for converting signal.",
-                    "help_text": "Required for basecalling. Refer to the [model table on the Dorado repository for selecting a simplex basecalling model](https://github.com/nanoporetech/dorado#available-basecalling-models)."
                 },
                 "remora_cfg": {
                     "type": "string",
@@ -428,7 +429,7 @@
         },
         "wfversion": {
             "type": "string",
-            "default": "v1.0.0",
+            "default": "v1.0.1",
             "hidden": true
         },
         "monochrome_logs": {
