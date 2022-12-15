@@ -197,6 +197,7 @@ workflow {
         else {
             // map basecalling model to clair3 model
             lookup_table = Channel.fromPath("${projectDir}/data/clair3_models.tsv", checkIfExists: true)
+            // TODO basecaller_model_path
             clair3_model = lookup_clair3_model(lookup_table, params.basecaller_cfg)
         }
 

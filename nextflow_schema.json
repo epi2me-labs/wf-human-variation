@@ -74,7 +74,7 @@
                     "type": "string",
                     "description": "Name of the model to use for converting signal and selecting a small variant calling model.",
                     "help_text": "Required for basecalling and small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. Refer to the [model table on the Dorado repository for selecting a simplex basecalling model](https://github.com/nanoporetech/dorado#available-basecalling-models).",
-                    "default": "dna_r10.4.1_e8.2_400bps_sup@v3.5.2"
+                    "default": "dna_r10.4.1_e8.2_400bps_sup@v4.0.0"
                 },
                 "bed": {
                     "type": "string",
@@ -301,6 +301,10 @@
                     "description": "Override the inferred model with a custom remora model",
                     "help_text": "For typical use, users should set --remora_cfg which will use a named model from inside the container. Experimental or custom models will not be available in the container and can be loaded from the host with --remora_model_path.",
                     "hidden": true
+                },
+                "basecaller_args": {
+                    "type": "string",
+                    "description": "Additional command line arguments to pass to the basecaller process."
                 }
             },
             "required": []
@@ -429,7 +433,7 @@
         },
         "wfversion": {
             "type": "string",
-            "default": "v1.0.1",
+            "default": "v1.1.0",
             "hidden": true
         },
         "monochrome_logs": {

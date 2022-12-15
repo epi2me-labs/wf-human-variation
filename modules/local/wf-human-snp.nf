@@ -571,5 +571,7 @@ process lookup_clair3_model {
     '''
     clair3_model=$(resolve_clair3_model.py lookup_table '!{basecall_model}')
     cp -r ${CLAIR_MODELS_PATH}/${clair3_model} model
+    echo "Basecall model: !{basecall_model}"
+    echo "Clair3 model  : ${clair3_model}"
     '''
 }
