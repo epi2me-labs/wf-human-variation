@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.1.0]
+### Changed
+* Updated Dorado container image to use Dorado v0.1.1
+    * Latest models are now v4.0.0
+    * Workflow prints a more helpful error when Dorado fails due to unknown model name
+* Updated wf-human-snp container image to load new Clair3 models for v4 basecalling
+* Default `basecaller_cfg` set to `dna_r10.4.1_e8.2_400bps_sup@v4.0.0`
+### Added
+* `--basecaller_args` may be used to provide custom arguments to the basecalling process
+
 ## [v1.0.1]
 ### Changed
 * Default `basecaller_cfg` set to `dna_r10.4.1_e8.2_400bps_sup@v3.5.2`

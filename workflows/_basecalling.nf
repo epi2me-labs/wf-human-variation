@@ -18,12 +18,27 @@ process dorado {
         path("${chunk_idx}.ubam")
     script:
     def remora_model = remora_model_override ? "remora_model" : "\${DRD_MODELS_PATH}/${remora_cfg}"
-    def remora_args = (params.basecaller_basemod_threads > 0 && (params.remora_cfg || remora_model_override)) ? "--remora-models ${remora_model} --remora-threads ${params.basecaller_basemod_threads} --remora-batchsize 1024" : ''
+    def remora_args = (params.basecaller_basemod_threads > 0 && (params.remora_cfg || remora_model_override)) ? "--modified-bases-models ${remora_model}" : ''
     def model_arg = basecaller_model_override ? "dorado_model" : "\${DRD_MODELS_PATH}/${basecaller_cfg}"
+    def basecaller_args = params.basecaller_args ?: ''
     """
+    echo '***'
+    echo 'Available models:'
+    list-models | sed 's,^,- ,' | sed "s,\${DRD_MODELS_PATH}/,,"
+    echo '***'
+    echo 'You selected:'
+    echo "Basecalling model: ${basecaller_cfg}"
+    echo "Remora model     : ${remora_cfg}"
+    echo '***'
+    echo 'A file open error below indicates that you have entered an unknown model name.'
+    echo 'It is possible the model you selected worked previously but has been updated to a new version.'
+    echo 'Resubmit this workflow with an appropriate model from the model list above.'
+    echo '***'
+
     dorado basecaller \
         ${model_arg} . \
         ${remora_args} \
+        ${basecaller_args} \
         --device ${params.cuda_device} | samtools view -b -o ${chunk_idx}.ubam -
     """
 }
