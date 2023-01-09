@@ -5,7 +5,7 @@ include:
 
 # conda, mac, simg
 variables:
-    NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-sv/demo_data.tar.gz && tar -xzvf demo_data.tar.gz; echo 'verbosity: 2' >> ~/.condarc;"
+    NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-sv/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
     NF_PROCESS_FILES: "modules/local/wf-human-sv.nf"
     NF_IGNORE_PROCESSES: "getAllChromosomesBed,minimap2_ubam"
     NF_WORKFLOW_OPTS: "--sv --bam demo_data/test.bam --ref demo_data/chr20_human_g1k_v37_part.fasta.gz --bed demo_data/target.bed --tr_bed demo_data/human_hs37d5.trf.bed"
