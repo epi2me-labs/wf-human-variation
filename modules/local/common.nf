@@ -162,7 +162,7 @@ process configure_jbrowse {
     def sv_variant = params.sv ? "--variant sv ${params.out_dir}/${params.sample_name}.wf_sv.vcf.gz ${params.out_dir}/${params.sample_name}.wf_sv.vcf.gz.tbi" : ''
     def alignment = output_bam ? "--alignment ${params.out_dir}/${xam.name} ${params.out_dir}/${xam_idx.name}" : ''
     """
-    configure_jbrowse.py \
+    workflow-glue configure_jbrowse \
         --reference ${reference} ${params.out_dir}/${reference.name} ${params.out_dir}/${ref_idx.name} \
         ${alignment} \
         ${snp_variant} \

@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """Create workflow report."""
 
-import argparse
-
 from aplanat import annot, hist, report
 from aplanat.components import bcfstats, depthcoverage
 from aplanat.components import simple as scomponents
@@ -11,6 +9,7 @@ from aplanat.util import Colors
 from bokeh.layouts import gridplot
 import numpy as np
 import pandas as pd
+from .util import wf_parser  # noqa: ABS101
 
 
 def plot_qc_stats(read_stats):
@@ -63,32 +62,8 @@ This section displays basic metrics relating to genome coverage.
     )
 
 
-def main():
+def main(args):
     """Run the entry point."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("report", help="Report output file")
-    parser.add_argument(
-        "--read_stats", default='unknown',
-        help="read statistics output from bamstats")
-    parser.add_argument(
-        "--versions", required=True,
-        help="directory containing CSVs containing name,version.")
-    parser.add_argument(
-        "--params", required=True,
-        help="directory containing CSVs containing name,version.")
-    parser.add_argument(
-        "--revision", default='unknown',
-        help="git branch/tag of the executed workflow")
-    parser.add_argument(
-        "--commit", default='unknown',
-        help="git commit of the executed workflow")
-    parser.add_argument(
-        "--vcf_stats", default='unknown',
-        help="final vcf stats file")
-    parser.add_argument(
-        "--read_depth", default="unknown",
-        help="read coverage output from mosdepth")
-    args = parser.parse_args()
     report_doc = report.HTMLReport(
         "Haploid variant calling Summary Report",
         ("Results generated through the wf-hap-snp nextflow "
@@ -119,5 +94,31 @@ This section displays basic QC metrics indicating read data quality.
     report_doc.write(args.report)
 
 
-if __name__ == "__main__":
-    main()
+def argparser():
+    """Create argument parser."""
+    parser = wf_parser("report")
+
+    parser.add_argument("report", help="Report output file")
+    parser.add_argument(
+        "--read_stats", default='unknown',
+        help="read statistics output from bamstats")
+    parser.add_argument(
+        "--versions", required=True,
+        help="directory containing CSVs containing name,version.")
+    parser.add_argument(
+        "--params", required=True,
+        help="directory containing CSVs containing name,version.")
+    parser.add_argument(
+        "--revision", default='unknown',
+        help="git branch/tag of the executed workflow")
+    parser.add_argument(
+        "--commit", default='unknown',
+        help="git commit of the executed workflow")
+    parser.add_argument(
+        "--vcf_stats", default='unknown',
+        help="final vcf stats file")
+    parser.add_argument(
+        "--read_depth", default="unknown",
+        help="read coverage output from mosdepth")
+
+    return parser

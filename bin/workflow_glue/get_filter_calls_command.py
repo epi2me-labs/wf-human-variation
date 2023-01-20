@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """Construct SV call filtering command."""
 
-import argparse
+
 import gzip
 import sys
+from .util import wf_parser  # noqa: ABS101
 
 threshold_lookup = ['0'] + ['2'] * 10 + ['3'] * 9 + ['5'] * 20 + ['8'] * 100
 
@@ -25,9 +26,9 @@ def calculate_average_depth(path):
     return avg_depth
 
 
-def parse_arguments():
-    """Parse the command line arguments."""
-    parser = argparse.ArgumentParser()
+def argparser():
+    """Create argument parser."""
+    parser = wf_parser("get_filter_calls_command")
 
     parser.add_argument(
         "--vcf",
@@ -92,13 +93,11 @@ def parse_arguments():
         nargs="+"
     )
 
-    return parser.parse_args()
+    return parser
 
 
-def main():
+def main(args):
     """Run the entry point."""
-    args = parse_arguments()
-
     # Get SV type filters
     sv_type_filters = []
     for svtype in args.sv_types:
@@ -138,7 +137,3 @@ def main():
     # Print command to stdout
     command = f"bcftools view {filter_string} {args.vcf}"
     sys.stdout.write(command)
-
-
-if __name__ == '__main__':
-    main()

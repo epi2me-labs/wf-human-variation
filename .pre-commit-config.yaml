@@ -31,4 +31,4 @@ repos:
           - flake8-builtins
           - flake8-absolute-import
           - flake8-print
-        entry: flake8 bin --import-order-style google --statistics
+        entry: flake8 bin --import-order-style google --statistics --max-line-length 88

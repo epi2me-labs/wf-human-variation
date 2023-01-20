@@ -10,6 +10,7 @@ variables:
     NF_IGNORE_PROCESSES: "getAllChromosomesBed,minimap2_ubam"
     NF_WORKFLOW_OPTS: "--sv --bam demo_data/test.bam --ref demo_data/chr20_human_g1k_v37_part.fasta.gz --bed demo_data/target.bed --tr_bed demo_data/human_hs37d5.trf.bed"
     CI_FLAVOUR: "new"
+    PYTEST_CONTAINER_CONFIG_KEY: "e2l_base_tag"
 
 conda-run:
     artifacts:

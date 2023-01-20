@@ -431,11 +431,6 @@
             "type": "string",
             "hidden": true
         },
-        "wfversion": {
-            "type": "string",
-            "default": "v1.1.0",
-            "hidden": true
-        },
         "monochrome_logs": {
             "type": "boolean"
         },

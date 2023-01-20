@@ -32,7 +32,7 @@ process checkSampleSheet {
     output:
         file "samples.txt"
     """
-    check_sample_sheet.py sample_sheet.txt samples.txt
+    workflow-glue check_sample_sheet sample_sheet.txt samples.txt
     """
 }
 

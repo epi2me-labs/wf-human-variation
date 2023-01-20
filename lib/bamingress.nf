@@ -27,7 +27,7 @@ process check_for_alignment {
     script:
         """
         realign=0
-        check_sq_ref.py --xam ${xam} --ref ${reference} || realign=\$?
+        workflow-glue check_sq_ref --xam ${xam} --ref ${reference} || realign=\$?
 
         # Allow EX_OK and EX_DATAERR, otherwise explode
         if [ \$realign -ne 0 ] && [ \$realign -ne 65 ]; then
