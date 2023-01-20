@@ -539,12 +539,12 @@ process makeReport {
         path "*report.html"
     script:
         report_name = "${params.sample_name}.wf-human-snp-report.html"
-        wfversion = params.wfversion
+        wfversion = workflow.manifest.version
         if( workflow.commitId ){
             wfversion = workflow.commitId
         }
         """
-        report.py \
+        workflow-glue report \
         $report_name \
         --versions $versions \
         --params params.json \
@@ -569,7 +569,7 @@ process lookup_clair3_model {
         path("model/")
     shell:
     '''
-    clair3_model=$(resolve_clair3_model.py lookup_table '!{basecall_model}')
+    clair3_model=$(workflow-glue resolve_clair3_model lookup_table '!{basecall_model}')
     cp -r ${CLAIR_MODELS_PATH}/${clair3_model} model
     echo "Basecall model: !{basecall_model}"
     echo "Clair3 model  : ${clair3_model}"

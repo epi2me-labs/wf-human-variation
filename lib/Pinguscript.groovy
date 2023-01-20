@@ -8,7 +8,7 @@ class Pinguscript {
         def msgId = UUID.randomUUID().toString()
         def hosthash = null
         try {
-            hosthash = InetAddress.getLocalHost().getHostName().md5()
+            hosthash = InetAddress.getLocalHost().getHostName()
         } catch(Exception e) {
             hosthash = "Unavailable"
         }
@@ -32,7 +32,7 @@ class Pinguscript {
         def meta = meta_json "error": errorMessage.toString(), "profile": profile.toString(),
             "agent": agent.toString()
         meta+=any_other_data
-        def ping_version = '2.0.1'
+        def ping_version = '2.0.2'
         def tracking_json = new JsonBuilder()
         def tracking_id = tracking_json "msg_id": msgId, "version": ping_version
         def data_json = new JsonBuilder()

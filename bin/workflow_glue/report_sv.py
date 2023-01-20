@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 """Create workflow report."""
 
-import argparse
 from datetime import datetime
 import json
-import sys
 
 import aplanat
 from aplanat import bio, hist, report
@@ -14,7 +12,7 @@ from bokeh.layouts import gridplot, layout
 from bokeh.models import BasicTickFormatter, Range1d
 import numpy as np
 import pandas as pd
-
+from .util import wf_parser  # noqa: ABS101
 
 vcf_cols = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
 
@@ -93,44 +91,8 @@ def get_sv_size_plots(vcf_df, sv_types, sv_colours):
     return length_plots
 
 
-def main():
+def main(args):
     """Run the entry point."""
-    parser = argparse.ArgumentParser(sys.argv[1:])
-    parser.add_argument(
-        "output",
-        help="Report output file.")
-    parser.add_argument(
-        "--vcf",
-        nargs='+',
-        required=True)
-    parser.add_argument(
-        "--reads_summary",
-        nargs='+',
-        required=False)
-    parser.add_argument(
-        "--eval_results",
-        nargs='+',
-        required=False)
-    parser.add_argument(
-        "--read_depth",
-        nargs='+',
-        required=False)
-    parser.add_argument(
-        "--revision", default='unknown',
-        help="git branch/tag of the executed workflow")
-    parser.add_argument(
-        "--commit", default='unknown',
-        help="git commit of the executed workflow")
-    parser.add_argument(
-        "--params", default=None, required=True,
-        help="A csv containing the parameter key/values")
-    parser.add_argument(
-        "--params-hidden", default="",
-        help="Comma delimited list of keys to hide from parameters table")
-    parser.add_argument(
-        "--versions", required=True,
-        help="directory contained CSVs containing name,version.")
-    args = parser.parse_args()
     report_doc = report.WFReport(
         "wf-human-sv report", "wf-human-sv",
         revision=args.revision, commit=args.commit)
@@ -320,5 +282,42 @@ def main():
     report_doc.write(args.output)
 
 
-if __name__ == "__main__":
-    main()
+def argparser():
+    """Create argument parser."""
+    parser = wf_parser("report_sv")
+    parser.add_argument(
+        "output",
+        help="Report output file.")
+    parser.add_argument(
+        "--vcf",
+        nargs='+',
+        required=True)
+    parser.add_argument(
+        "--reads_summary",
+        nargs='+',
+        required=False)
+    parser.add_argument(
+        "--eval_results",
+        nargs='+',
+        required=False)
+    parser.add_argument(
+        "--read_depth",
+        nargs='+',
+        required=False)
+    parser.add_argument(
+        "--revision", default='unknown',
+        help="git branch/tag of the executed workflow")
+    parser.add_argument(
+        "--commit", default='unknown',
+        help="git commit of the executed workflow")
+    parser.add_argument(
+        "--params", default=None, required=True,
+        help="A csv containing the parameter key/values")
+    parser.add_argument(
+        "--params-hidden", default="",
+        help="Comma delimited list of keys to hide from parameters table")
+    parser.add_argument(
+        "--versions", required=True,
+        help="directory contained CSVs containing name,version.")
+
+    return parser

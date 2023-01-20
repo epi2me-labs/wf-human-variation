@@ -9,13 +9,17 @@ import os
 import sys
 
 import pysam
+from .util import wf_parser  # noqa: ABS101
 
 # NOTE Both OK and DATAERR are permissible exits from this script so
 #      if you want to raise an error to stop Nextflow, it better be
 #      something else!
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
+
+
+def argparser():
+    """Create argument parser."""
+    parser = wf_parser("check_sq_ref")
+
     parser.add_argument(
         "--xam", "--bam", "--cram",
         required=True,
@@ -24,8 +28,11 @@ if __name__ == "__main__":
         "--ref",
         required=True,
     )
-    args = parser.parse_args()
+    return parser
 
+
+def main(args):
+    """Run entry point."""
     try:
         xam = pysam.AlignmentFile(args.xam, check_sq=False)
         ref = pysam.FastaFile(args.ref)

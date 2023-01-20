@@ -59,7 +59,7 @@ process filterCalls {
     script:
         def sv_types_joined = params.sv_types.split(',').join(" ")
     """
-    get_filter_calls_command.py \
+    workflow-glue get_filter_calls_command \
         --target_bedfile $target_bed \
         --vcf $vcf \
         --depth_bedfile $mosdepth_bed \
@@ -156,7 +156,7 @@ process report {
         def readStats = read_stats ? "--reads_summary ${read_stats}" : ""
         def evalResults = eval_json.name != 'OPTIONAL_FILE' ? "--eval_results ${eval_json}" : ""
     """
-    report_sv.py \
+    workflow-glue report_sv \
         $report_name \
         --vcf $vcf \
         $readStats \

@@ -1,19 +1,17 @@
-#!/usr/bin/env python
 """Script to check that sample sheet is well-formatted."""
-import argparse
 import sys
 
 import pandas as pd
 
+from .util import get_named_logger, wf_parser  # noqa: ABS101
 
-def main():
+
+def main(args):
     """Run entry point."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument('sample_sheet')
-    parser.add_argument('output')
-    args = parser.parse_args()
+    logger = get_named_logger("check-sheet")
 
     try:
+        logger.info(f"Reading {args.sample_sheet}.")
         samples = pd.read_csv(args.sample_sheet, sep=None)
         if 'alias' in samples.columns:
             if 'sample_id' in samples.columns:
@@ -34,7 +32,12 @@ def main():
         raise IOError(
             "Sample sheet contains duplicate values.")
     samples.to_csv(args.output, sep=",", index=False)
+    logger.info(f"Written cleaned-up sheet to {args.output}.")
 
 
-if __name__ == '__main__':
-    main()
+def argparser():
+    """Argument parser for entrypoint."""
+    parser = wf_parser("check-sample-sheet")
+    parser.add_argument('sample_sheet')
+    parser.add_argument('output')
+    return parser
