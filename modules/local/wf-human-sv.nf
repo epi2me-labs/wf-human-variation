@@ -42,7 +42,8 @@ process sniffles2 {
         $tr_arg \
         $sniffles_args \
         --vcf ${params.sample_name}.sniffles.vcf
-    sed -i '/.:0:0:0:NULL/d' ${params.sample_name}.sniffles.vcf
+    sed '/.:0:0:0:NULL/d' ${params.sample_name}.sniffles.vcf > tmp.vcf
+    mv tmp.vcf ${params.sample_name}.sniffles.vcf
     """
 }
 
