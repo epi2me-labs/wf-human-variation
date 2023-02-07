@@ -8,10 +8,11 @@ perform the following:
 * diploid variant calling
 * structural variant calling
 * aggregation of modified base counts
+* copy number variant calling
 
 The wf-human-variation workflow consolidates the small variant calling from the
 previous wf-human-snp with the structual variant calling from wf-human-sv (both
-of which are now deprecated). This pipeline performs the steps of the two
+of which are now deprecated), as well as CNV calling from wf-cnv. This pipeline performs the steps of the three
 pipelines simultaneously and the results are generated and output in the same
 way as they would have been had the pipelines been run separately.
 
@@ -31,6 +32,7 @@ aggregate modified base counts into a [bedMethyl](https://www.encodeproject.org/
 This workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)
 for basecalling `pod5` or `fast5` signal data.
 
+This workflow uses [QDNAseq](https://bioconductor.org/packages/release/bioc/html/QDNAseq.html) for calling copy number variants.
 ## Quickstart
 
 The workflow uses [nextflow](https://www.nextflow.io/) to manage compute and 
@@ -44,7 +46,7 @@ the required software. Both methods are automated out-of-the-box provided
 either Docker or Singularity is installed.
 
 It is not required to clone or download the git repository in order to run the workflow.
-For more information on running EPI2ME Labs workflows [visit out website](https://labs.epi2me.io/wfindex).
+For more information on running EPI2ME Labs workflows [visit our website](https://labs.epi2me.io/wfindex).
 
 **Workflow options**
 
@@ -67,7 +69,7 @@ wget -O demo_data.tar.gz \
 tar -xzvf demo_data.tar.gz
 ```
 
-The basecalling, SNP, SV, and 5mC aggregation workflows are all independent and can be
+The basecalling, SNP, SV, 5mC aggregation and CNV workflows are all independent and can be
 run in isolation or together using options to activate them.
 
 The SNP and SV workflows can be run with the demonstration data using:
@@ -92,6 +94,7 @@ Each subworkflow is enabled with a command line option:
 * SNP calling: `--snp`
 * SV calling: `--sv`
 * Methylation aggregation: `--methyl`
+* CNV calling: `--cnv`
 
 Subworkflows where the relevant option is omitted will not be run.
 
@@ -129,7 +132,8 @@ The primary outputs of the workflow include:
 * a gzipped VCF file containing SNPs found in the dataset (`--snp`)
 * a gzipped VCF file containing the SVs called from the dataset (`--sv`)
 * a gzipped [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file aggregating modified CpG base counts (`--methyl`)
-* an HTML report detailing the primary findings of the workflow, for both the SNP and SV calling
+* a VCF of CNV calls, QDNAseq-generated plots, and BED files of both raw read counts per bin and corrected, normalised, and smoothed read counts per bin (`--cnv`)
+* an HTML report detailing the primary findings of the workflow, for SNP, SV, and CNV calling
 * if basecalling and alignment was conducted, the workflow will output two sorted, indexed CRAMs of basecalls aligned to the provided references, with reads separated by their quality score:
     * `<sample_name>.pass.cram` contains reads with `qscore >= threshold` (only pass reads are used to make downstream variant cals)
     * `<sample_name>.fail.cram` contains reads with `qscore < threshold`
@@ -151,6 +155,7 @@ The secondary outputs of the workflow include:
 - Aggregation of methylation calls with `--methyl` requires data to be basecalled with a model that includes base modifications, providing the `MM` and `ML` BAM tags
 - Refer to the [Dorado documentation](https://github.com/nanoporetech/dorado#available-basecalling-models) for a list of available basecalling models
 - Take care to retain the input reference when basecalling or alignment has been performed as CRAM files cannot be read without the corresponding reference!
+- Refer to our [blogpost](https://labs.epi2me.io/copy-number-calling/) and [CNV workflow documentation](https://github.com/epi2me-labs/wf-cnv) for more information on running the copy number calling subworkflow.
 ## Useful links
 
 * [nextflow](https://www.nextflow.io/)

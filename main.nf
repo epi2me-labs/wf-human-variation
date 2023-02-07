@@ -8,6 +8,9 @@ include { lookup_clair3_model; output_snp } from './modules/local/wf-human-snp'
 include { bam as sv } from './workflows/wf-human-sv'
 include { output_sv } from './modules/local/wf-human-sv'
 
+include { cnv } from './workflows/wf-human-cnv'
+include { output_cnv } from './modules/local/wf-human-cnv'
+
 include {
     index_ref_gzi;
     index_ref_fai;
@@ -38,8 +41,8 @@ workflow {
     }
 
     can_start = true
-    if (!params.snp && !params.sv && !params.methyl) {
-        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --methyl]" + colors.reset)
+    if (!params.snp && !params.sv && !params.methyl && !params.cnv) {
+        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --cnv, --methyl]" + colors.reset)
         can_start = false
     }
 
@@ -235,6 +238,16 @@ workflow {
         methyl_stats = Channel.empty()
     }
 
+    //wf-human-cnv
+    if (params.cnv) {
+        results = cnv(
+          bam_channel,
+          bam_stats
+        )
+        output_cnv(results)
+        }
+    
+
     jb_conf = configure_jbrowse(
         ref_channel,
         bam_channel,
@@ -253,8 +266,8 @@ workflow {
             jb_conf.flatten()
         )
     )
-}
 
+}
 
 if (!params.disable_ping) {
     workflow.onComplete {

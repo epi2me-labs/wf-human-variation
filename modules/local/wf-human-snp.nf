@@ -528,7 +528,6 @@ process vcfStats {
 
 
 process makeReport {
-    label "wf_human_snp"
     input:
         file read_summary
         tuple path(mosdepth_bed), path(mosdepth_dist), path(mosdepth_threshold) // MOSDEPTH_TUPLE
@@ -569,7 +568,7 @@ process lookup_clair3_model {
         path("model/")
     shell:
     '''
-    clair3_model=$(workflow-glue resolve_clair3_model lookup_table '!{basecall_model}')
+    clair3_model=$(resolve_clair3_model.py lookup_table '!{basecall_model}')
     cp -r ${CLAIR_MODELS_PATH}/${clair3_model} model
     echo "Basecall model: !{basecall_model}"
     echo "Clair3 model  : ${clair3_model}"

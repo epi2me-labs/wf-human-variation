@@ -25,6 +25,12 @@
                     "help_text": "If this option is selected, small variant calling will be carried out using Clair3.",
                     "default": false
                 },
+                "cnv": {
+                    "type": "boolean",
+                    "description": "Call for copy number variants.",
+                    "help_text": "If this option is selected, copy number variant calling will be carried out using QDNAseq.",
+                    "default": false
+                },
                 "methyl": {
                     "type": "boolean",
                     "description": "Enable output of methylation calls to a bedMethyl file [requires input BAM with Ml and Mm tags]",
@@ -212,6 +218,30 @@
                     "default": "EMPTY",
                     "description": "The name of the sequence to be processed.",
                     "hidden": true
+                }
+            }
+        },
+        "cnv_options": {
+            "title": "Copy number variant calling options",
+            "type": "object",
+            "description": "Options related to the copy number variant subworkflow.",
+            "properties": {
+                "bin_size": {
+                    "type": "integer",
+                    "default": 500,
+                    "description": "Bin size for QDNAseq in kbp.",
+                    "help_text": "Pre-computed bin annotations are available for a range of bin sizes. Larger sizes reduce noise, however this may result in reduced sensitivity.",
+                    "enum": [
+                        1,
+                        5,
+                        10,
+                        15,
+                        30,
+                        50,
+                        100,
+                        500,
+                        1000
+                    ]
                 }
             }
         },
@@ -407,6 +437,9 @@
             "$ref": "#/definitions/methyl_options"
         },
         {
+            "$ref": "#/definitions/cnv_options"
+        },
+        {
             "$ref": "#/definitions/output"
         },
         {
@@ -443,7 +476,7 @@
         }
     },
     "docs": {
-        "intro": "## Introduction\n\nThis workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small\nvariants from long reads. Clair3 makes the best of two methods: pileup (for fast\ncalling of variant candidates in high confidence regions), and full-alignment\n(to improve precision of calls of more complex candidates).\n\nThis workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for\ncalling structural variants.\n\nThis workflow uses [modbam2bed](https://github.com/epi2me-labs/modbam2bed) to\naggregate modified base counts into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.\n\nThis workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)\nfor basecalling `pod5` or `fast5` signal data.\n\n",
+        "intro": "## Introduction\n\nThis workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small\nvariants from long reads. Clair3 makes the best of two methods: pileup (for fast\ncalling of variant candidates in high confidence regions), and full-alignment\n(to improve precision of calls of more complex candidates).\n\nThis workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for\ncalling structural variants.\n\nThis workflow uses [modbam2bed](https://github.com/epi2me-labs/modbam2bed) to\naggregate modified base counts into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.\n\nThis workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)\nfor basecalling `pod5` or `fast5` signal data.\n\nThis workflow uses [QDNAseq](https://bioconductor.org/packages/release/bioc/html/QDNAseq.html) for calling copy number variants.\n",
         "links": "## Useful links\n\n* [nextflow](https://www.nextflow.io/)\n* [docker](https://www.docker.com/products/docker-desktop)\n* [singularity](https://sylabs.io/singularity/)\n\n"
     }
 }
