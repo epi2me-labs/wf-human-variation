@@ -153,7 +153,7 @@ def main(args):
         section.markdown("### Variant calling results")
         section.markdown(
             "This section displays a summary view"
-            " of the variant calls made by cuteSV.")
+            " of the variant calls made by Sniffles2.")
 
         # Assuming we are using hg37 or 38 here
         chroms_37 = [str(x) for x in range(1, 23)] + ['X', 'Y']

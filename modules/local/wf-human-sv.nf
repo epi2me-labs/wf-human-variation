@@ -49,7 +49,6 @@ process sniffles2 {
 
 
 process filterCalls {
-    label "wf_human_sv"
     cpus 1
     input:
         file vcf
@@ -60,7 +59,7 @@ process filterCalls {
     script:
         def sv_types_joined = params.sv_types.split(',').join(" ")
     """
-    workflow-glue get_filter_calls_command \
+    get_filter_calls_command.py \
         --target_bedfile $target_bed \
         --vcf $vcf \
         --depth_bedfile $mosdepth_bed \
@@ -141,7 +140,6 @@ process getParams {
 
 
 process report {
-    label "wf_human_sv"
     cpus 1
     input:
         file vcf
