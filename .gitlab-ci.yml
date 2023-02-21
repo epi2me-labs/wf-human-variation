@@ -5,7 +5,7 @@ include:
 
 # conda, mac, simg
 variables:
-    NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-sv/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
+    NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-sv/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
     NF_PROCESS_FILES: "modules/local/wf-human-sv.nf"
     NF_IGNORE_PROCESSES: "getAllChromosomesBed,minimap2_ubam"
     NF_WORKFLOW_OPTS: "--sv --bam demo_data/test.bam --ref demo_data/chr20_human_g1k_v37_part.fasta.gz --bed demo_data/target.bed --tr_bed demo_data/human_hs37d5.trf.bed"
@@ -21,6 +21,19 @@ conda-run:
         exclude: [] # give me everything pal
 
 docker-run:
+    artifacts:
+        when: always
+        paths:
+            - ${CI_PROJECT_NAME}
+            - .nextflow.log
+        exclude:
+            - ${CI_PROJECT_NAME}/**/*.bam
+            - ${CI_PROJECT_NAME}/**/*.cram
+            - ${CI_PROJECT_NAME}/**/*.fa
+            - ${CI_PROJECT_NAME}/**/*.fna
+            - ${CI_PROJECT_NAME}/**/*.fasta
+            - ${CI_PROJECT_NAME}/**/ref_cache/**
+
     # Define a 1D job matrix to inject a variable named MATRIX_NAME into
     #   the CI environment, we can use the value of MATRIX_NAME to determine
     #   which options to apply as part of the rules block below
@@ -45,35 +58,35 @@ docker-run:
 
         - if: $MATRIX_NAME == "wf-human-snp_modelint"
           variables:
-              NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "hap"
               NF_WORKFLOW_OPTS: "--snp --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom --phase_vcf"
 
         - if: $MATRIX_NAME == "wf-human-snp_modelext"
           variables:
-              NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "hap,lookup_clair3_model"
               NF_WORKFLOW_OPTS: "--snp --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --phase_vcf"
 
         - if: $MATRIX_NAME == "wf-human-sv"
           variables:
-              NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-sv/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-sv/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-sv.nf"
               NF_IGNORE_PROCESSES: "getAllChromosomesBed,minimap2_ubam"
               NF_WORKFLOW_OPTS: "--sv --bam demo_data/test.bam --ref demo_data/chr20_human_g1k_v37_part.fasta.gz --bed demo_data/target.bed --tr_bed demo_data/human_hs37d5.trf.bed"
 
         - if: $MATRIX_NAME == "wf-human-cnv"
           variables:
-              NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-cnv/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-cnv/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-cnv.nf"
               NF_IGNORE_PROCESSES: ""
               NF_WORKFLOW_OPTS: "--cnv --bam demo_data/test.bam --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz --bin_size 500"
         
         - if: $MATRIX_NAME == "gzref-ubam-methyl"
           variables:
-              NF_BEFORE_SCRIPT: "wget -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-methyl/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-methyl/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: ""
               NF_WORKFLOW_OPTS: "--methyl --bam demo_data/demo.cram --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1"
