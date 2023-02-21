@@ -21,6 +21,7 @@ repos:
     rev: 3.7.9
     hooks:
       - id: flake8
+        pass_filenames: false
         additional_dependencies:
           - flake8-rst-docstrings
           - flake8-docstrings
@@ -31,4 +32,9 @@ repos:
           - flake8-builtins
           - flake8-absolute-import
           - flake8-print
-        entry: flake8 bin --import-order-style google --statistics --max-line-length 88
+        args: [
+            "bin",
+            "--import-order-style=google",
+            "--statistics",
+            "--max-line-length=88",
+        ]
