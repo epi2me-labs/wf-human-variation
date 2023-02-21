@@ -107,8 +107,8 @@ process aggregate_pileup_variants {
             --ref_fn !{ref} \
             --contigs_fn !{contigs}
 
-        # TODO: this is a little silly: it can take a non-trivial amount of time
-        if [ "$( bgzip -@ !{task.cpus} -fdc pileup.vcf.gz | grep -v '#' | wc -l )" -eq 0 ]; \
+        # Replaced bgzip with the faster bcftools index -n
+        if [ "$( bcftools index -n pileup.vcf.gz )" -eq 0 ]; \
         then echo "[INFO] Exit in pileup variant calling"; exit 1; fi
 
         bgzip -@ !{task.cpus} -fdc pileup.vcf.gz | \
@@ -302,7 +302,7 @@ process aggregate_full_align_variants {
             --ref_fn !{ref} \
             --contigs_fn !{contigs}
 
-        if [ "$( bgzip -fdc full_alignment.vcf.gz | grep -v '#' | wc -l )" -eq 0 ]; then
+        if [ "$( bcftools index -n full_alignment.vcf.gz )" -eq 0 ]; then
             echo "[INFO] Exit in full-alignment variant calling"
             exit 0
         fi
