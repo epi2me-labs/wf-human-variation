@@ -46,7 +46,7 @@ docker-run:
                 "wf-human-snp_modelext",
                 "wf-human-sv",
                 "wf-human-cnv",
-                "gzref-ubam-methyl",
+                "gzref-ucram-methyl",
                 "omni"
               ]
     rules:
@@ -84,12 +84,12 @@ docker-run:
               NF_IGNORE_PROCESSES: ""
               NF_WORKFLOW_OPTS: "--cnv --bam demo_data/test.bam --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz --bin_size 500"
         
-        - if: $MATRIX_NAME == "gzref-ubam-methyl"
+        - if: $MATRIX_NAME == "gzref-ucram-methyl"
           variables:
               NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-methyl/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
-              NF_PROCESS_FILES: "workflows/methyl.nf"
-              NF_IGNORE_PROCESSES: ""
-              NF_WORKFLOW_OPTS: "--methyl --bam demo_data/demo.cram --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1"
+              NF_PROCESS_FILES: "workflows/methyl.nf modules/local/common.nf"
+              NF_IGNORE_PROCESSES: "index_ref_gzi,mapula"
+              NF_WORKFLOW_OPTS: "--methyl --bam demo_data/demo.ucram --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1"
 
 
         #TODO tr_bed in test data
