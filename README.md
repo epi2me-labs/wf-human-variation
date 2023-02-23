@@ -16,6 +16,9 @@ of which are now deprecated), as well as CNV calling from wf-cnv. This pipeline 
 pipelines simultaneously and the results are generated and output in the same
 way as they would have been had the pipelines been run separately.
 
+
+
+
 ## Introduction
 
 This workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small
@@ -33,6 +36,10 @@ This workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/d
 for basecalling `pod5` or `fast5` signal data.
 
 This workflow uses [QDNAseq](https://bioconductor.org/packages/release/bioc/html/QDNAseq.html) for calling copy number variants.
+
+
+
+
 ## Quickstart
 
 The workflow uses [nextflow](https://www.nextflow.io/) to manage compute and 
@@ -156,6 +163,10 @@ The secondary outputs of the workflow include:
 - Refer to the [Dorado documentation](https://github.com/nanoporetech/dorado#available-basecalling-models) for a list of available basecalling models
 - Take care to retain the input reference when basecalling or alignment has been performed as CRAM files cannot be read without the corresponding reference!
 - Refer to our [blogpost](https://labs.epi2me.io/copy-number-calling/) and [CNV workflow documentation](https://github.com/epi2me-labs/wf-cnv) for more information on running the copy number calling subworkflow.
+
+
+
+
 ## Useful links
 
 * [nextflow](https://www.nextflow.io/)
