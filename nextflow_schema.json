@@ -37,6 +37,12 @@
                     "help_text": "If this option is selected, aggregation of methylation calls with be carried out using modbam2bed.",
                     "default": false
                 },
+                "str": {
+                    "type": "boolean",
+                    "description": "Enable Straglr to genotype STR expansions.",
+                    "help_text": "If this option is selected, genotyping of STR expansions will be carried out using Straglr. This sub-workflow is only compatible with genome build 38.",
+                    "default": false
+                },
                 "mapula": {
                     "type": "boolean",
                     "description": "Enable mapula to generate basic alignment QC statistics (can be slow on very large data sets)",
@@ -257,6 +263,23 @@
                 }
             }
         },
+        "str_options": {
+            "title": "Short tandem repeat expansion genotyping options",
+            "type": "object",
+            "description": "Options related to the STR subworkflow.",
+            "properties": {
+                "sex": {
+                    "type": "string",
+                    "default": "female",
+                    "description": "Sex (male or female) to be passed to Straglr-genotype.",
+                    "help_text": "The sex determines how many calls will be obtained for all repeats on chrX. Defaults to female if not specified.",
+                    "enum": [
+                        "male",
+                        "female"
+                    ]
+                }
+            }
+        },
         "basecalling_options": {
             "title": "Basecalling options",
             "fa_icon": "fas fa-gear",
@@ -440,6 +463,9 @@
             "$ref": "#/definitions/cnv_options"
         },
         {
+            "$ref": "#/definitions/str_options"
+        },
+        {
             "$ref": "#/definitions/output"
         },
         {
@@ -476,7 +502,7 @@
         }
     },
     "docs": {
-        "intro": "## Introduction\n\nThis workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small\nvariants from long reads. Clair3 makes the best of two methods: pileup (for fast\ncalling of variant candidates in high confidence regions), and full-alignment\n(to improve precision of calls of more complex candidates).\n\nThis workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for\ncalling structural variants.\n\nThis workflow uses [modbam2bed](https://github.com/epi2me-labs/modbam2bed) to\naggregate modified base counts into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.\n\nThis workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)\nfor basecalling `pod5` or `fast5` signal data.\n\nThis workflow uses [QDNAseq](https://bioconductor.org/packages/release/bioc/html/QDNAseq.html) for calling copy number variants.\n",
-        "links": "## Useful links\n\n* [nextflow](https://www.nextflow.io/)\n* [docker](https://www.docker.com/products/docker-desktop)\n* [singularity](https://sylabs.io/singularity/)\n\n"
+        "intro": "## Introduction\n\nThis workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small\nvariants from long reads. Clair3 makes the best of two methods: pileup (for fast\ncalling of variant candidates in high confidence regions), and full-alignment\n(to improve precision of calls of more complex candidates).\n\nThis workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for\ncalling structural variants.\n\nThis workflow uses [modbam2bed](https://github.com/epi2me-labs/modbam2bed) to\naggregate modified base counts into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.\n\nThis workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)\nfor basecalling `pod5` or `fast5` signal data.\n\nThis workflow uses [QDNAseq](https://bioconductor.org/packages/release/bioc/html/QDNAseq.html) for calling copy number variants.\n\nThis workflow uses a fork of [Straglr](https://github.com/philres/straglr) for genotyping short tandem repeat expansions.\n",
+        "links": "## Useful links\n\n* [Nextflow](https://www.nextflow.io/)\n* [Docker](https://www.docker.com/products/docker-desktop)\n* [Singularity](https://sylabs.io/singularity/)\n\n"
     }
 }

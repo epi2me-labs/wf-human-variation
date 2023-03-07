@@ -5,6 +5,8 @@ include {
     aggregate_pileup_variants;
     select_het_snps;
     phase_contig;
+    phase_contig_haplotag;
+    merge_haplotagged_contigs;
     get_qual_filter;
     create_candidates;
     evaluate_candidates;
@@ -18,6 +20,8 @@ include {
     vcfStats;
     makeReport;
 } from "../modules/local/wf-human-snp.nf"
+
+include { get_genome; } from '../modules/local/common.nf'
 
 
 // workflow module
@@ -34,6 +38,11 @@ workflow snp {
         // truncate bam channel to remove meta to keep compat with snp pipe
         bam = bam_channel.map{ it -> tuple(it[0], it[1]) }
 
+         // STR workflow only - only proceed if BAM is b38
+        if (params.str) {
+            genome = get_genome(bam)
+            genome_match_channel = genome.genome_build.ifEmpty{throw new Exception("The detected genome build is not compatible with this workflow. STRs can only be genotyped when aligned to build 38.)")}
+        }
         // Run preliminaries to find contigs and generate regions to process in
         // parallel.
         // > Step 0
@@ -62,10 +71,28 @@ workflow snp {
         // `each` doesn't work with tuples, so we have to make the product ourselves
         phase_inputs = select_het_snps.out.het_snps_vcf
             .combine(bam).combine(ref)
-        // > Step 3 (Step 4 haplotag step removed in clair3 v0.1.11)
-        phase_contig(phase_inputs)
-        phase_contig.out.phased_bam_and_vcf.set { phased_bam_and_vcf }
+        // > Step 3
+        // > Step 4 (haplotagging performed as part of STR sub-workflow only)
 
+        if (params.str) {
+            phase_contig_haplotag(phase_inputs)
+            phase_contig_haplotag.out.phased_bam_and_vcf.set { phased_bam_and_vcf }
+
+            phase_contig_haplotag.out.phased_bam_and_vcf.map{it -> tuple(it[0], it[1], it[2])}.set { bam_for_str }
+            // Merge the haplotagged contigs into a single BAM
+            phase_contig_haplotag.out.phased_bam_and_vcf.collect{it[1]}.set { contig_bams }
+            haplotagged_bam = merge_haplotagged_contigs(contig_bams)
+
+        }
+        else {
+            phase_contig(phase_inputs)
+            phase_contig.out.phased_bam_and_vcf.set { phased_bam_and_vcf }
+            // SNP only so we don't need these
+            bam_for_str = Channel.empty()
+            haplotagged_bam = Channel.empty()
+        }
+
+        
         // Find quality filter to select variants for "full alignment"
         // processing, then generate bed files containing the candidates.
         // > Step 5
@@ -100,6 +127,7 @@ workflow snp {
                 model: it[3]
             }.set { mangled }
         // phew! Run all-the-things
+
         evaluate_candidates(
             mangled.bams, mangled.candidates, mangled.ref, mangled.model)
 
@@ -139,6 +167,7 @@ workflow snp {
         if (params.phase_vcf) {
             data = merge_pileup_and_full_vars.out.merged_vcf
                 .combine(bam).combine(ref)
+            
             post_clair_phase_contig(data)
                 .map { it -> [it[1]] }
                 .set { final_vcfs }
@@ -168,6 +197,7 @@ workflow snp {
         telemetry = workflow_params
 
     emit:
-        clair_final.concat().concat(report).flatten()
+        clair_final.concat().concat(report).concat(haplotagged_bam).flatten()
+        bam_for_str
         telemetry
 }

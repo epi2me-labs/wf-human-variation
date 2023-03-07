@@ -1,13 +1,13 @@
 import groovy.json.JsonBuilder
 
 include {
-    getGenome;
     getVersions;
     getParams;
     callCNV;
     makeReport
 } from "../modules/local/wf-human-cnv.nf"
 
+include { get_genome; } from '../modules/local/common.nf'
 
 workflow cnv {
     take:
@@ -18,8 +18,8 @@ workflow cnv {
         // truncate bam channel to remove meta to keep compat with cnv pipe
         bam = bam_channel.map{ it -> tuple(it[0], it[1]) }
 
-        genome = getGenome(bam)
-        genome_match_channel = genome.genome_build.ifEmpty{exit 1, log.error('The genome build detected in the BAM is not compatible with this workflow.')}
+        genome = get_genome(bam)
+        genome_match_channel = genome.genome_build.ifEmpty{throw new Exception("The genome build detected in the BAM is not compatible with this workflow.)")}
 
         cnvs = callCNV(bam, genome.genome_build)
 

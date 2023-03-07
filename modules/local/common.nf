@@ -187,3 +187,19 @@ process minimap2_ubam {
     """
 }
 
+
+process get_genome {
+    cpus 1
+    input:
+        tuple path(bam), path(bai)
+    output:
+        path("${bam}_genome.txt")
+        path("output.txt"), emit: genome_label optional true
+        env genome_string, emit: genome_build optional true
+     script:
+        """
+        samtools idxstats ${bam} > ${bam}_genome.txt
+        get_genome.py --chr_counts ${bam}_genome.txt -o output.txt -w str
+        genome_string=`cat output.txt`
+        """
+}
