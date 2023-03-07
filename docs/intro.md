@@ -15,3 +15,5 @@ This workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/d
 for basecalling `pod5` or `fast5` signal data.
 
 This workflow uses [QDNAseq](https://bioconductor.org/packages/release/bioc/html/QDNAseq.html) for calling copy number variants.
+
+This workflow uses a fork of [Straglr](https://github.com/philres/straglr) for genotyping short tandem repeat expansions.

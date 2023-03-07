@@ -11,6 +11,8 @@ include { output_sv } from './modules/local/wf-human-sv'
 include { cnv } from './workflows/wf-human-cnv'
 include { output_cnv } from './modules/local/wf-human-cnv'
 
+include { output_str } from './modules/local/wf-human-str'
+
 include {
     index_ref_gzi;
     index_ref_fai;
@@ -30,19 +32,17 @@ include {
 include { basecalling } from './workflows/basecalling'
 include { methyl; } from './workflows/methyl'
 
+include { str } from './workflows/wf-human-str'
+
 // entrypoint workflow
 WorkflowMain.initialise(workflow, params, log)
 workflow {
 
     Map colors = NfcoreTemplate.logColours(params.monochrome_logs)
 
-    if (workflow.profile.contains("conda")) {
-        throw new Exception(colors.red + "Sorry, wf-human-variation is not compatible with --profile conda, please use --profile standard (Docker) or --profile singularity." + colors.reset)
-    }
-
     can_start = true
-    if (!params.snp && !params.sv && !params.methyl && !params.cnv) {
-        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --cnv, --methyl]" + colors.reset)
+    if (!params.snp && !params.sv && !params.methyl && !params.cnv && !params.str) {
+        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --cnv, --str, --methyl]" + colors.reset)
         can_start = false
     }
 
@@ -78,7 +78,6 @@ workflow {
         ref_index_fp = file(params.ref + ".fai")
     }
     if (params.fast5_dir) {
-
 
         // Basecall fast5 input
         if (params.bam) {
@@ -182,9 +181,8 @@ workflow {
         mapula_stats = Channel.empty()
     }
 
-    // wf-human-snp
-    if (params.snp) {
-
+    // wf-human-snp or wf-human-str
+    if (params.snp || params.str) {
         if(default_bed_set) {
             // wf-human-snp uses OPTIONAL_FILE for empty bed for legacy reasons
             snp_bed = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
@@ -247,6 +245,18 @@ workflow {
         output_cnv(results)
         }
     
+    // wf-human-str
+    if(params.str) {
+        // use haplotagged bam from snp() as input to str()
+        bam_channel_str = clair_vcf[1]
+
+        results = str(
+          bam_channel_str,
+          ref_channel,
+          bam_stats
+        )
+        output_str(results)
+    }
 
     jb_conf = configure_jbrowse(
         ref_channel,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Check BAM header and return genome build based on chromosome sizes."""
 
-from .util import wf_parser  # noqa: ABS101
+import argparse
 
 
 CHROMOSOME_SIZES = {
@@ -60,9 +60,8 @@ CHROMOSOME_SIZES = {
 
 ALLOWED_CHR = [
     "chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9",
-    "chr10", "chr11", "chr12", "chr11", "chr12", "chr13", "chr14", "chr15",
-    "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrX",
-    "chrY"
+    "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17",
+    "chr18", "chr19", "chr20", "chr21", "chr22", "chrX", "chrY"
 ]
 
 
@@ -79,31 +78,37 @@ def chromosome_sizes(extracted_sizes):
     return fasta_sizes
 
 
-def get_genome(sizes):
+def get_genome(sizes, workflow):
     """Get genome based on chromosome sizes."""
     genome = ""
     for i in CHROMOSOME_SIZES.keys():
         if sizes.items() <= CHROMOSOME_SIZES[i].items():
             genome = i
+    if (workflow == "str") and (genome != "hg38"):
+        genome = ""
     return genome
 
 
-def main(args):
+def main():
     """Run entry point."""
-    all_sizes = chromosome_sizes(args.chr_counts)
-
-    genome = get_genome(all_sizes)
-    result = open(args.output, 'w')
-    result.write(genome)
-
-
-def argparser():
-    """Argument parser for entrypoint."""
-    parser = wf_parser("get_genome")
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         '--chr_counts', required=True, dest="chr_counts",
         help="Output from samtools faidx")
     parser.add_argument(
-        '-o', '--output', dest="output",
+        '-o', '--output', required=True, dest="output",
         help="Output genome")
-    return parser
+    parser.add_argument(
+        '-w', '--workflow', dest="workflow",
+        help="STR")
+    args = parser.parse_args()
+
+    all_sizes = chromosome_sizes(args.chr_counts)
+
+    genome = get_genome(all_sizes, args.workflow)
+    result = open(args.output, 'w')
+    result.write(genome)
+
+
+if __name__ == '__main__':
+    main()

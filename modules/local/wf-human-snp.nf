@@ -1,5 +1,6 @@
 import groovy.json.JsonBuilder
 
+
 process make_chunks {
     // Do some preliminaries. Ordinarily this would setup a working directory
     // that all other commands would make use off, but all we need here are the
@@ -141,6 +142,43 @@ process select_het_snps {
         '''
 }
 
+process phase_contig_haplotag {
+    // Tags reads in an input BAM from heterozygous SNPs
+    // Also haplotag for those modes that need it (--str)
+
+    label "wf_human_snp"
+    cpus 4
+    input:
+        tuple val(contig), path(het_snps), path(het_snps_tbi), path(bam), path(bai), path(ref), path(fai), path(ref_cache)
+    output:
+        tuple val(contig), path("${contig}_hp.bam"), path("${contig}_hp.bam.bai"), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
+    shell:
+        '''
+            echo "Using whatshap for phasing"
+            whatshap phase \
+                --output phased_!{contig}.vcf.gz \
+                --reference !{ref} \
+                --chromosome !{contig} \
+                --distrust-genotypes \
+                --ignore-read-groups \
+                !{het_snps} \
+                !{bam}
+
+        tabix -f -p vcf phased_!{contig}.vcf.gz
+
+        whatshap haplotag \
+            --reference !{ref} \
+            --ignore-read-groups \
+            --regions !{contig} \
+            phased_!{contig}.vcf.gz \
+            !{bam} \
+        | samtools view -b -1 -@3 -o !{contig}_hp.bam
+
+        # --write-index produces .csi not .bai, which downstream things seem not to like
+        samtools index -@!{task.cpus} !{contig}_hp.bam
+
+        '''
+}
 
 process phase_contig {
     // Tags reads in an input BAM from heterozygous SNPs
@@ -179,6 +217,19 @@ process phase_contig {
         '''
 }
 
+process merge_haplotagged_contigs {
+    cpus params.threads
+    // merge the haplotagged contigs to produce a single BAM file
+    label "wf_human_snp"
+    input:
+        path contig_bams
+    output:
+        tuple path("*haplotagged.bam"), path("*haplotagged.bam.bai"), emit: merged_bam
+    """
+    samtools merge -@ $task.cpus -o ${params.sample_name}.haplotagged.bam ${contig_bams}
+    samtools index -@ $task.cpus ${params.sample_name}.haplotagged.bam
+    """
+}
 
 process get_qual_filter {
     // Determines quality filter for selecting candidate variants for second
