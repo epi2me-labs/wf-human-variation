@@ -88,6 +88,12 @@
                     "help_text": "Required for basecalling and small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. Refer to the [model table on the Dorado repository for selecting a simplex basecalling model](https://github.com/nanoporetech/dorado#available-basecalling-models).",
                     "default": "dna_r10.4.1_e8.2_400bps_sup@v4.0.0"
                 },
+                "bam_min_coverage": {
+                    "type": "number",
+                    "default": 20,
+                    "description": "Minimum read coverage required to run analysis.",
+                    "hidden": false
+                },
                 "bed": {
                     "type": "string",
                     "format": "file-path",
