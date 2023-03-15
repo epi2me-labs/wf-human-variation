@@ -171,7 +171,7 @@ The secondary outputs of the workflow include:
 - Take care to retain the input reference when basecalling or alignment has been performed as CRAM files cannot be read without the corresponding reference!
 - Refer to our [blogpost](https://labs.epi2me.io/copy-number-calling/) and [CNV workflow documentation](https://github.com/epi2me-labs/wf-cnv) for more information on running the copy number calling subworkflow.
 - The STR workflow performs genotyping of specific repeats, which can be found [here](https://github.com/epi2me-labs/wf-human-variation/blob/master/data/wf_str_repeats.bed), and is only compatible with genome build 38.
-
+- The workflow does not support starting from FASTQ directly. If you wish to start from FASTQ, convert your FASTQ to an unaligned BAM file format first, which you can then use with the `--bam` option. This can be done, for example, using [Picard FastqToSam](https://broadinstitute.github.io/picard/command-line-overview.html#FastqToSam).
 
 
 
