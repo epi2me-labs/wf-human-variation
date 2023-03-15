@@ -2,7 +2,7 @@
 """Create workflow report."""
 
 from aplanat import annot, hist, report
-from aplanat.components import bcfstats, depthcoverage
+from aplanat.components import depthcoverage
 from aplanat.components import simple as scomponents
 from aplanat.report import WFReport
 from aplanat.util import Colors
@@ -70,17 +70,17 @@ def main(args):
             "workflow provided by Oxford Nanopore Technologies"))
 
     report_doc = WFReport(
-        "Workflow Human SNP", "wf-human-snp",
+        "Low-coverage bam QC", "wf-human-variation",
         revision=args.revision, commit=args.commit)
+
     section = report_doc.add_section()
-    section.markdown("""
+    section.markdown(f"""
 ### Read Quality control
 This section displays basic QC metrics indicating read data quality.
+This dataset was not processed by the workflow as it did not meet the minimum
+bam coverage of {args.low_cov}x required.
 """)
     section.plot(plot_qc_stats(args.read_stats))
-    # canned VCF stats report component
-    section = report_doc.add_section()
-    bcfstats.full_report(args.vcf_stats, report=section)
 
     if args.read_depth:
         section = report_doc.add_section()
@@ -96,7 +96,7 @@ This section displays basic QC metrics indicating read data quality.
 
 def argparser():
     """Create argument parser."""
-    parser = wf_parser("report")
+    parser = wf_parser("report_qc")
 
     parser.add_argument("report", help="Report output file")
     parser.add_argument(
@@ -115,10 +115,10 @@ def argparser():
         "--commit", default='unknown',
         help="git commit of the executed workflow")
     parser.add_argument(
-        "--vcf_stats", default='unknown',
-        help="final vcf stats file")
-    parser.add_argument(
         "--read_depth", default="unknown",
         help="read coverage output from mosdepth")
+    parser.add_argument(
+        "--low_cov", default="unknown",
+        help="define if the QC report should be for low-cov bam")
 
     return parser

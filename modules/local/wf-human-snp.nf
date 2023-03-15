@@ -594,7 +594,7 @@ process makeReport {
             wfversion = workflow.commitId
         }
         """
-        workflow-glue report \
+        workflow-glue report_snp \
         $report_name \
         --versions $versions \
         --params params.json \

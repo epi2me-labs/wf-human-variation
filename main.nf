@@ -23,7 +23,11 @@ include {
     mapula;
     getAllChromosomesBed;
     publish_artifact;
-    configure_jbrowse; } from './modules/local/common'
+    configure_jbrowse;
+    get_coverage; 
+    failedQCReport; 
+    getParams; 
+    getVersions; } from './modules/local/common'
 
 include {
     bam_ingress;
@@ -167,7 +171,7 @@ workflow {
 
     // mosdepth for depth traces -- passed into wf-snp :/
     mosdepth(bam_channel, bed, ref_channel)
-    mosdepth_stats = mosdepth.out
+    mosdepth_stats = mosdepth.out[0]
 
     // readStats for alignment and QC -- passed into wf-snp :/
     readStats(bam_channel, bed, ref_channel)
@@ -179,6 +183,49 @@ workflow {
     }
     else {
         mapula_stats = Channel.empty()
+    }
+    
+    // Determine if the coverage threshold is met to perform analysis.
+    // If too low, it creates an empty input channel, 
+    // avoiding the subsequent processes to do anything
+    if (params.bam_min_coverage > 0){
+        // Define if a dataset passes or not the filtering
+        get_coverage(mosdepth.out[1])
+        // Combine with the bam and branch by passing the depth filter
+        get_coverage.out.pass
+            .combine(bam_channel)
+            .branch{ 
+                pass: it[0] == "true" 
+                not_pass: it[0] == "false" 
+                }
+            .set{bamdepth_filter}
+        // Create the pass_bam_channel  channel when they pass
+        bamdepth_filter.pass
+            .map{it ->
+                it.size > 0 ? [it[2], it[3], it[4]] : it
+            }
+            .set{pass_bam_channel }
+        // If it doesn't pass the minimum depth required, 
+        // emit a bam channel of discarded bam files.
+        bamdepth_filter.not_pass
+            .map{it ->
+                it.size > 0 ? [it[1], it[2], it[3], it[4]] : it
+            }
+            .set{discarded_bams}
+        discarded_bams
+            .subscribe {
+                log.error "ERROR: File ${it[1].getName()} will not be processed by the workflow as the detected coverage of ${it[0]}x is below the minimum coverage threshold of ${params.bam_min_coverage}x required for analysis."
+            }
+        // Create a report if the discarded bam channel is not empty.
+        software_versions = getVersions()
+        workflow_params = getParams()
+        report = failedQCReport(
+            discarded_bams, bam_stats, mosdepth_stats,
+            software_versions.collect(), workflow_params)
+    } else {
+        // If the bam_min_depth is 0, then run as usual.
+        bam_channel.set{pass_bam_channel }
+        report = Channel.empty()
     }
 
     // wf-human-snp or wf-human-str
@@ -203,7 +250,7 @@ workflow {
         }
 
         clair_vcf = snp(
-            bam_channel,
+            pass_bam_channel ,
             snp_bed,
             ref_channel,
             mosdepth_stats,
@@ -217,7 +264,7 @@ workflow {
     if(params.sv) {
 
         results = sv(
-            bam_channel,
+            pass_bam_channel ,
             ref_channel,
             bed,
             mosdepth_stats,
@@ -229,7 +276,7 @@ workflow {
 
     // wf-human-methyl
     if (params.methyl) {
-        results = methyl(bam_channel, ref_channel)
+        results = methyl(pass_bam_channel , ref_channel)
         methyl_stats = results.modbam2bed.flatten()
     }
     else {
@@ -239,7 +286,7 @@ workflow {
     //wf-human-cnv
     if (params.cnv) {
         results = cnv(
-          bam_channel,
+          pass_bam_channel ,
           bam_stats
         )
         output_cnv(results)
@@ -273,7 +320,8 @@ workflow {
             mosdepth_stats.flatten(),
             methyl_stats.flatten(),
             mapula_stats.flatten(),
-            jb_conf.flatten()
+            jb_conf.flatten(),
+            report.flatten()
         )
     )
 

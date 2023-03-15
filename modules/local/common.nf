@@ -1,3 +1,5 @@
+import groovy.json.JsonBuilder
+
 process cram_cache {
     input:
         path reference
@@ -65,6 +67,7 @@ process mosdepth {
             path("${params.sample_name}.regions.bed.gz"),
             path("${params.sample_name}.mosdepth.global.dist.txt"),
             path("${params.sample_name}.thresholds.bed.gz")
+        path "${params.sample_name}.mosdepth.summary.txt"
     script:
         """
         export REF_PATH=${ref}
@@ -201,5 +204,79 @@ process get_genome {
         samtools idxstats ${bam} > ${bam}_genome.txt
         get_genome.py --chr_counts ${bam}_genome.txt -o output.txt -w str
         genome_string=`cat output.txt`
+        """
+}
+
+
+// Process to get the genome coverage from the mosdepth summary.
+process get_coverage {
+    cpus 1
+    input:
+        path mosdepth_summary
+
+    output:
+        tuple env(passes), env(value), emit: pass
+    shell:
+        '''
+        passes=$( awk 'BEGIN{v="false"}; NR>1 && $1=="total_region" && $4>=!{params.bam_min_coverage} {v="true"}; END {print v}' !{mosdepth_summary} )
+        value=$( awk 'BEGIN{v=0}; NR>1 && $1=="total_region" {v=$4}; END {print v}' !{mosdepth_summary} )
+        '''
+}
+
+
+// Make bam QC reporting.
+process failedQCReport  {
+    cpus 1
+    input:
+        tuple val(cvg), path(xam), path(xam_idx), val(xam_meta)
+        file read_summary
+        tuple path(mosdepth_bed), path(mosdepth_dist), path(mosdepth_threshold) // MOSDEPTH_TUPLE
+        path versions
+        path "params.json"
+    output:
+        path "*report.html"
+    script:
+        report_name = "${params.sample_name}.wf-human-qc-report.html"
+        wfversion = workflow.manifest.version
+        if( workflow.commitId ){
+            wfversion = workflow.commitId
+        }
+        """
+        workflow-glue report_qc \
+            $report_name \
+            --versions $versions \
+            --params params.json \
+            --read_stats $read_summary \
+            --read_depth $mosdepth_dist \
+            --revision $wfversion \
+            --commit $workflow.commitId \
+            --low_cov ${params.bam_min_coverage}
+        """
+}
+
+
+// Create version of bamstats and mosdepth, as
+// well as get parameters for reporting.
+process getVersions {
+    cpus 1
+    output:
+        path "versions.txt"
+    script:
+        """
+        mosdepth --version | sed 's/ /,/' >> versions.txt
+        bamstats --version | awk '{print "bamstats,"\$1}' >> versions.txt
+        """
+}
+
+
+process getParams {
+    cpus 1
+    output:
+        path "params.json"
+    script:
+        def paramsJSON = new JsonBuilder(params).toPrettyString()
+        """
+        # Output nextflow params object to JSON
+        echo '$paramsJSON' > params.json
         """
 }
