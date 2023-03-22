@@ -66,9 +66,11 @@ process mosdepth {
         tuple \
             path("${params.sample_name}.regions.bed.gz"),
             path("${params.sample_name}.mosdepth.global.dist.txt"),
-            path("${params.sample_name}.thresholds.bed.gz")
-        path "${params.sample_name}.mosdepth.summary.txt"
+            path("${params.sample_name}.thresholds.bed.gz"), emit: mosdepth_tuple
+        path "${params.sample_name}.mosdepth.summary.txt", emit: summary
+        path("${params.sample_name}.per-base.bed.gz"), emit: perbase, optional: true
     script:
+        def perbase_args = params.depth_intervals ? "" : "--no-per-base"
         """
         export REF_PATH=${ref}
         export MOSDEPTH_PRECISION=3
@@ -77,7 +79,7 @@ process mosdepth {
         -t $task.cpus \
         -b ${target_bed} \
         --thresholds 1,10,20,30 \
-        --no-per-base \
+        ${perbase_args} \
         ${params.sample_name} \
         $xam
         """
