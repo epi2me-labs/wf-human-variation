@@ -385,6 +385,12 @@
                     "default": "output",
                     "format": "directory-path",
                     "description": "Directory for output of all workflow results."
+                },
+                "depth_intervals": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Output a bedGraph file with entries for each genomic interval featuring homogeneous depth.",
+                    "help_text": "The output [bedGraph](https://genome.ucsc.edu/goldenPath/help/bedgraph.html) file will have an entry for each genomic interval in which all positions have the same alignment depth. By default this workflow outputs summary depth information from your aligned reads. Per-base depth outputs are slower to generate but may be required for some downstream applications."
                 }
             }
         },

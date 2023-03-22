@@ -171,7 +171,8 @@ workflow {
 
     // mosdepth for depth traces -- passed into wf-snp :/
     mosdepth(bam_channel, bed, ref_channel)
-    mosdepth_stats = mosdepth.out[0]
+    mosdepth_stats = mosdepth.out.mosdepth_tuple
+    mosdepth_perbase = mosdepth.out.perbase
 
     // readStats for alignment and QC -- passed into wf-snp :/
     readStats(bam_channel, bed, ref_channel)
@@ -190,7 +191,7 @@ workflow {
     // avoiding the subsequent processes to do anything
     if (params.bam_min_coverage > 0){
         // Define if a dataset passes or not the filtering
-        get_coverage(mosdepth.out[1])
+        get_coverage(mosdepth.out.summary)
         // Combine with the bam and branch by passing the depth filter
         get_coverage.out.pass
             .combine(bam_channel)
@@ -318,6 +319,7 @@ workflow {
             bam_fail.flatten(),
             bam_stats.flatten(),
             mosdepth_stats.flatten(),
+            mosdepth_perbase.flatten(),
             methyl_stats.flatten(),
             mapula_stats.flatten(),
             jb_conf.flatten(),
