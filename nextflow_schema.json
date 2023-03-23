@@ -266,6 +266,12 @@
                     "type": "string",
                     "description": "Additional command line arguments to pass to the modbam2bed process",
                     "hidden": true
+                },
+                "phase_methyl": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Generate phased methylation data.",
+                    "help_text": "Enabling this will output two [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) files of methylated sites for each haplotype (named SAMPLE.hapN, where N can be 1 or 2) by leveraging phased reads generated using the small variant calling subworkflow. This option will automatically enable the small variant and methylation subworkflows."
                 }
             }
         },
