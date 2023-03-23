@@ -1,43 +1,81 @@
-"""Script to check that sample sheet is well-formatted."""
+"""Check if a sample sheet is valid."""
+import csv
 import sys
-
-import pandas as pd
 
 from .util import get_named_logger, wf_parser  # noqa: ABS101
 
 
 def main(args):
-    """Run entry point."""
-    logger = get_named_logger("check-sheet")
+    """Run the entry point."""
+    logger = get_named_logger("checkSheet")
+
+    barcodes = []
+    aliases = []
+    types = []
 
     try:
-        logger.info(f"Reading {args.sample_sheet}.")
-        samples = pd.read_csv(args.sample_sheet, sep=None)
-        if 'alias' in samples.columns:
-            if 'sample_id' in samples.columns:
-                sys.stderr.write(
-                    "Warning: sample sheet contains both 'alias' and "
-                    'sample_id, using the former.')
-            samples['sample_id'] = samples['alias']
-        if not set(['sample_id', 'barcode']).intersection(samples.columns):
-            raise IOError()
-    except Exception:
-        raise IOError(
-            "Could not parse sample sheet, it must contain two columns "
-            "named 'barcode' and 'sample_id' or 'alias'.")
-    # check duplicates
-    dup_bc = samples['barcode'].duplicated()
-    dup_sample = samples['sample_id'].duplicated()
-    if any(dup_bc) or any(dup_sample):
-        raise IOError(
-            "Sample sheet contains duplicate values.")
-    samples.to_csv(args.output, sep=",", index=False)
-    logger.info(f"Written cleaned-up sheet to {args.output}.")
+        with open(args.sample_sheet, "r") as f:
+            csv_reader = csv.DictReader(f)
+            n_row = 0
+            for row in csv_reader:
+                n_row += 1
+                if n_row == 1:
+                    n_cols = len(row)
+                else:
+                    # check we got the same number of fields
+                    if len(row) != n_cols:
+                        raise ValueError(
+                            f"Unexpected number of cells in row number {n_row}."
+                        )
+                try:
+                    barcodes.append(row["barcode"])
+                except KeyError:
+                    sys.stdout.write("'barcode' column missing")
+                    exit()
+                try:
+                    aliases.append(row["alias"])
+                except KeyError:
+                    sys.stdout.write("'alias' column missing")
+                    exit()
+                try:
+                    types.append(row["type"])
+                except KeyError:
+                    pass
+    except Exception as e:
+        sys.stdout.write(f"Parsing error: {e}")
+        exit()
+
+    # check barcode and alias values are unique
+    if len(barcodes) > len(set(barcodes)):
+        sys.stdout.write("values in 'barcode' column not unique")
+        exit()
+    if len(aliases) > len(set(aliases)):
+        sys.stdout.write("values in 'alias' column not unique")
+        exit()
+
+    if types:
+        # check if "type" column has unexpected values
+        unexp_type_vals = set(types) - set(
+            [
+                "test_sample",
+                "positive_control",
+                "negative_control",
+                "no_template_control",
+            ]
+        )
+        if unexp_type_vals:
+            sys.stdout.write(
+                f"found unexpected values in 'type' column: {unexp_type_vals}. "
+                "allowed values are: `['test_sample', 'positive_control', "
+                "'negative_control', 'no_template_control']`"
+            )
+            exit()
+
+    logger.info(f"Checked sample sheet {args.sample_sheet}.")
 
 
 def argparser():
     """Argument parser for entrypoint."""
-    parser = wf_parser("check-sample-sheet")
-    parser.add_argument('sample_sheet')
-    parser.add_argument('output')
+    parser = wf_parser("check_sample_sheet")
+    parser.add_argument("sample_sheet", help="Sample sheet to check")
     return parser
