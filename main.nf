@@ -45,8 +45,8 @@ workflow {
     Map colors = NfcoreTemplate.logColours(params.monochrome_logs)
 
     can_start = true
-    if (!params.snp && !params.sv && !params.methyl && !params.cnv && !params.str) {
-        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --cnv, --str, --methyl]" + colors.reset)
+    if (!params.snp && !params.sv && !params.methyl && !params.cnv && !params.str && !params.phase_methyl) {
+        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --cnv, --str, --methyl, --phase_methyl]" + colors.reset)
         can_start = false
     }
 
@@ -61,12 +61,11 @@ workflow {
     }
 
     // check snp has basecaller config for clair3 model lookup
-    if(params.snp) {
+    if(params.snp || params.phase_methyl) {
         if(!params.basecaller_cfg && !params.clair3_model_path) {
             throw new Exception(colors.red + "You must provide a basecaller profile with --basecaller_cfg <profile> to ensure the right Clair3 model is chosen!" + colors.reset)
         }
     }
-
 
     // Check ref and decompress if needed
     ref = null
@@ -117,7 +116,6 @@ workflow {
 
         check_bam = params.bam
     }
-
 
     // ************************************************************************
     // Bail from the workflow for a reason we should have already specified
@@ -229,8 +227,8 @@ workflow {
         report = Channel.empty()
     }
 
-    // wf-human-snp or wf-human-str
-    if (params.snp || params.str) {
+    // Set up BED for wf-human-snp, wf-human-str or --phase_methyl
+    if (params.snp || params.str || params.phase_methyl) {
         if(default_bed_set) {
             // wf-human-snp uses OPTIONAL_FILE for empty bed for legacy reasons
             snp_bed = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
@@ -258,7 +256,7 @@ workflow {
             bam_stats,
             clair3_model,
         )
-        output_snp(clair_vcf[0].flatten())
+        output_snp(clair_vcf.clair3_results.flatten())
     }
 
     // wf-human-sv
@@ -276,8 +274,12 @@ workflow {
     }
 
     // wf-human-methyl
-    if (params.methyl) {
-        results = methyl(pass_bam_channel , ref_channel)
+    if (params.methyl || params.phase_methyl) {
+        if (params.phase_methyl){
+            results = methyl(clair_vcf.hp_bams, ref_channel)
+        } else {
+            results = methyl(pass_bam_channel, ref_channel)
+        }
         methyl_stats = results.modbam2bed.flatten()
     }
     else {
@@ -296,7 +298,7 @@ workflow {
     // wf-human-str
     if(params.str) {
         // use haplotagged bam from snp() as input to str()
-        bam_channel_str = clair_vcf[1]
+        bam_channel_str = clair_vcf.str_bams
 
         results = str(
           bam_channel_str,

@@ -74,7 +74,7 @@ workflow snp {
         // > Step 3
         // > Step 4 (haplotagging performed as part of STR sub-workflow only)
 
-        if (params.str) {
+        if (params.str || params.phase_methyl) {
             phase_contig_haplotag(phase_inputs)
             phase_contig_haplotag.out.phased_bam_and_vcf.set { phased_bam_and_vcf }
 
@@ -197,7 +197,8 @@ workflow snp {
         telemetry = workflow_params
 
     emit:
-        clair_final.concat().concat(report).concat(haplotagged_bam).flatten()
-        bam_for_str
-        telemetry
+        clair3_results = clair_final.concat().concat(report).concat(haplotagged_bam).flatten()
+        str_bams = bam_for_str
+        hp_bams = haplotagged_bam.combine(bam_channel.map{it[2]})
+        telemetry = telemetry
 }
