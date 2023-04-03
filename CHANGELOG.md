@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--phase_methyl` will output haplotype-level methylation calls, using the HP tags added by whatshap in the wf-human-snp workflow
 ### Changed
 - Added coverage barrier to wf-human-variation
+### Fixed
+- Fix bug in `report_sv.py` causing the script to crash when the VCF is empty 
 
 ## [v1.3.0]
 ### Added

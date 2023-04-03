@@ -19,8 +19,11 @@ vcf_cols = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
 
 def read_vcf(fname):
     """Read a VCF file."""
-    df = pd.read_csv(fname, comment='#', header=None, delimiter='\t')
-    df = df.rename(columns=dict(enumerate(vcf_cols)))
+    try:
+        df = pd.read_csv(fname, comment='#', header=None, delimiter='\t')
+        df = df.rename(columns=dict(enumerate(vcf_cols)))
+    except pd.errors.EmptyDataError:
+        df = pd.DataFrame()
     return df
 
 
@@ -161,85 +164,88 @@ def main(args):
         sv_colours = ['red', 'green']
 
         vcf_df = read_vcf(sample_vcf)
-        vcf_df = expand_column(vcf_df)
-        vcf_df = vcf_df.drop('RNAMES', 1)
-        vcf_df['CHROM'] = vcf_df['CHROM'].astype(str)
-        vcf_df['SVLEN'] = vcf_df['SVLEN'].astype(int)
-        vcf_df['CHROM'] = vcf_df['CHROM'].str.replace('chr', '')
-        vcf_df = vcf_df.loc[vcf_df['CHROM'].isin(chroms_37)]
+        if vcf_df.empty:
+            section.markdown("The workflow found no structural variants to report.")
+        else:
+            vcf_df = expand_column(vcf_df)
+            vcf_df = vcf_df.drop('RNAMES', 1)
+            vcf_df['CHROM'] = vcf_df['CHROM'].astype(str)
+            vcf_df['SVLEN'] = vcf_df['SVLEN'].astype(int)
+            vcf_df['CHROM'] = vcf_df['CHROM'].str.replace('chr', '')
+            vcf_df = vcf_df.loc[vcf_df['CHROM'].isin(chroms_37)]
 
-        table = get_sv_summary_table(vcf_df)
-        karyograms = gridplot(
-            get_sv_karyograms(vcf_df, sv_types, sv_colours),
-            ncols=2)
-        size_plots = gridplot(
-            get_sv_size_plots(vcf_df, sv_types, sv_colours),
-            ncols=2)
+            table = get_sv_summary_table(vcf_df)
+            karyograms = gridplot(
+                get_sv_karyograms(vcf_df, sv_types, sv_colours),
+                ncols=2)
+            size_plots = gridplot(
+                get_sv_size_plots(vcf_df, sv_types, sv_colours),
+                ncols=2)
 
-        section.table(
-            table,
-            index=True,
-            sortable=False,
-            paging=False,
-            searchable=False)
-        section.plot(
-            layout(
-                [karyograms],
-                [size_plots],
-                sizing_mode="stretch_width"))
+            section.table(
+                table,
+                index=True,
+                sortable=False,
+                paging=False,
+                searchable=False)
+            section.plot(
+                layout(
+                    [karyograms],
+                    [size_plots],
+                    sizing_mode="stretch_width"))
 
-        if not args.eval_results:
+            if not args.eval_results:
+                section.markdown(
+                    "This report was generated without evaluation"
+                    " results. To see them, re-run the workflow with"
+                    " --mode benchmark set.")
+                continue
+
+            #
+            # Evaluation results
+            #
+            section.markdown("### Evaluation results")
+            data = None
+            with open(args.eval_results[index]) as f:
+                data = json.load(f)
+            section = report_doc.add_section()
             section.markdown(
-                "This report was generated without evaluation"
-                " results. To see them, re-run the workflow with"
-                " --mode benchmark set.")
-            continue
-
-        #
-        # Evaluation results
-        #
-        section.markdown("### Evaluation results")
-        data = None
-        with open(args.eval_results[index]) as f:
-            data = json.load(f)
-        section = report_doc.add_section()
-        section.markdown(
-            "This sections displays the truvari"
-            " evaluation metrics for your SV calls.")
-        exec_summary = aplanat.graphics.InfoGraphItems()
-        exec_summary.append(
-            "TP-call",
-            "{:.2f}".format(data['TP-call']),
-            "chart-pie"
-        )
-        exec_summary.append(
-            "FP",
-            "{:.2f}".format(data['FP']),
-            "chart-pie"
-        )
-        exec_summary.append(
-            "FN",
-            "{:.2f}".format(data['FN']),
-            "chart-pie"
-        )
-        exec_summary.append(
-            "F1",
-            "{:.2f}".format(data['f1']),
-            "chart-pie"
-        )
-        exec_summary.append(
-            "Precision",
-            "{:.2f}".format(data['precision']),
-            "chart-pie"
-        )
-        exec_summary.append(
-            "Recall",
-            "{:.2f}".format(data['recall']),
-            "chart-pie"
-        )
-        exec_plot = aplanat.graphics.infographic(
-            exec_summary.values(), ncols=4)
-        section.plot(exec_plot, key="exec-plot")
+                "This sections displays the truvari"
+                " evaluation metrics for your SV calls.")
+            exec_summary = aplanat.graphics.InfoGraphItems()
+            exec_summary.append(
+                "TP-call",
+                "{:.2f}".format(data['TP-call']),
+                "chart-pie"
+            )
+            exec_summary.append(
+                "FP",
+                "{:.2f}".format(data['FP']),
+                "chart-pie"
+            )
+            exec_summary.append(
+                "FN",
+                "{:.2f}".format(data['FN']),
+                "chart-pie"
+            )
+            exec_summary.append(
+                "F1",
+                "{:.2f}".format(data['f1']),
+                "chart-pie"
+            )
+            exec_summary.append(
+                "Precision",
+                "{:.2f}".format(data['precision']),
+                "chart-pie"
+            )
+            exec_summary.append(
+                "Recall",
+                "{:.2f}".format(data['recall']),
+                "chart-pie"
+            )
+            exec_plot = aplanat.graphics.infographic(
+                exec_summary.values(), ncols=4)
+            section.plot(exec_plot, key="exec-plot")
 
     #
     # Params reporting
