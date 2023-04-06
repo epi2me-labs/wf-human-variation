@@ -281,8 +281,12 @@ def make_report(
             str_status = stranger_annotations.loc[stranger_annotations[
                 'VARID'] == repeat]['STR_STATUS'].to_string(index=False)
             all_status = str_status.split(",")
+            if not (0 < len(all_status) <= 2):
+                raise ValueError(f"Invalid number of alleles at site {repeat}")
+            # Use the first and last status in the list.
+            # If the list report one allele only, it will report the same value
             str_status1 = all_status[0]
-            str_status2 = all_status[1]
+            str_status2 = all_status[-1]
 
             max_copy_number = max(merged[merged['VARID'] == repeat][
                 'copy_number'].values)
@@ -297,9 +301,11 @@ def make_report(
 
             end = merged[merged['VARID'] == repeat]['end'].unique()[0]
 
+            # Use the first allele.
             allele1 = merged[merged['VARID'] == repeat]['allele'].unique()[0]
 
-            allele2 = merged[merged['VARID'] == repeat]['allele'].unique()[1]
+            # Use the last allele (equal to the first if one allele only).
+            allele2 = merged[merged['VARID'] == repeat]['allele'].unique()[-1]
 
             size1 = merged[
                 (merged['VARID'] == repeat) &
