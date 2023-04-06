@@ -113,8 +113,7 @@ process getVersions {
     """
     trap '' PIPE # suppress SIGPIPE without interfering with pipefail
     python -c "import pysam; print(f'pysam,{pysam.__version__}')" >> versions.txt
-    TRUVARI=\$(which truvari)
-    python \$TRUVARI version | sed 's/ /,/' >> versions.txt
+    truvari version | sed 's/ /,/' >> versions.txt
     fastcat --version | sed 's/^/fastcat,/' >> versions.txt
     sniffles --version | head -n 1 | sed 's/ Version //' >> versions.txt
     bcftools --version | head -n 1 | sed 's/ /,/' >> versions.txt

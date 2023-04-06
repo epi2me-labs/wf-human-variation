@@ -400,6 +400,33 @@
                 }
             }
         },
+        "sv_benchmark_options": {
+            "title": "Structural variant benchmarking options",
+            "type": "object",
+            "description": "Options specific to automated benchmarking of the SV calling subworkflow.",
+            "properties": {
+                "sv_benchmark": {
+                    "type": "boolean",
+                    "description": "Benchmark called structural variants.",
+                    "help_text": "If this option is selected, automated benchmarking of structural variant calls will be carried out using Truvari.",
+                    "default": false
+                },
+                "sv_benchmark_vcf": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Override truthset VCF for benchmarking structural variants.",
+                    "help_text": "This option will use a custom VCF in place of the one bundled with the default 'NIST_SVs_Integration_v0.6' truth set. A Tabix index is required and will be expected to have the same path as the VCF with a '.tbi' extension.",
+                    "hidden": true
+                },
+                "sv_benchmark_bed": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Override truthset BED for benchmarking structural variants.",
+                    "help_text": "This option will use a custom BED in place of the one bundled with the default 'NIST_SVs_Integration_v0.6' truth set.",
+                    "hidden": true
+                }
+            }
+        },
         "multiprocessing_options": {
             "title": "Multiprocessing Options",
             "type": "object",
@@ -485,6 +512,9 @@
         },
         {
             "$ref": "#/definitions/output"
+        },
+        {
+            "$ref": "#/definitions/sv_benchmark_options"
         },
         {
             "$ref": "#/definitions/multiprocessing_options"
