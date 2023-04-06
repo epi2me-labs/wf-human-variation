@@ -67,6 +67,11 @@ workflow {
         }
     }
 
+    // check SV calling will be done when benchmarking SV calls
+    if(params.sv_benchmark && !params.sv) {
+        throw new Exception(colors.red + "Cannot benchmark SV subworkflow without running SV subworkflow! Enable the SV subworkflow with --sv." + colors.reset)
+    }
+
     // Check ref and decompress if needed
     ref = null
     ref_index_fp = null

@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `--depth_intervals` will output a bedGraph file with entries for each genomic interval featuring homogeneous depth
 - `--phase_methyl` will output haplotype-level methylation calls, using the HP tags added by whatshap in the wf-human-snp workflow
+- `--sv_benchmark` will benchmark SV calls with Truvari
+    - The workflow uses the 'NIST_SVs_Integration_v0.6' truth set and benchmarking should be carried out on HG002 data.
 ### Changed
 - Added coverage barrier to wf-human-variation
 ### Fixed
