@@ -154,6 +154,8 @@ process phase_contig_haplotag {
         tuple val(contig), path("${contig}_hp.bam"), path("${contig}_hp.bam.bai"), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
     shell:
         '''
+        # REF_PATH points to the reference cache and allows faster parsing of CRAM files
+        export REF_PATH=!{ref_cache}/%2s/%2s/%s
             echo "Using whatshap for phasing"
             whatshap phase \
                 --output phased_!{contig}.vcf.gz \
@@ -194,6 +196,8 @@ process phase_contig {
         tuple val(contig), path(bam), path(bai), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
     shell:
         '''
+        # REF_PATH points to the reference cache and allows faster parsing of CRAM files
+        export REF_PATH=!{ref_cache}/%2s/%2s/%s
         if [[ "!{params.use_longphase_intermediate}" == "true" ]]; then
             echo "Using longphase for phasing"
             # longphase needs decompressed 
@@ -421,6 +425,8 @@ process post_clair_phase_contig {
         tuple val(contig), path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"), emit: vcf
     shell:
         '''
+        # REF_PATH points to the reference cache and allows faster parsing of CRAM files
+        export REF_PATH=!{ref_cache}/%2s/%2s/%s
         if [[ "!{params.use_longphase}" == "true" ]]; then
             echo "Using longphase for phasing"
             # longphase needs decompressed 
