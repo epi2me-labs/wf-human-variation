@@ -13,8 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Added coverage barrier to wf-human-variation
 ### Fixed
-- Fix bug in `report_sv.py` causing the script to crash when the VCF is empty 
-- Fix bug in `report_str.py` causing the script to crash when a STR has just one allelic form 
+- `report_sv.py` now handles empty VCF files
+- `report_str.py` now handles mono-allelic STR 
+- WhatsHap processes do not block for long time with CRAM inputs due to missing REF_PATH
 
 ## [v1.3.0]
 ### Added
