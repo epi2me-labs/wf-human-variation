@@ -72,12 +72,14 @@ process mosdepth {
     script:
         def perbase_args = params.depth_intervals ? "" : "--no-per-base"
         """
+        # extract first 3 columns of input BED to prevent col 4 leaking as label into outputs [CW-1702]
+        awk -v OFS='\\t' '{print \$1, \$2, \$3}' ${target_bed} > cut.bed
         export REF_PATH=${ref}
         export MOSDEPTH_PRECISION=3
         mosdepth \
         -x \
         -t $task.cpus \
-        -b ${target_bed} \
+        -b cut.bed \
         --thresholds 1,10,20,30 \
         ${perbase_args} \
         ${params.sample_name} \

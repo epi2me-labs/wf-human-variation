@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `report_sv.py` now handles empty VCF files
 - `report_str.py` now handles mono-allelic STR 
 - WhatsHap processes do not block for long time with CRAM inputs due to missing REF_PATH
+- filterCalls failure when input BED has more than three columns
 
 ## [v1.3.0]
 ### Added
