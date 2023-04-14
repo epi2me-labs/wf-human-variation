@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - The workflow uses the 'NIST_SVs_Integration_v0.6' truth set and benchmarking should be carried out on HG002 data.
 ### Changed
 - Added coverage barrier to wf-human-variation
+- Updated to Oxford Nanopore Technologies PLC. Public License
 ### Fixed
 - `report_sv.py` now handles empty VCF files
 - `report_str.py` now handles mono-allelic STR 
