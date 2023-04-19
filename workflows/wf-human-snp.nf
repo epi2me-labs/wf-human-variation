@@ -21,8 +21,6 @@ include {
     makeReport;
 } from "../modules/local/wf-human-snp.nf"
 
-include { get_genome; } from '../modules/local/common.nf'
-
 
 // workflow module
 workflow snp {
@@ -38,11 +36,6 @@ workflow snp {
         // truncate bam channel to remove meta to keep compat with snp pipe
         bam = bam_channel.map{ it -> tuple(it[0], it[1]) }
 
-         // STR workflow only - only proceed if BAM is b38
-        if (params.str) {
-            genome = get_genome(bam)
-            genome_match_channel = genome.genome_build.ifEmpty{throw new Exception("The detected genome build is not compatible with this workflow. STRs can only be genotyped when aligned to build 38.)")}
-        }
         // Run preliminaries to find contigs and generate regions to process in
         // parallel.
         // > Step 0

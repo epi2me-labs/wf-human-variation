@@ -27,7 +27,8 @@ include {
     get_coverage; 
     failedQCReport; 
     getParams; 
-    getVersions; } from './modules/local/common'
+    getVersions;
+    getGenome; } from './modules/local/common'
 
 include {
     bam_ingress;
@@ -153,6 +154,17 @@ workflow {
             ref_index,
             check_bam,
         )
+    }
+
+    // Check if the genome build in the BAM is suitable for any workflows that have restrictions
+    // NOTE getGenome will exit non-zero if the build is neither hg19 or hg38, so don't call it unless needed
+    if (params.str || params.cnv){
+        // CNV requires hg19 or hg38
+        // STR requires hg38
+        genome_build = getGenome(bam_channel)
+    }
+    else {
+        genome_build = null // only CNV consumes genome_build currently
     }
 
     // Build ref cache for CRAM steps that do not take a reference
@@ -294,11 +306,12 @@ workflow {
     //wf-human-cnv
     if (params.cnv) {
         results = cnv(
-          pass_bam_channel ,
-          bam_stats
+            pass_bam_channel,
+            bam_stats,
+            genome_build
         )
         output_cnv(results)
-        }
+    }
     
     // wf-human-str
     if(params.str) {
