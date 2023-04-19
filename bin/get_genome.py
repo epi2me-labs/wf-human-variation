@@ -2,6 +2,8 @@
 """Check BAM header and return genome build based on chromosome sizes."""
 
 import argparse
+import os
+import sys
 
 
 CHROMOSOME_SIZES = {
@@ -78,15 +80,28 @@ def chromosome_sizes(extracted_sizes):
     return fasta_sizes
 
 
-def get_genome(sizes, workflow):
+def get_genome(sizes):
     """Get genome based on chromosome sizes."""
-    genome = ""
-    for i in CHROMOSOME_SIZES.keys():
-        if sizes.items() <= CHROMOSOME_SIZES[i].items():
-            genome = i
-    if (workflow == "str") and (genome != "hg38"):
-        genome = ""
-    return genome
+    if not sizes:
+        return ""
+    for known_genome_build in CHROMOSOME_SIZES.keys():
+        if sizes.items() <= CHROMOSOME_SIZES[known_genome_build].items():
+            return known_genome_build
+    return ""
+
+
+def check_genome(genome_build, workflow):
+    """Determine if genome is suitable for this workflow."""
+    bad_genome = False
+    extra_msg_context = ""
+    if not genome_build:
+        bad_genome = True
+    elif workflow == "str" and genome_build != "hg38":
+        bad_genome = True
+        extra_msg_context = (
+            f"Detected genome: {genome_build}, but STRs can only be genotyped "
+            "when aligned to build 38.\n")
+    return (bad_genome, extra_msg_context)
 
 
 def main():
@@ -100,14 +115,25 @@ def main():
         help="Output genome")
     parser.add_argument(
         '-w', '--workflow', dest="workflow",
-        help="STR")
+        help="Subworkflow name")
     args = parser.parse_args()
 
     all_sizes = chromosome_sizes(args.chr_counts)
 
-    genome = get_genome(all_sizes, args.workflow)
+    genome_build = get_genome(all_sizes)
+    bad_genome, extra_msg_context = check_genome(genome_build, args.workflow)
+
+    # explode on bad genome
+    if bad_genome:
+        sys.stderr.write(
+            "The genome build detected in the BAM is not compatible with "
+            "this workflow.\n")
+        sys.stderr.write(extra_msg_context)
+        sys.exit(os.EX_DATAERR)
+
+    # otherwise write out the genome name
     result = open(args.output, 'w')
-    result.write(genome)
+    result.write(genome_build)
 
 
 if __name__ == '__main__':

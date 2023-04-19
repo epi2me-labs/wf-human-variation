@@ -63,14 +63,14 @@ docker-run:
           variables:
               NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
-              NF_IGNORE_PROCESSES: "hap,phase_contig_haplotag,merge_haplotagged_contigs,get_genome,get_coverage,getVersions,getParams,failedQCReport"
+              NF_IGNORE_PROCESSES: "hap,phase_contig_haplotag,merge_haplotagged_contigs,getGenome,get_coverage,getVersions,getParams,failedQCReport"
               NF_WORKFLOW_OPTS: "--snp --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom --phase_vcf --bam_min_coverage 0.00001"
 
         - if: $MATRIX_NAME == "wf-human-snp_modelext"
           variables:
               NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
-              NF_IGNORE_PROCESSES: "hap,lookup_clair3_model,phase_contig_haplotag,merge_haplotagged_contigs,get_genome,get_coverage,getVersions,getParams,failedQCReport"
+              NF_IGNORE_PROCESSES: "hap,lookup_clair3_model,phase_contig_haplotag,merge_haplotagged_contigs,getGenome,get_coverage,getVersions,getParams,failedQCReport"
               NF_WORKFLOW_OPTS: "--snp --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --phase_vcf --bam_min_coverage 0.00001"
 
         - if: $MATRIX_NAME == "wf-human-snp_covblock"
@@ -78,7 +78,7 @@ docker-run:
               NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "hap,lookup_clair3_model,phase_contig_haplotag,merge_haplotagged_contigs,\
-                                    get_genome,aggregate_all_variants,aggregate_full_align_variants,aggregate_pileup_variants,create_candidates,\
+                                    getGenome,aggregate_all_variants,aggregate_full_align_variants,aggregate_pileup_variants,create_candidates,\
                                     evaluate_candidates,get_qual_filter,makeReport,make_chunks,merge_pileup_and_full_vars,output_snp,phase_contig,\
                                     pileup_variants,post_clair_phase_contig,select_het_snps,vcfStats"
               NF_WORKFLOW_OPTS: "--snp --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --phase_vcf --bam_min_coverage 100"
@@ -101,14 +101,14 @@ docker-run:
           variables:
               NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-methyl/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "workflows/methyl.nf modules/local/common.nf"
-              NF_IGNORE_PROCESSES: "index_ref_gzi,mapula,get_genome,get_coverage,getVersions,getParams,failedQCReport"
+              NF_IGNORE_PROCESSES: "index_ref_gzi,mapula,getGenome,get_coverage,getVersions,getParams,failedQCReport"
               NF_WORKFLOW_OPTS: "--methyl --bam demo_data/demo.ucram --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 --bam_min_coverage 0.00001"
 
         - if: $MATRIX_NAME == "gzref-bam-methyl-hap"
           variables:
               NF_BEFORE_SCRIPT: "wget -qO demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-str/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "workflows/methyl.nf modules/local/common.nf"
-              NF_IGNORE_PROCESSES: "minimap2_ubam,index_ref_gzi,mapula,get_genome,get_coverage,getVersions,getParams,failedQCReport"
+              NF_IGNORE_PROCESSES: "minimap2_ubam,index_ref_gzi,mapula,getGenome,get_coverage,getVersions,getParams,failedQCReport"
               NF_WORKFLOW_OPTS: "--methyl --bam demo_data/demo.bam --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 --bam_min_coverage 0.00001 --phase_methyl"
 
         - if: $MATRIX_NAME == "wf-human-str"

@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `report_str.py` now handles mono-allelic STR 
 - WhatsHap processes do not block for long time with CRAM inputs due to missing REF_PATH
 - filterCalls failure when input BED has more than three columns
+- get_genome assumed STR subworkflow was always enabled, preventing CNV analysis with hg19
+- "genome build (...) is not compatible with this workflow" was incorrectly thrown when the workflow stopped before calling get_genome
 
 ## [v1.3.0]
 ### Added

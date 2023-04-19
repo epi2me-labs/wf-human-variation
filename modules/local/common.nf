@@ -195,19 +195,18 @@ process minimap2_ubam {
 }
 
 
-process get_genome {
+process getGenome {
     cpus 1
     input:
-        tuple path(bam), path(bai)
+        tuple path(xam), path(xam_idx), val(xam_meta)
     output:
-        path("${bam}_genome.txt")
-        path("output.txt"), emit: genome_label optional true
-        env genome_string, emit: genome_build optional true
+        env genome_build, emit: genome_build optional true
      script:
+        def workflow_arg = params.str ? "-w str" : ""
         """
-        samtools idxstats ${bam} > ${bam}_genome.txt
-        get_genome.py --chr_counts ${bam}_genome.txt -o output.txt -w str
-        genome_string=`cat output.txt`
+        samtools idxstats ${xam} > ${xam}_genome.txt
+        get_genome.py --chr_counts ${xam}_genome.txt -o output.txt ${workflow_arg}
+        genome_build=`cat output.txt`
         """
 }
 
