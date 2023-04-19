@@ -41,8 +41,8 @@ workflow {
     Map colors = NfcoreTemplate.logColours(params.monochrome_logs)
 
     can_start = true
-    if (!params.snp && !params.sv && !params.methyl && !params.cnv && !params.str) {
-        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --cnv, --str, --methyl]" + colors.reset)
+    if (!params.fast5_dir && !params.snp && !params.sv && !params.methyl && !params.cnv && !params.str) {
+        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--fast5_dir, --snp, --sv, --cnv, --str, --methyl]" + colors.reset)
         can_start = false
     }
 
