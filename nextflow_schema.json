@@ -230,6 +230,13 @@
                     "default": "EMPTY",
                     "description": "The name of the sequence to be processed.",
                     "hidden": true
+                },
+                "skip_refine_snp_with_sv": {
+                    "type": "boolean",
+                    "hidden": true,
+                    "default": false,
+                    "description": "Do not refine SNP calls using calls from the SV subworkflow.",
+                    "help_text": "By default when the SNP and SV subworkflows are both selected, the workflow will use the results of the SV subworkflow to refine the SNP calls. Enabling this option will disable the use of SV calls to refine low-coverage variant zygosity and variant phase to avoid impossible overlaps (e.g. homozygous SNPs falling in a large deletion called by Sniffles)."
                 }
             }
         },

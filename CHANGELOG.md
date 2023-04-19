@@ -8,10 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `--depth_intervals` will output a bedGraph file with entries for each genomic interval featuring homogeneous depth
 - `--phase_methyl` will output haplotype-level methylation calls, using the HP tags added by whatshap in the wf-human-snp workflow
+- `--bam_min_coverage` adds a coverage barrier to bam files preventing downstream anayses
 - `--sv_benchmark` will benchmark SV calls with Truvari
     - The workflow uses the 'NIST_SVs_Integration_v0.6' truth set and benchmarking should be carried out on HG002 data.
 ### Changed
 - Added coverage barrier to wf-human-variation
+- When the SNP and SV subworkflows are both selected, the workflow will use the results of the SV subworkflow to refine the SNP calls
+    - This new behaviour can be disabled with `--skip_refine_snp_with_sv`
 - Updated to Oxford Nanopore Technologies PLC. Public License
 ### Fixed
 - `report_sv.py` now handles empty VCF files
