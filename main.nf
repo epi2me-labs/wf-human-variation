@@ -244,6 +244,22 @@ workflow {
         report = Channel.empty()
     }
 
+    // wf-human-sv
+    if(params.sv) {
+        results = sv(
+            pass_bam_channel ,
+            ref_channel,
+            bed,
+            mosdepth_stats,
+            OPTIONAL
+        )
+        artifacts = results.report.flatten()
+        sniffles_vcf = results.sniffles_vcf
+        output_sv(artifacts)
+    } else {
+        sniffles_vcf = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
+    }
+    
     // Set up BED for wf-human-snp, wf-human-str or --phase_methyl
     if (params.snp || params.str || params.phase_methyl) {
         if(default_bed_set) {
@@ -266,28 +282,15 @@ workflow {
         }
 
         clair_vcf = snp(
-            pass_bam_channel ,
+            pass_bam_channel,
             snp_bed,
             ref_channel,
             mosdepth_stats,
             bam_stats,
             clair3_model,
+            sniffles_vcf
         )
         output_snp(clair_vcf.clair3_results.flatten())
-    }
-
-    // wf-human-sv
-    if(params.sv) {
-
-        results = sv(
-            pass_bam_channel ,
-            ref_channel,
-            bed,
-            mosdepth_stats,
-            OPTIONAL
-        )
-        artifacts = results[0].flatten()
-        output_sv(artifacts)
     }
 
     // wf-human-methyl

@@ -43,11 +43,12 @@ workflow bam {
             mosdepth_stats,
             benchmark_result)
     emit:
-        report.html.concat(
+        report = report.html.concat(
             called.vcf,
             called.vcf_index,
             benchmark_result,
         )
+        sniffles_vcf = called.vcf
 }
 
 

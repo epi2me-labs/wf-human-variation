@@ -14,6 +14,7 @@ include {
     merge_pileup_and_full_vars;
     post_clair_phase_contig;
     aggregate_all_variants;
+    refine_with_sv;
     hap;
     getParams;
     getVersions;
@@ -31,6 +32,7 @@ workflow snp {
         mosdepth_stats
         read_stats
         model
+        sniffles_vcf
     main:
 
         // truncate bam channel to remove meta to keep compat with snp pipe
@@ -180,17 +182,32 @@ workflow snp {
             params.phase_vcf,
             make_chunks.out.contigs_file)
 
+        // Refine the SNP phase using SVs from Sniffles
+        if (!params.skip_refine_snp_with_sv && params.sv){
+            // If we request phase_methyl or str, then we use the haplotagged
+            // bam files (because why not).
+            if (params.str || params.phase_methyl){
+                bam_for_refinement = haplotagged_bam
+            } else {
+                bam_for_refinement = bam
+            }
+            final_snp_vcf = refine_with_sv(ref, clair_final.final_vcf, bam_for_refinement, sniffles_vcf)
+        } else {
+            // If refine_with_sv not requested, emit clair_final instead
+            final_snp_vcf = clair_final.final_vcf
+        }
+
         // reporting
         software_versions = getVersions()
         workflow_params = getParams()
-        vcf_stats = vcfStats(clair_final.final_vcf)
+        vcf_stats = vcfStats(final_snp_vcf)
         report = makeReport(
             read_stats, mosdepth_stats, vcf_stats[0],
             software_versions.collect(), workflow_params)
         telemetry = workflow_params
 
     emit:
-        clair3_results = clair_final.concat().concat(report).concat(haplotagged_bam).flatten()
+        clair3_results = final_snp_vcf.concat(clair_final.final_gvcf).concat(report).concat(haplotagged_bam).flatten()
         str_bams = bam_for_str
         hp_bams = haplotagged_bam.combine(bam_channel.map{it[2]})
         telemetry = telemetry

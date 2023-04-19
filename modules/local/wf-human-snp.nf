@@ -503,6 +503,29 @@ process aggregate_all_variants{
 }
 
 
+process refine_with_sv {
+    label "wf_human_snp"
+    cpus 1
+    input:
+        tuple path(ref), path(fai), path(ref_cache) 
+        tuple path(clair_vcf, stageAs: 'clair.vcf.gz'), path(clair_tbi, stageAs: 'clair.vcf.gz.tbi')
+        tuple path(xam), path(xai) // this may be a haplotagged_bam or input CRAM 
+        path sniffles_vcf
+    output:
+        tuple path("${params.sample_name}.wf_snp.vcf.gz"), path("${params.sample_name}.wf_snp.vcf.gz.tbi"), emit: final_vcf
+    shell:
+        '''
+        export REF_PATH=!{ref_cache}/%2s/%2s/%s
+        pypy $(which clair3.py) SwitchZygosityBasedOnSVCalls \\
+            --bam_fn !{xam} \\
+            --clair3_vcf_input clair.vcf.gz \\
+            --sv_vcf_input !{sniffles_vcf} \\
+            --vcf_output ./!{params.sample_name}.wf_snp.vcf \\
+            --threads !{task.cpus}
+        '''
+}
+
+
 process hap {
     label "happy"
     input:
