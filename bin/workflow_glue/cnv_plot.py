@@ -183,21 +183,19 @@ def read_length_plot(read_lengths):
 
     plt = histplot(data=histogram_data, binwidth=100)
 
-    xaxis = list()
-    xaxis.append({
+    xaxis = {
         'name': "Read length",
         'nameGap': '30',
         'nameTextStyle': {'fontSize': '16', 'fontStyle': 'bold'},
         'nameLocation': 'middle'
-    })
+    }
 
-    yaxis = list()
-    yaxis.append({
+    yaxis = {
         'name': "Number of reads",
         'nameGap': '60',
         'nameTextStyle': {'fontSize': '16', 'fontStyle': 'bold'},
         'nameLocation': 'middle'
-    })
+    }
 
     plt.xAxis = xaxis
     plt.yAxis = yaxis

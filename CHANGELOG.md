@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v1.4.0]
 ### Added
+- Workflow outputs alignment statistics report when alignment has been performed
+### Changed
+- Bumped base container to use samtools 1.17 to prevent user reported segfault during minimap2_ubam process
+
+## [v1.4.0]
+### Added
 - `--depth_intervals` will output a bedGraph file with entries for each genomic interval featuring homogeneous depth
 - `--phase_methyl` will output haplotype-level methylation calls, using the HP tags added by whatshap in the wf-human-snp workflow
 - `--sv_benchmark` will benchmark SV calls with Truvari
