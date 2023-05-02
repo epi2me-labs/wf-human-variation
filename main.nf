@@ -26,6 +26,7 @@ include {
     configure_jbrowse;
     get_coverage; 
     failedQCReport; 
+    makeAlignmentReport; 
     getParams; 
     getVersions;
     getGenome; } from './modules/local/common'
@@ -187,11 +188,16 @@ workflow {
     // mosdepth for depth traces -- passed into wf-snp :/
     mosdepth(bam_channel, bed, ref_channel)
     mosdepth_stats = mosdepth.out.mosdepth_tuple
-    mosdepth_perbase = mosdepth.out.perbase
-
+    if (params.depth_intervals){
+        mosdepth_perbase = mosdepth.out.perbase
+    } else {
+        mosdepth_perbase = Channel.from("$projectDir/data/OPTIONAL_FILE")
+    }
+    
     // readStats for alignment and QC -- passed into wf-snp :/
     readStats(bam_channel, bed, ref_channel)
-    bam_stats = readStats.out
+    bam_stats = readStats.out.read_stats
+    bam_flag = readStats.out.flagstat
 
     if (params.mapula) {
         mapula(bam_channel, bed, ref_channel)
@@ -235,13 +241,29 @@ workflow {
         // Create a report if the discarded bam channel is not empty.
         software_versions = getVersions()
         workflow_params = getParams()
-        report = failedQCReport(
+        report_fail = failedQCReport(
             discarded_bams, bam_stats, mosdepth_stats,
             software_versions.collect(), workflow_params)
+
+        // Create passing bam report
+        report_pass = pass_bam_channel
+                    .combine(bam_stats)
+                    .combine(bam_flag)
+                    .combine(software_versions.collect())
+                    .combine(workflow_params)
+                    .flatten()
+                    .collect() | makeAlignmentReport
     } else {
-        // If the bam_min_depth is 0, then run as usual.
-        bam_channel.set{pass_bam_channel }
-        report = Channel.empty()
+        // If the bam_min_depth is 0, then create alignment report for everything.
+        bam_channel.set{pass_bam_channel}
+        report_fail = Channel.empty()
+        report_pass = pass_bam_channel
+                    .combine(bam_stats)
+                    .combine(bam_flag)
+                    .combine(software_versions.collect())
+                    .combine(workflow_params)
+                    .flatten()
+                    .collect() | makeAlignmentReport
     }
 
     // wf-human-sv
@@ -346,7 +368,8 @@ workflow {
             methyl_stats.flatten(),
             mapula_stats.flatten(),
             jb_conf.flatten(),
-            report.flatten()
+            report_pass.flatten(),
+            report_fail.flatten()
         )
     )
 

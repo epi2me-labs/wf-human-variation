@@ -114,12 +114,13 @@ process readStats {
         path target_bed
         tuple path(ref), path(ref_idx), path(ref_cache)
     output:
-        path "${params.sample_name}.readstats.tsv.gz"
+        path "${params.sample_name}.readstats.tsv.gz", emit: read_stats
+        path "${params.sample_name}.flagstat.tsv", emit: flagstat
     script:
         def ref_path = "${ref_cache}/%2s/%2s/%s:" + System.getenv("REF_PATH")
         """
         export REF_PATH="${ref_path}"
-        bamstats --threads 3 "${xam}" | gzip > "${params.sample_name}.readstats.tsv.gz"
+        bamstats -s ${params.sample_name} -u -f ${params.sample_name}.flagstat.tsv --threads 3 "${xam}" | gzip > "${params.sample_name}.readstats.tsv.gz"
         """
 }
 
@@ -256,6 +257,32 @@ process failedQCReport  {
             --low_cov ${params.bam_min_coverage}
         """
 }
+
+// Alignment report
+process makeAlignmentReport {
+    input: 
+        tuple path(xam),
+            path(xam_idx),
+            val(xam_meta),
+            path("readstats/*"),
+            path("flagstats/*"),
+            path("versions.txt"),
+            path("params.json")
+
+    output:
+        path "*.html"
+
+    script:
+        """
+        workflow-glue report_al \\
+            --name wf-human-variation \\
+            --stats_dir readstats/ \\
+            --flagstat_dir flagstats/ \\
+            --versions versions.txt \\
+            --params params.json 
+        """
+}
+
 
 
 // Create version of bamstats and mosdepth, as
