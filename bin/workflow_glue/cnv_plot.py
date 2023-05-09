@@ -471,7 +471,7 @@ def make_report(
             'Detailed CNV Results', 'Details'):
 
         p("QDNASeq Smoothed Read Counts")
-        p(f"Bin size {bin_size}Mb, No call not displayed")
+        p(f"Bin size {bin_size}Kbp, No call not displayed")
         EZChart(
             copy_number_plot(
                 df_smoothed_read_counts, chr_sizes, "scatter"),
