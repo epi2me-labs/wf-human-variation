@@ -72,10 +72,12 @@ process mosdepth {
     script:
         def perbase_args = params.depth_intervals ? "" : "--no-per-base"
         """
-        # extract first 3 columns of input BED to prevent col 4 leaking as label into outputs [CW-1702]
-        awk -v OFS='\\t' '{print \$1, \$2, \$3}' ${target_bed} > cut.bed
         export REF_PATH=${ref}
         export MOSDEPTH_PRECISION=3
+        # extract first 3 columns of input BED to prevent col 4 leaking as label into outputs [CW-1702]
+        # and convert them into windows of the given size [CW-2015]
+        bedtools makewindows -b ${target_bed} -w ${params.depth_window_size} > cut.bed
+        # Run mosdepth
         mosdepth \
         -x \
         -t $task.cpus \
@@ -266,6 +268,7 @@ process makeAlignmentReport {
             val(xam_meta),
             path("readstats/*"),
             path("flagstats/*"),
+            path("depths/*"),
             path("versions.txt"),
             path("params.json")
 
@@ -278,6 +281,7 @@ process makeAlignmentReport {
             --name wf-human-variation \\
             --stats_dir readstats/ \\
             --flagstat_dir flagstats/ \\
+            --depths_dir depths/ \\
             --versions versions.txt \\
             --params params.json 
         """

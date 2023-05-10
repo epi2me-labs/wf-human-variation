@@ -52,7 +52,7 @@ process filterCalls {
     cpus 1
     input:
         file vcf
-        tuple path(mosdepth_bed), path(mosdepth_dist), path(mosdepth_threshold) // MOSDEPTH_TUPLE
+        path mosdepth_summary // MOSDEPTH_TUPLE
         file target_bed
     output:
         path "*.filtered.vcf", emit: vcf
@@ -62,7 +62,7 @@ process filterCalls {
     get_filter_calls_command.py \
         --target_bedfile $target_bed \
         --vcf $vcf \
-        --depth_bedfile $mosdepth_bed \
+        --depth_summary $mosdepth_summary \
         --min_sv_length $params.min_sv_length \
         --max_sv_length $params.max_sv_length \
         --sv_types $sv_types_joined \
@@ -142,8 +142,6 @@ process report {
     cpus 1
     input:
         file vcf
-        file read_stats
-        tuple path(mosdepth_bed), path(mosdepth_dist), path(mosdepth_threshold) // MOSDEPTH_TUPLE
         file eval_json
         file versions
         path "params.json"
@@ -151,14 +149,11 @@ process report {
         path "*report.html", emit: html
     script:
         def report_name = "${params.sample_name}.wf-human-sv-report.html"
-        def readStats = read_stats ? "--reads_summary ${read_stats}" : ""
         def evalResults = eval_json.name != 'OPTIONAL_FILE' ? "--eval_results ${eval_json}" : ""
     """
     workflow-glue report_sv \
         $report_name \
         --vcf $vcf \
-        $readStats \
-        --read_depth $mosdepth_dist \
         --params params.json \
         --params-hidden 'help,schema_ignore_params,${params.schema_ignore_params}' \
         --versions $versions \

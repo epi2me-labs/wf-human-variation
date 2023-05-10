@@ -7,7 +7,7 @@ import ezcharts as ezc  # noqa: I202
 from ezcharts.components.ezchart import EZChart
 from ezcharts.layout.snippets import Grid, Progress, Tabs
 
-THEME = "epi2melabs"
+from .common import CHROMOSOMES, THEME  # noqa: ABS101
 
 
 def histogram_with_mean_and_median(
@@ -225,3 +225,73 @@ def mapping(report, stats_df_mapped):
                     x_axis_name="Coverage [%]",
                     y_axis_name="Number of reads",
                 )
+
+
+def depths(report, depth_df):
+    """Create depth section.
+
+    This section contains a plot with depth coverage vs. genome position on the left and
+    relative cumulative coverage (i.e. percentage of genome covered to at least a
+    certain depth vs. depth) on the right.
+
+    :param report: report object (`ezcharts.components.reports.labs.LabsReport`)
+    :param depth_df: `pd.DataFrame` with depth data.
+    """
+    with report.add_section("Depth of coverage", "Depth"):
+        dom_tags.p(
+            """
+            This section illustrates the depth of coverage of the reference genomes. The
+            plot shows coverage vs. genomic position (note that the coordinates on
+            the x-axis are the positions along the concatenated reference including all
+            reference sequences in the respective reference file).
+            """
+        )
+        # If the dataframe is empty, state it
+        if depth_df.empty:
+            dom_tags.p(
+                """
+                The depth file is empty.
+                """
+            )
+        # Otherwise, plot the coverage
+        else:
+            tabs = Tabs()
+            for sample_name, df_samp_file in depth_df.groupby("sample_name"):
+                # prepare data for depth vs coordinate plot
+                df_depth_vs_coords = (
+                    df_samp_file.eval("mean_pos = (start + end) / 2")
+                    .eval("step = end - start")
+                    .reset_index()
+                )
+                # Sort column by chromosome number
+                df_depth_vs_coords.sort_values(
+                    by=["chrom", "start"],
+                    key=lambda chrom: chrom.map(CHROMOSOMES)
+                    )
+                # Reordering
+                df_depth_vs_coords['chrom'] = \
+                    df_depth_vs_coords.chrom.cat.remove_unused_categories()
+                df_depth_vs_coords['chrom'] = \
+                    df_depth_vs_coords.chrom.cat.reorder_categories(
+                    [i for i in df_depth_vs_coords.chrom.unique()])
+                # Extract ref lengths
+                ref_lengths = df_depth_vs_coords.groupby(
+                    "chrom", observed=True, sort=False)["end"].last()
+                total_ref_starts = ref_lengths.cumsum().shift(1, fill_value=0)
+                # Add cumulative depth
+                df_depth_vs_coords["total_mean_pos"] = df_depth_vs_coords.apply(
+                    lambda x: x.mean_pos + total_ref_starts[x.chrom], axis=1)
+                # prepare data for cumulative depth plot
+                with tabs.add_tab(sample_name):
+                    plt = ezc.lineplot(
+                        data=df_depth_vs_coords.round(2),
+                        x="total_mean_pos",
+                        y="depth",
+                        hue="chrom",
+                    )
+                    plt.title = {"text": "Coverage along reference"}
+                    plt.xAxis.name = "Position along reference"
+                    plt.yAxis.name = "Sequencing depth"
+                    for s in plt.series:
+                        s.showSymbol = False
+                    EZChart(plt, theme=THEME)

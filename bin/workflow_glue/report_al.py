@@ -26,6 +26,9 @@ def main(args):
     if sample_names != sample_names:
         raise ValueError('Sample names in the two stats file do not match')
 
+    # Import depth files when provided, otherwise make an empty df
+    depth_df = read_data.depths(args.depths_dir)
+
     # create the report
     report = labs.LabsReport(
         f"{args.name} reads QC report",
@@ -47,6 +50,10 @@ def main(args):
     # extract the mapped reads and some other metrics used in the report sections
     stats_df_mapped = stats_df.query('ref != "*"')
     sections.mapping(report, stats_df_mapped)
+
+    # Add depth plots
+    if not depth_df.empty:
+        sections.depths(report, depth_df)
 
     # write the report to the output file
     report_fname = f"{args.name}-alignment-report.html"
@@ -71,8 +78,8 @@ def argparser():
         help="directory with `bamstats` per-file stats",
     )
     parser.add_argument(
-        "--refnames_dir",
-        help="directory with files containing reference names",
+        "--depths_dir",
+        help="directory with depth files for the sample",
     )
     parser.add_argument(
         "--params",

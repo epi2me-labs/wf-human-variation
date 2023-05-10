@@ -94,6 +94,13 @@
                     "description": "Minimum read coverage required to run analysis.",
                     "hidden": false
                 },
+                "depth_window_size": {
+                    "type": "number",
+                    "default": 25000,
+                    "description": "Coverage window size in bp.",
+                    "help_text": "This options specify the window size to use when computing the coverage along the genome.",
+                    "hidden": true
+                },
                 "bed": {
                     "type": "string",
                     "format": "file-path",

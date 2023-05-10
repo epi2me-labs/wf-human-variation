@@ -29,8 +29,6 @@ workflow snp {
         bam_channel
         bed
         ref
-        mosdepth_stats
-        read_stats
         model
         sniffles_vcf
     main:
@@ -202,8 +200,7 @@ workflow snp {
         workflow_params = getParams()
         vcf_stats = vcfStats(final_snp_vcf)
         report = makeReport(
-            read_stats, mosdepth_stats, vcf_stats[0],
-            software_versions.collect(), workflow_params)
+            vcf_stats[0], software_versions.collect(), workflow_params)
         telemetry = workflow_params
 
     emit:

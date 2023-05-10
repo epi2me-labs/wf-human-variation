@@ -609,8 +609,6 @@ process vcfStats {
 
 process makeReport {
     input:
-        file read_summary
-        tuple path(mosdepth_bed), path(mosdepth_dist), path(mosdepth_threshold) // MOSDEPTH_TUPLE
         file vcfstats
         path versions
         path "params.json"
@@ -627,8 +625,6 @@ process makeReport {
         $report_name \
         --versions $versions \
         --params params.json \
-        --read_stats $read_summary \
-        --read_depth $mosdepth_dist \
         --vcf_stats $vcfstats \
         --revision $wfversion \
         --commit $workflow.commitId
