@@ -249,6 +249,7 @@ workflow {
         report_pass = pass_bam_channel
                     .combine(bam_stats)
                     .combine(bam_flag)
+                    .combine(mosdepth_stats.map{it[0]})
                     .combine(software_versions.collect())
                     .combine(workflow_params)
                     .flatten()
@@ -260,6 +261,7 @@ workflow {
         report_pass = pass_bam_channel
                     .combine(bam_stats)
                     .combine(bam_flag)
+                    .combine(mosdepth_stats.map{it[0]})
                     .combine(software_versions.collect())
                     .combine(workflow_params)
                     .flatten()
@@ -272,7 +274,7 @@ workflow {
             pass_bam_channel ,
             ref_channel,
             bed,
-            mosdepth_stats,
+            mosdepth.out.summary,
             OPTIONAL
         )
         artifacts = results.report.flatten()
@@ -307,8 +309,6 @@ workflow {
             pass_bam_channel,
             snp_bed,
             ref_channel,
-            mosdepth_stats,
-            bam_stats,
             clair3_model,
             sniffles_vcf
         )

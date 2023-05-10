@@ -2,27 +2,17 @@
 """Construct SV call filtering command."""
 
 import argparse
-import gzip
 import sys
 
 threshold_lookup = ['0'] + ['2'] * 10 + ['3'] * 9 + ['5'] * 20 + ['8'] * 100
 
 
-def calculate_average_depth(path):
+def import_total_depth(path):
     """Get the average read depth."""
-    with gzip.open(path, "r") as fh:
-        sum_depth = 0
-        count_depth = 0
-        total_size = 0
+    with open(path, "r") as fh:
         for line in fh:
-            if not line:
-                continue
-            cols = line.strip().split(b"\t")
-            sum_depth += float(cols[3]) * int(cols[2])
-            total_size += int(cols[2])
-            count_depth += 1
-    avg_depth = sum_depth / total_size
-    return avg_depth
+            if "total" in line:
+                return float(line.strip().split("\t")[3])
 
 
 def parse_arguments():
@@ -44,7 +34,7 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--depth_bedfile",
+        "--depth_summary",
         help=(
             "Provide the path to a bedfile (e.g. from mosdepth)"
             " containing depth of coverage by region."
@@ -113,8 +103,9 @@ def main():
     # Todo: Check this
     min_read_support = args.min_read_support_limit
     if args.min_read_support in ['auto']:
-        avg_depth = calculate_average_depth(args.depth_bedfile)
-        avg_depth = min(avg_depth, len(threshold_lookup) - 1)
+        avg_depth = import_total_depth(args.depth_summary)
+        avg_depth = min(avg_depth, len(threshold_lookup) - 1) \
+            if avg_depth else len(threshold_lookup) - 1
         detected_read_support = int(threshold_lookup[round(avg_depth)])
 
         if detected_read_support > args.min_read_support_limit:

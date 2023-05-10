@@ -39,8 +39,6 @@ workflow bam {
 
         report = runReport(
             called.vcf.collect(),
-            [],
-            mosdepth_stats,
             benchmark_result)
     emit:
         report = report.html.concat(
@@ -133,16 +131,12 @@ workflow variantCall {
 workflow runReport {
     take:
         vcf
-        read_stats
-        depth_bed
         eval_json
     main:
         software_versions = getVersions()
         workflow_params = getParams()
         report(
             vcf.collect(),
-            read_stats.collect(),
-            depth_bed.collect(),
             eval_json,
             software_versions,
             workflow_params)

@@ -6,10 +6,8 @@ import json
 
 import aplanat
 from aplanat import bio, hist, report
-from aplanat.components import depthcoverage, fastcat
 import aplanat.graphics
 from bokeh.layouts import gridplot, layout
-from bokeh.models import BasicTickFormatter, Range1d
 import numpy as np
 import pandas as pd
 from .util import wf_parser  # noqa: ABS101
@@ -111,43 +109,6 @@ def main(args):
             f"## Sample: {sample_name}")
         section.markdown(
             f"```Date: {datetime.today().strftime('%Y-%m-%d')}```")
-
-        #
-        # Input dataset QC
-        #
-        sample_summary = None
-        for summary in args.reads_summary or []:
-            if summary.split('.')[0] == sample_name:
-                sample_summary = summary
-
-        for read_depth in args.read_depth:
-            if read_depth.split('.')[0] == sample_name:
-                read_depth = read_depth
-
-        if sample_summary:
-            reads_summary_df = pd.read_csv(sample_summary, sep='\t')
-            read_qual = fastcat.read_quality_plot(reads_summary_df)
-            read_length = fastcat.read_length_plot(reads_summary_df)
-            read_length.x_range = Range1d(0, 100000)
-            read_length.xaxis.formatter = BasicTickFormatter(
-                use_scientific=False)
-            section = report_doc.add_section()
-            section.markdown("### Read Quality Control")
-            section.markdown(
-                "This sections displays basic QC"
-                " metrics indicating read data quality.")
-            section.plot(layout(
-                [[read_length, read_qual]],
-                sizing_mode="stretch_width")
-            )
-            rd_plot = depthcoverage.cumulative_depth_from_dist(read_depth)
-            section = report_doc.add_section()
-            section.markdown("### Genome coverage")
-            section.markdown(
-                "Genome wide read coverage")
-            section.plot(gridplot(
-                [rd_plot],
-                ncols=2))
 
         #
         # Variant calls
@@ -299,15 +260,7 @@ def argparser():
         nargs='+',
         required=True)
     parser.add_argument(
-        "--reads_summary",
-        nargs='+',
-        required=False)
-    parser.add_argument(
         "--eval_results",
-        nargs='+',
-        required=False)
-    parser.add_argument(
-        "--read_depth",
         nargs='+',
         required=False)
     parser.add_argument(
