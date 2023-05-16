@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
+### Changed
+- Reports for wf-human-sv and wf-human-snp
 ### Fixed
 - Workflow crashing with `--bam_min_coverage 0`
 

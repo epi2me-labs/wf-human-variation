@@ -1,25 +1,45 @@
 #!/usr/bin/env python
 """Create workflow report."""
 
-from datetime import datetime
 import json
 
-import aplanat
-from aplanat import bio, hist, report
-import aplanat.graphics
-from bokeh.layouts import gridplot, layout
+from dominate.tags import a, h4, p
+from ezcharts.components.ezchart import EZChart
+from ezcharts.components.reports.labs import LabsReport
+from ezcharts.components.theme import LAB_head_resources
+from ezcharts.layout.snippets import DataTable, Grid, Stats, Tabs
+from ezcharts.layout.snippets import Progress
+from ezcharts.plots import util
+from ezcharts.plots.categorical import barplot
+from ezcharts.plots.ideogram import ideogram
 import numpy as np
 import pandas as pd
+from .report_utils.common import CHROMOSOMES  # noqa: ABS101
 from .util import wf_parser  # noqa: ABS101
 
-vcf_cols = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
+vcf_cols = [
+    'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER',
+    'INFO', 'FORMAT', 'TUMOR', 'NORMAL'
+    ]
+Colors = util.Colors
 
 
 def read_vcf(fname):
-    """Read a VCF file."""
+    """Read input VCF as pandas dataframe."""
+    new_types = {
+        'CHROM': str,
+        'SVLEN': int,
+        'END': int,
+    }
     try:
         df = pd.read_csv(fname, comment='#', header=None, delimiter='\t')
         df = df.rename(columns=dict(enumerate(vcf_cols)))
+        df = expand_column(df)
+        df = df.drop('RNAMES', 1)
+        for (key, dtype) in new_types.items():
+            df[key] = df[key].astype(dtype)
+        df['CHROM'] = df['CHROM'].str.replace('chr', '')
+        df = df.loc[df['CHROM'].isin(CHROMOSOMES)]
     except pd.errors.EmptyDataError:
         df = pd.DataFrame()
     return df
@@ -32,7 +52,10 @@ def expand_column(df, column='INFO', row_split_delim=';', key_val_delim='='):
         split_row = row[1].split(row_split_delim)
         split_row_items = {}
         for i in split_row:
-            key_val_split = i.split('=')
+            key_val_split = i.split(key_val_delim)
+            # Replace SVINSLEN with SVLEN since referring to the same metric
+            if key_val_split[0] == 'SVINSLEN':
+                key_val_split[0] = 'SVLEN'
             if not len(key_val_split) > 1:
                 split_row_items[key_val_split[0]] = ''
                 continue
@@ -54,199 +77,227 @@ def get_sv_summary_table(vcf_df):
         'Max. Length': ('SVLEN', lambda x: np.max(x.abs()))}).transpose()
 
 
-def get_sv_karyograms(vcf_df, sv_types, sv_colours):
-    """Plot positions of SV calls per type."""
-    karyograms = list()
-    for sv, col in zip(sv_types, sv_colours):
-        data = vcf_df.loc[vcf_df['SVTYPE'] == sv[0]]
-        if data.empty:
-            continue
-        plot = bio.karyotype(
-            [data['POS']],
-            [data['CHROM']],
-            [sv[1]],
-            [col],
-            alpha=0.2,
-            height=300)
-        aplanat.export_jsx(plot, f'{sv[0]}_karyogram.jsx')
-        karyograms.append(plot)
-    return karyograms
+def sv_stats(vcf_data):
+    """Display base stats."""
+    tabs = Tabs()
+    for (index, sample_name, vcf_df) in vcf_data:
+        with tabs.add_tab(sample_name):
+            if vcf_df.empty:
+                p("The workflow found no structural variants to report.")
+            else:
+                inserts = vcf_df.loc[vcf_df['SVTYPE'] == 'INS']
+                delets = vcf_df.loc[vcf_df['SVTYPE'] == 'DEL']
+                Stats(
+                    columns=3,
+                    items=[
+                        (f'{"{:,}".format(inserts.shape[0])}',
+                         'Number of Insertions'),
+                        (f'{"{:,}".format(delets.shape[0])}',
+                         'Number of Deletions'),
+                        (f'{"{:,}".format(vcf_df.CHROM.unique().shape[0])}',
+                         'Chromosomes with SVs'),
+                    ])
 
 
-def get_sv_size_plots(vcf_df, sv_types, sv_colours):
+def sv_size_plots(vcf_data):
     """Plot size distributions of SV calls per type."""
-    length_plots = list()
-    for sv, col in zip(sv_types, sv_colours):
-        data = np.log10(vcf_df.loc[vcf_df['SVTYPE'] == sv[0], 'SVLEN'].abs())
-        if data.empty:
-            continue
-        plot = hist.histogram(
-            [data], colors=[col],
-            names=[sv[1]], bins=200, xlim=(1, None),
-            height=250,
-            title="{} SV lengths".format(sv[1]),
-            x_axis_label='log10(SV length / bases)',
-            y_axis_label='count')
-        aplanat.export_jsx(plot, f'{sv[0]}_size.jsx')
-        length_plots.append(plot)
-    return length_plots
+    tabs = Tabs()
+    for (index, sample_name, vcf_df) in vcf_data:
+        with tabs.add_tab(sample_name):
+            if vcf_df.empty:
+                p("The workflow found no structural variants to report.")
+            else:
+                p("This section shows the size distributions of SV calls per type. "
+                    "Deletions have negative values.")
+                with Grid():
+                    # Extract insertions
+                    inserts = vcf_df.loc[vcf_df['SVTYPE'] == 'INS']
+                    if not inserts.empty:
+                        inserts = inserts[['SVTYPE', 'SVLEN']] \
+                            .groupby('SVLEN') \
+                            .count() \
+                            .reset_index()
+                        inserts.columns = ['Length', 'Count']
+                        # Define max value
+                        maxins = int(inserts.Length.max()) \
+                            if inserts.Length.max() else 0
+                        # Create min/max range of values
+                        inserts = pd.merge(pd.DataFrame({
+                            'Length': range(0, maxins + 10)
+                        }), inserts, on="Length", how="left").fillna(0)
+                        # Add insertion plot
+                        plt = barplot(data=inserts, x="Length", y="Count")
+                        plt.title = {"text": "Insertion size distribution"}
+                        EZChart(plt, 'epi2melabs')
+                    else:
+                        h4("No insertions to plot")
+                    # Extract deletions
+                    delets = vcf_df.loc[vcf_df['SVTYPE'] == 'DEL']
+                    if not delets.empty:
+                        delets = delets[['SVTYPE', 'SVLEN']] \
+                            .groupby('SVLEN') \
+                            .count() \
+                            .reset_index()
+                        delets.columns = ['Length', 'Count']
+                        # Define max value
+                        mindel = int(delets.Length.min()) \
+                            if delets.Length.min() else 0
+                        # Create min/max range of values
+                        delets = pd.merge(pd.DataFrame({
+                            'Length': range(mindel - 10, 1)
+                        }), delets, on="Length", how="left").fillna(0)
+                        # Add deletion plot
+                        plt = barplot(data=delets, x="Length", y="Count")
+                        plt.title = {"text": "Deletion size distribution"}
+                        EZChart(plt, 'epi2melabs')
+                    else:
+                        h4("No deletions to plot")
+
+
+def karyoplot(vcf_data, args):
+    """Karyogram plot."""
+    p("Chromosomal hotspots of structural variation.")
+    tabs = Tabs()
+    for (index, sample_name, vcf_df) in vcf_data:
+        with tabs.add_tab(sample_name):
+            if vcf_df.empty:
+                p("The workflow found no structural variants to report.")
+            else:
+                colors = {
+                    "INS": Colors.cinnabar,
+                    "DEL": Colors.cerulean
+                }
+                df = vcf_df[['CHROM', 'POS', 'ID', 'SVLEN']]
+                df.columns = ['chr', 'start', 'name', 'length']
+                # Define end point to start+length...
+                df = df.eval('end=start + length')
+                # ... but if its too small it won't appear, so set it
+                # to at least 100Kb in size to be able to show the hotspots
+                df.loc[df['length'] < 1e5, 'end'] += 1e5 - \
+                    df.loc[df['length'] < 1e5, 'length']
+                # Define color mappings
+                df['color'] = vcf_df['SVTYPE'].map(colors).fillna(Colors.black)
+                df = df[['chr', 'start', 'end', 'name', 'color']]
+                # Prepare the ideogram
+                plt = ideogram(blocks=df, genome=args.genome)
+                EZChart(plt, height='600px', width='90%', theme='epi2melabs')
+                p("""Red: Insertion""")
+                p("""Blue: Deletion""")
 
 
 def main(args):
     """Run the entry point."""
-    report_doc = report.WFReport(
-        "wf-human-sv report", "wf-human-sv",
-        revision=args.revision, commit=args.commit)
-
+    # Input all VCFs
+    vcf_data = []
     for index, sample_vcf in enumerate(args.vcf):
-        sample_name = sample_vcf.split('.')[0]
-
-        #
-        # Front matter
-        #
-        section = report_doc.add_section()
-        section.markdown(
-            f"## Sample: {sample_name}")
-        section.markdown(
-            f"```Date: {datetime.today().strftime('%Y-%m-%d')}```")
-
-        #
-        # Variant calls
-        #
-        section = report_doc.add_section()
-        section.markdown("### Variant calling results")
-        section.markdown(
-            "This section displays a summary view"
-            " of the variant calls made by Sniffles2.")
-
-        # Assuming we are using hg37 or 38 here
-        chroms_37 = [str(x) for x in range(1, 23)] + ['X', 'Y']
-        sv_types = (('INS', 'Insertion'), ('DEL', 'Deletion'))
-        sv_colours = ['red', 'green']
-
         vcf_df = read_vcf(sample_vcf)
-        if vcf_df.empty:
-            section.markdown("The workflow found no structural variants to report.")
-        else:
-            vcf_df = expand_column(vcf_df)
-            vcf_df = vcf_df.drop('RNAMES', 1)
-            vcf_df['CHROM'] = vcf_df['CHROM'].astype(str)
-            vcf_df['SVLEN'] = vcf_df['SVLEN'].astype(int)
-            vcf_df['CHROM'] = vcf_df['CHROM'].str.replace('chr', '')
-            vcf_df = vcf_df.loc[vcf_df['CHROM'].isin(chroms_37)]
+        vcf_data.append((index, sample_vcf.split('.')[0], vcf_df))
 
-            table = get_sv_summary_table(vcf_df)
-            karyograms = gridplot(
-                get_sv_karyograms(vcf_df, sv_types, sv_colours),
-                ncols=2)
-            size_plots = gridplot(
-                get_sv_size_plots(vcf_df, sv_types, sv_colours),
-                ncols=2)
+    # Create report file
+    report = LabsReport(
+        "Structural variants analysis", "wf-human-variation",
+        args.params, args.versions,
+        head_resources=[*LAB_head_resources])
 
-            section.table(
-                table,
-                index=True,
-                sortable=False,
-                paging=False,
-                searchable=False)
-            section.plot(
-                layout(
-                    [karyograms],
-                    [size_plots],
-                    sizing_mode="stretch_width"))
+    with report.add_section('At a glance', 'Summary'):
+        p(
+            "This section displays a description"
+            ' of the variant calls made by ',
+            a("Sniffles", href="https://github.com/fritzsedlazeck/Sniffles"), '.')
+        sv_stats(vcf_data)
 
-            if not args.eval_results:
-                section.markdown(
-                    "This report was generated without evaluation"
-                    " results. To see them, re-run the workflow with"
-                    " --mode benchmark set.")
-                continue
+    with report.add_section('Variant calling results', 'Variants'):
+        p(
+            "This section displays summary statistics"
+            " of the variant calls made by",
+            a("Sniffles", href="https://github.com/fritzsedlazeck/Sniffles"), '.')
+        tabs = Tabs()
+        for (index, sample_name, vcf_df) in vcf_data:
+            with tabs.add_tab(sample_name):
+                if vcf_df.empty:
+                    p("The workflow found no structural variants to report.")
+                else:
+                    DataTable.from_pandas(get_sv_summary_table(vcf_df))
 
-            #
-            # Evaluation results
-            #
-            section.markdown("### Evaluation results")
-            data = None
+    with report.add_section('Karyogram', 'Karyogram'):
+        karyoplot(vcf_data, args)
+
+    with report.add_section('Size distribution', 'Size'):
+        sv_size_plots(vcf_data)
+
+    # Import jsons and create the progress bars before plotting
+    values = []
+    if args.eval_results:
+        for (index, sample_name, vcf_df) in vcf_data:
             with open(args.eval_results[index]) as f:
                 data = json.load(f)
-            section = report_doc.add_section()
-            section.markdown(
-                "This sections displays the truvari"
-                " evaluation metrics for your SV calls.")
-            exec_summary = aplanat.graphics.InfoGraphItems()
-            exec_summary.append(
-                "TP-call",
-                "{:.2f}".format(data['TP-call']),
-                "chart-pie"
-            )
-            exec_summary.append(
-                "FP",
-                "{:.2f}".format(data['FP']),
-                "chart-pie"
-            )
-            exec_summary.append(
-                "FN",
-                "{:.2f}".format(data['FN']),
-                "chart-pie"
-            )
-            exec_summary.append(
-                "F1",
-                "{:.2f}".format(data['f1']),
-                "chart-pie"
-            )
-            exec_summary.append(
-                "Precision",
-                "{:.2f}".format(data['precision']),
-                "chart-pie"
-            )
-            exec_summary.append(
-                "Recall",
-                "{:.2f}".format(data['recall']),
-                "chart-pie"
-            )
-            exec_plot = aplanat.graphics.infographic(
-                exec_summary.values(), ncols=4)
-            section.plot(exec_plot, key="exec-plot")
+                tp = data['TP-call']
+                fp = data['FP']
+                fn = data['FN']
+                # Represent the metrics as progress bars ranging from 0 to 1
+                f1 = Progress(
+                    value_min=0.0,
+                    value_max=1.0,
+                    value_now=round(data['f1'], 2),
+                    bar_cls="progress-bar-striped",
+                    height=50)
+                pr = Progress(
+                    value_min=0.0,
+                    value_max=1.0,
+                    value_now=round(data['precision'], 2),
+                    bar_cls="progress-bar-striped",
+                    height=50)
+                rc = Progress(
+                    value_min=0.0,
+                    value_max=1.0,
+                    value_now=round(data['recall'], 2),
+                    bar_cls="progress-bar-striped",
+                    height=50)
+                # Append values
+                values.append({
+                    'TP': tp, 'FP': fp, 'FN': fn,
+                    'F1': f1, 'PR': pr, 'RC': rc
+                    })
 
-    #
-    # Params reporting
-    #
-    section = report_doc.add_section()
-    section.markdown("## Workflow parameters")
-    section.markdown(
-        "The table below highlights values of"
-        " the main parameters used in this analysis.")
-    params = []
-    hidden_params = args.params_hidden.split(',')
-    with open(args.params) as f:
-        params_data = json.load(f)
-    for key, value in params_data.items():
-        if key not in hidden_params:
-            params.append((key, value))
-    df_params = pd.DataFrame(params, columns=['Key', 'Value'])
-    section.table(
-        df_params, sortable=False, paging=False, index=False, searchable=False)
-
-    #
-    # Software versions
-    #
-    section = report_doc.add_section()
-    section.markdown("## Software versions")
-    section.markdown('''The table below highlights versions
-                    of key software used within the analysis''')
-    versions = list()
-    if args.versions is not None:
-        with open(args.versions) as fh:
-            for line in fh.readlines():
-                name, version = line.strip().split(',')
-                versions.append((name, version))
-    versions = pd.DataFrame(versions, columns=('Name', 'Version'))
-    section.table(versions, index=False)
+    with report.add_section('Results evaluation', 'Evaluation'):
+        if not args.eval_results:
+            p(
+                "This report was generated without evaluation"
+                " results. To see them, re-run the workflow with"
+                " --sv_benchmark set.")
+        else:
+            p(
+                "This section displays the ",
+                a("Truvari", href="https://github.com/ACEnglish/truvari"),
+                " benchmarking and"
+                " evaluation of the variant calls made by",
+                a("Sniffles", href="https://github.com/fritzsedlazeck/Sniffles"), '.')
+            tabs = Tabs()
+            for (index, sample_name, vcf_df) in vcf_data:
+                with tabs.add_tab(sample_name):
+                    #
+                    # Evaluation results
+                    #
+                    vals = values[index]
+                    p(
+                        "This sections displays the truvari"
+                        " evaluation metrics for your SV calls.")
+                    # Show statistics as 3x2 matrix of statistics.
+                    Stats(
+                        columns=3,
+                        items=[
+                            (vals['TP'], 'True positives'),
+                            (vals['FP'], 'False positives'),
+                            (vals['FN'], 'False negatives'),
+                            (vals['F1'], 'F1-score'),
+                            (vals['PR'], 'Precision'),
+                            (vals['RC'], 'Recall')
+                        ])
 
     #
     # write report
     #
-    report_doc.write(args.output)
+    report.write(args.output)
 
 
 def argparser():
@@ -259,6 +310,10 @@ def argparser():
         "--vcf",
         nargs='+',
         required=True)
+    parser.add_argument(
+        "--genome",
+        default='hg38',
+        required=False)
     parser.add_argument(
         "--eval_results",
         nargs='+',

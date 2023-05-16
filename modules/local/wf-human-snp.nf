@@ -626,8 +626,7 @@ process makeReport {
         --versions $versions \
         --params params.json \
         --vcf_stats $vcfstats \
-        --revision $wfversion \
-        --commit $workflow.commitId
+        --sample_name $params.sample_name
         """
 }
 
