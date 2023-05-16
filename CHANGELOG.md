@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Reports for wf-human-sv and wf-human-snp
 ### Fixed
+- Coverage plot not working when a bed region file is provided
 - Workflow crashing with `--bam_min_coverage 0`
 
 ## [v1.5.1]

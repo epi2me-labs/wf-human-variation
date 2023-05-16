@@ -7,6 +7,31 @@ from pandas.api import types as pd_types
 from .common import CATEGORICAL, CHROMOSOMES  # noqa: ABS101
 
 
+def fasta_idx(faidx):
+    """Read faidx for the reference fasta."""
+    # these files can be quite large; so only keep relevant columns and store the string
+    # columns as categorical
+    relevant_stats_cols_dtypes = {
+        "chrom": CATEGORICAL,
+        "length": int,
+        "offset1": int,
+        "offset2": int,
+        "offset3": int,
+    }
+    try:
+        df = pd.read_csv(
+            faidx,
+            sep="\t",
+            names=relevant_stats_cols_dtypes,
+            dtype=relevant_stats_cols_dtypes,
+            usecols=['chrom', 'length']
+        )
+    except pd.errors.EmptyDataError:
+        df = pd.DataFrame(columns=relevant_stats_cols_dtypes)
+    # check that we actually got any reads
+    return df
+
+
 def bamstats(stats_dir):
     """Read bamstats per-read stats.
 
@@ -83,13 +108,108 @@ def flagstat(flagstat_dir):
     return pd.concat(dfs)
 
 
-def depths(depths_dir):
+def make_breaks(minval, maxval, winsize):
+    """Create intervals inclusive of last value."""
+    # Create the intervals
+    breaks = list(range(minval, maxval, winsize))
+    # Check that the max value is the chr length
+    if breaks[-1] > maxval:
+        breaks[-1] = maxval
+    if breaks[-1] < maxval:
+        breaks += [maxval]
+    return breaks
+
+
+def add_missing_windows(intervals, faidx, winsize=25000):
+    """Add missing windows to depth dataframe."""
+    relevant_stats_cols_dtypes = {
+        "chrom": CATEGORICAL,
+        "start": int,
+        "end": int,
+        "depth": float,
+    }
+    # Get unique chromosomes
+    chrs = intervals.chrom.unique().tolist()
+    # New intervals
+    final_intervals = []
+    # Add missing windows for each chromosome
+    for chr_id in chrs:
+        # Get chromosome entries
+        chr_entry = intervals.loc[intervals['chrom'] == chr_id].reset_index(drop=True)
+        # First window start
+        minval = chr_entry.start.min()
+        # Final window end
+        maxval = chr_entry.end.max()
+        # Chromosome length
+        chr_len = faidx[faidx['chrom'] == chr_id].length.max()
+        # If the minimum value is !=0, add intermediate windows
+        if minval != 0:
+            # Create the breaks for the intervals
+            breaks = make_breaks(0, minval, winsize)
+            # Create vectors to populate the DF
+            chr_vec = [chr_id for i in range(0, len(breaks) - 1)]
+            depth_vals = [0 for i in range(0, len(breaks) - 1)]
+            # Add heading    intervals
+            final_intervals.append(
+                pd.DataFrame(data={
+                    'chrom': chr_vec,
+                    'start': breaks[0:-1],
+                    'end': breaks[1:],
+                    'depth': depth_vals}))
+        # Append precomputed intervals, checking for breaks
+        # in between regions.
+        for idx, region in chr_entry.iterrows():
+            # To DF
+            region = region.to_frame().T
+            # Add the first window as default
+            if idx == 0:
+                final_intervals.append(region)
+                continue
+            # If the new window start is not the end of the previous,
+            # then create new regions
+            if region.start.min() != final_intervals[-1].end.max():
+                # Create intervals
+                breaks = make_breaks(
+                    final_intervals[-1].end.max(),
+                    region.start.min(),
+                    winsize)
+                # Create vectors to populate the DF
+                chr_vec = [chr_id] * (len(breaks) - 1)
+                depth_vals = [0] * (len(breaks) - 1)
+                # Add heading    intervals
+                final_intervals.append(
+                    pd.DataFrame(data={
+                        'chrom': chr_vec,
+                        'start': breaks[0:-1],
+                        'end': breaks[1:],
+                        'depth': depth_vals}))
+                final_intervals.append(region)
+            else:
+                final_intervals.append(region)
+        # If the max value is less than the chromosome length, add these too
+        if maxval < chr_len:
+            # Create the breaks for the intervals
+            breaks = make_breaks(maxval, chr_len, winsize)
+            # Create vectors to populate the DF
+            chr_vec = [chr_id] * (len(breaks) - 1)
+            depths = [0] * (len(breaks) - 1)
+            # Add tailing intervals
+            final_intervals.append(
+                pd.DataFrame(data={
+                    'chrom': chr_vec,
+                    'start': breaks[0:-1],
+                    'end': breaks[1:],
+                    'depth': depths}))
+    return pd.concat(final_intervals).astype(
+        relevant_stats_cols_dtypes).reset_index(drop=True)
+
+
+def depths(depths_dir, faidx, winsize):
     """Read depth data.
 
     :param depths_dir: directory with `mosdepth` output files
-    :param sample_names: list of sample names for which we found reads
-    :return: `pd.DataFrame` with columns `["chrom", "start", "end", "depth",
-        "sample_name"]`
+    :param faidx: dataframe from the fasta fai index
+    :winsize: size of the missing windows to add
     """
     dfs = []
     input_files = os.listdir(depths_dir)
@@ -108,13 +228,19 @@ def depths(depths_dir):
                 names=relevant_stats_cols_dtypes,
                 dtype=relevant_stats_cols_dtypes
             )
+            df = add_missing_windows(df, faidx, winsize)
             df = df.eval(f'sample_name = "{sample_name}"')
             df = df.loc[df['chrom'].isin(CHROMOSOMES)]
         except pd.errors.EmptyDataError:
             df = pd.DataFrame(
-                columns=relevant_stats_cols_dtypes.update({'sample_name': CATEGORICAL}))
+                columns=relevant_stats_cols_dtypes.update({
+                    'sample_name': CATEGORICAL,
+                    'length': int
+                    }))
         dfs.append(df)
     if not dfs:
         return pd.DataFrame(
-            columns=relevant_stats_cols_dtypes.update({'sample_name': CATEGORICAL}))
+            columns=relevant_stats_cols_dtypes.update({
+                'sample_name': CATEGORICAL,
+                'length': int}))
     return pd.concat(dfs).astype({"sample_name": CATEGORICAL, "chrom": CATEGORICAL})

@@ -15,6 +15,11 @@ def main(args):
     """Run entry point."""
     logger = get_named_logger("report")
 
+    # Import fai file
+    faidx = read_data.fasta_idx(args.reference_fai)
+    if faidx.empty:
+        raise pd.errors.EmptyDataError(f'{args.reference_fai}')
+
     # read input stats data
     stats_df = read_data.bamstats(args.stats_dir)
 
@@ -27,7 +32,7 @@ def main(args):
         raise ValueError('Sample names in the two stats file do not match')
 
     # Import depth files when provided, otherwise make an empty df
-    depth_df = read_data.depths(args.depths_dir)
+    depth_df = read_data.depths(args.depths_dir, faidx, args.window_size)
 
     # create the report
     report = labs.LabsReport(
@@ -80,6 +85,16 @@ def argparser():
     parser.add_argument(
         "--depths_dir",
         help="directory with depth files for the sample",
+    )
+    parser.add_argument(
+        "--reference_fai",
+        help="Reference fai index with sequences lengths",
+    )
+    parser.add_argument(
+        "--window_size",
+        default=25000,
+        type=int,
+        help="Size of windows for the depth plot",
     )
     parser.add_argument(
         "--params",
