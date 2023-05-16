@@ -269,6 +269,9 @@ process makeAlignmentReport {
             path("readstats/*"),
             path("flagstats/*"),
             path("depths/*"),
+            path('ref.fasta'),
+            path('ref.fasta.fai'),
+            path('ref_cache/'),
             path("versions.txt"),
             path("params.json")
 
@@ -280,9 +283,11 @@ process makeAlignmentReport {
         workflow-glue report_al \\
             --name wf-human-variation \\
             --stats_dir readstats/ \\
+            --reference_fai ref.fasta.fai \\
             --flagstat_dir flagstats/ \\
             --depths_dir depths/ \\
             --versions versions.txt \\
+            --window_size ${params.depth_window_size} \\
             --params params.json 
         """
 }

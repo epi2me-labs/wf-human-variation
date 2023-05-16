@@ -257,23 +257,25 @@ def depths(report, depth_df):
         else:
             tabs = Tabs()
             for sample_name, df_samp_file in depth_df.groupby("sample_name"):
+                # Sort column by chromosome number
+                df_samp_file.sort_values(
+                    by=["chrom", "start"],
+                    key=lambda chrom: chrom.map(CHROMOSOMES)
+                    )
+                # Reordering
+                df_samp_file['chrom'] = \
+                    df_samp_file.chrom.cat.remove_unused_categories()
+                df_samp_file['chrom'] = \
+                    df_samp_file.chrom.cat.reorder_categories(
+                    [i for i in df_samp_file.chrom.unique()])
+                # Reset index
+                df_samp_file = df_samp_file.reset_index(drop=True)
                 # prepare data for depth vs coordinate plot
                 df_depth_vs_coords = (
                     df_samp_file.eval("mean_pos = (start + end) / 2")
                     .eval("step = end - start")
                     .reset_index()
                 )
-                # Sort column by chromosome number
-                df_depth_vs_coords.sort_values(
-                    by=["chrom", "start"],
-                    key=lambda chrom: chrom.map(CHROMOSOMES)
-                    )
-                # Reordering
-                df_depth_vs_coords['chrom'] = \
-                    df_depth_vs_coords.chrom.cat.remove_unused_categories()
-                df_depth_vs_coords['chrom'] = \
-                    df_depth_vs_coords.chrom.cat.reorder_categories(
-                    [i for i in df_depth_vs_coords.chrom.unique()])
                 # Extract ref lengths
                 ref_lengths = df_depth_vs_coords.groupby(
                     "chrom", observed=True, sort=False)["end"].last()
