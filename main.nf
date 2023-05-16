@@ -210,6 +210,8 @@ workflow {
     // Determine if the coverage threshold is met to perform analysis.
     // If too low, it creates an empty input channel, 
     // avoiding the subsequent processes to do anything
+    software_versions = getVersions()
+    workflow_params = getParams()
     if (params.bam_min_coverage > 0){
         // Define if a dataset passes or not the filtering
         get_coverage(mosdepth.out.summary)
@@ -239,8 +241,6 @@ workflow {
                 log.error "ERROR: File ${it[1].getName()} will not be processed by the workflow as the detected coverage of ${it[0]}x is below the minimum coverage threshold of ${params.bam_min_coverage}x required for analysis."
             }
         // Create a report if the discarded bam channel is not empty.
-        software_versions = getVersions()
-        workflow_params = getParams()
         report_fail = failedQCReport(
             discarded_bams, bam_stats, mosdepth_stats,
             software_versions.collect(), workflow_params)
