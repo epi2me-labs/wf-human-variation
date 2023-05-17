@@ -70,10 +70,13 @@ ALLOWED_CHR = [
 def chromosome_sizes(extracted_sizes):
     """Get dictionary of chromosomes and sizes from samtools index."""
     fasta_sizes = {}
-    with open(extracted_sizes, 'r') as csvfile:
-        for line in csvfile:
+    with open(extracted_sizes, 'r') as fa_idx:
+        for line in fa_idx:
             line = line.rstrip()
             cols = line.split('\t')
+            # prepend 'chr' if needed
+            if not cols[0].startswith('chr'):
+                cols[0] = "chr"+cols[0]
             if cols[0] in ALLOWED_CHR:
                 fasta_sizes[cols[0]] = cols[1]
 
