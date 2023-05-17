@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Coverage plot not working when a bed region file is provided
 - Workflow crashing with `--bam_min_coverage 0`
+- Subworkflows that require hg19/GRCh37 now correctly accept references where chromosome sequence names do not have the 'chr' prefix
 
 ## [v1.5.1]
 ### Changed
