@@ -128,9 +128,13 @@ class NfcoreSchema {
 
         // Collect expected parameters from the schema
         def expectedParams = []
+        def enums = [:]
         for (group in schemaParams) {
             for (p in group.value['properties']) {
                 expectedParams.push(p.key)
+                if (group.value['properties'][p.key].containsKey('enum')) {
+                    enums[p.key] = group.value['properties'][p.key]['enum']
+                }
             }
         }
 
@@ -178,7 +182,7 @@ class NfcoreSchema {
             println ''
             log.error 'ERROR: Validation of pipeline parameters failed!'
             JSONObject exceptionJSON = e.toJSON()
-            printExceptions(exceptionJSON, params_json, log)
+            printExceptions(exceptionJSON, params_json, log, enums)
             println ''
             has_error = true
         }
@@ -212,7 +216,9 @@ class NfcoreSchema {
         output        += "  ${colors.cyan}${command}${colors.reset}\n\n"
         Map params_map = paramsLoad(getSchemaPath(workflow, schema_filename=schema_filename))
         Integer max_chars  = paramsMaxChars(params_map) + 1
-        Integer desc_indent = max_chars + 14
+        Integer type_pad = 10
+        String param_prefix = "  --"
+        Integer desc_indent = max_chars + type_pad + param_prefix.length()
         Integer dec_linewidth = 160 - desc_indent
         for (group in params_map.keySet()) {
             Integer num_params = 0
@@ -223,10 +229,11 @@ class NfcoreSchema {
                     num_hidden += 1
                     continue;
                 }
-                def type = '[' + group_params.get(param).type + ']'
                 def description = group_params.get(param).description
                 def defaultValue = group_params.get(param).default ? " [default: " + group_params.get(param).default.toString() + "]" : ''
                 def description_default = description + colors.dim + defaultValue + colors.reset
+                def param_enum = group_params.get(param).get("enum")
+                def type = param_enum ? "[choice]" : "[${group_params.get(param).type}]"
                 // Wrap long description texts
                 // Loosely based on https://dzone.com/articles/groovy-plain-text-word-wrap
                 if (description_default.length() > dec_linewidth){
@@ -243,7 +250,11 @@ class NfcoreSchema {
                     olines += oline
                     description_default = olines.join("\n" + " " * desc_indent)
                 }
-                group_output += "  --" +  param.padRight(max_chars) + colors.dim + type.padRight(10) + colors.reset + description_default + '\n'
+                group_output += param_prefix + param.padRight(max_chars) + colors.dim + type.padRight(type_pad) + colors.reset + description_default + '\n'
+                // Enumerate enumerations
+                for (choice in param_enum) {
+                    group_output += (" " * desc_indent) + "* ${choice}\n"
+                }
                 num_params += 1
             }
             group_output += '\n'
@@ -353,7 +364,7 @@ class NfcoreSchema {
     //
     // Loop over nested exceptions and print the causingException
     //
-    private static void printExceptions(ex_json, params_json, log) {
+    private static void printExceptions(ex_json, params_json, log, enums) {
         def causingExceptions = ex_json['causingExceptions']
         if (causingExceptions.length() == 0) {
             def m = ex_json['message'] =~ /required key \[([^\]]+)\] not found/
@@ -369,11 +380,20 @@ class NfcoreSchema {
             else {
                 def param = ex_json['pointerToViolation'] - ~/^#\//
                 def param_val = params_json[param].toString()
-                log.error "* --${param}: ${ex_json['message']} (${param_val})"
+                if (ex_json['message'] =~ /.*not a valid enum value.*/) {
+                    String stderr_msg = "* --${param}: ${param_val} is not a valid choice, pick one of:\n"
+                    for (choice in enums[param]) {
+                        stderr_msg += "    - ${choice}\n"
+                    }
+                    log.error stderr_msg // avoid silly new lines between choices
+                }
+                else {
+                    log.error "* --${param}: ${ex_json['message']} (${param_val})"
+                }
             }
         }
         for (ex in causingExceptions) {
-            printExceptions(ex, params_json, log)
+            printExceptions(ex, params_json, log, enums)
         }
     }
 
