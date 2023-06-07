@@ -188,7 +188,7 @@ def watch_path(Map margs) {
 
 process move_or_compress {
     label params.process_label
-    cpus params.threads
+    cpus 1
     input:
         tuple val(meta), path(input)
     output:
@@ -211,7 +211,7 @@ process move_or_compress {
 
 process fastcat {
     label params.process_label
-    cpus params.threads
+    cpus 3
     input:
         tuple val(meta), path(input)
         val extra_args
