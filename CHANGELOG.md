@@ -217,9 +217,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switched to "new flavour" CI, meaning that containers are released from workflows independently
 
 ## [v0.1.0]
-* # Added
-* Ported wf-human-snp (v0.3.2) to modules/wf-human-snp
-* Ported wf-human-sv (v0.1.0) to modules/wf-human-sv
+### Added
+- Ported wf-human-snp (v0.3.2) to modules/wf-human-snp
+- Ported wf-human-sv (v0.1.0) to modules/wf-human-sv
 
 ## [v0.0.0]
 * Initialised wf-human-variation from wf-template #195cab5
