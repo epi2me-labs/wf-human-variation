@@ -76,7 +76,11 @@ process mosdepth {
         export MOSDEPTH_PRECISION=3
         # extract first 3 columns of input BED to prevent col 4 leaking as label into outputs [CW-1702]
         # and convert them into windows of the given size [CW-2015]
-        bedtools makewindows -b ${target_bed} -w ${params.depth_window_size} > cut.bed
+        # The workflow now sort the bed input, merge overlapping intervals and then build windows
+        # preventing crash in downstream tools [CW-2247]
+        sort -k 1,1 -k2,2n ${target_bed} | \
+            bedtools merge -i - | \
+            bedtools makewindows -b - -w ${params.depth_window_size} > cut.bed
         # Run mosdepth
         mosdepth \
         -x \
