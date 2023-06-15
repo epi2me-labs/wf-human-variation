@@ -48,7 +48,7 @@ nextflow run epi2me-labs/wf-human-variation \
     --bam demo_data/demo.bam \
     --bed demo_data/demo.bed \
     --ref demo_data/demo.fasta \
-    --basecaller_cfg 'dna_r10.4.1_e8.2_400bps_hac@v3.5.2'  \
+    --basecaller_cfg 'dna_r10.4.1_e8.2_400bps_hac@v4.1.0'  \
     --sample_name MY_SAMPLE \
     --out_dir ${OUTPUT}
 ```
@@ -86,8 +86,8 @@ nextflow run epi2me-labs/wf-human-variation \
     -profile standard \
     --snp --sv --methyl \
     --fast5_dir path/to/fast5/dir \
-    --basecaller_cfg 'dna_r10.4.1_e8.2_400bps_hac@v3.5.2'  \
-    --remora_cfg 'dna_r10.4.1_e8.2_400bps_hac@v3.5.2_5mCG@v2' \
+    --basecaller_cfg 'dna_r10.4.1_e8.2_400bps_hac@v4.1.0'  \
+    --remora_cfg 'dna_r10.4.1_e8.2_400bps_hac@v4.1.0_5mCG_5hmCG@v2' \
     --bed path/to.bed \
     --ref path/to.fasta \
     --out_dir ${OUTPUT}
