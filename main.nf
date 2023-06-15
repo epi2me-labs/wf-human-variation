@@ -74,6 +74,17 @@ workflow {
         throw new Exception(colors.red + "Cannot benchmark SV subworkflow without running SV subworkflow! Enable the SV subworkflow with --sv." + colors.reset)
     }
 
+    // switch workflow to BAM if calling CNV
+    if (params.cnv) {
+        log.warn "CNV calling subworkflow does not support CRAM. You don't need to do anything, but we're just letting you know that:"
+        log.warn "- If your input file is CRAM, it will be converted to a temporary BAM inside the workflow automatically."
+        log.warn "- If your input requires alignment or basecalling, the outputs will be saved to your output directory as BAM instead of CRAM."
+        output_bam = true
+    }
+    else {
+        output_bam = false
+    }
+
     // Check ref and decompress if needed
     ref = null
     ref_index_fp = null
@@ -107,7 +118,7 @@ workflow {
         }
 
         // ring ring it's for you
-        crams = basecalling(params.fast5_dir, file(params.ref)) // TODO fix file calls
+        crams = basecalling(params.fast5_dir, file(params.ref), output_bam) // TODO fix file calls
         bam_channel = crams.pass
         bam_fail = crams.fail
 
@@ -154,6 +165,7 @@ workflow {
             ref,
             ref_index,
             check_bam,
+            [output_bam: output_bam],
         )
     }
 

@@ -184,24 +184,6 @@ process configure_jbrowse {
     """
 }
 
-
-process minimap2_ubam {
-    cpus {params.ubam_map_threads + params.ubam_sort_threads + params.ubam_bam2fq_threads}
-    input:
-        path reference
-        path old_reference
-        tuple path(reads), path(reads_idx)
-    output:
-        tuple path("${params.sample_name}.cram"), path("${params.sample_name}.cram.crai"), emit: alignment
-    script:
-    def bam2fq_ref = old_reference.name != "OPTIONAL_FILE" ? "--reference ${old_reference}" : ''
-    """
-    samtools bam2fq -@ ${params.ubam_bam2fq_threads} -T 1 ${bam2fq_ref} ${reads} | minimap2 -y -t ${params.ubam_map_threads} -ax map-ont ${reference} - \
-    | samtools sort -@ ${params.ubam_sort_threads} --write-index -o ${params.sample_name}.cram##idx##${params.sample_name}.cram.crai -O CRAM --reference ${reference} -
-    """
-}
-
-
 process getGenome {
     cpus 1
     input:
