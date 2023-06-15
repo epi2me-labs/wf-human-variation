@@ -172,6 +172,24 @@ The secondary outputs of the workflow include:
 - Refer to our [blogpost](https://labs.epi2me.io/copy-number-calling/) and [CNV workflow documentation](https://github.com/epi2me-labs/wf-cnv) for more information on running the copy number calling subworkflow.
 - The STR workflow performs genotyping of specific repeats, which can be found [here](https://github.com/epi2me-labs/wf-human-variation/blob/master/data/wf_str_repeats.bed), and is only compatible with genome build 38.
 
+### Support for basecalling on GPU
+
+Currently, neither Windows nor macOS should be considered as supported operating systems for wf-basecalling as neither can efficiently perform basecalling through Docker. Users are encouraged to download Dorado for Windows and MacOS directly from the [Dorado GitHub repository](https://github.com/nanoporetech/dorado#installation).
+
+We do not directly support configuration of accelerated computing through WSL2 and Docker on Windows, but it is possible to set up for most versions of Windows 11 and some versions of Windows 10 and we direct users to the [CUDA on WSL User Guide](https://docs.nvidia.com/cuda/wsl-user-guide/index.html). Take note of the support constraints section.
+
+On MacOS, GPU support through Docker remains in technical infancy. In addition, the containers we provide will not be able to leverage the M1 and M2 architecture and will not run as performantly as if Dorado had been run natively.
+
+Note that when using Docker for accelerated computing on Linux, you will need the `nvidia-container-toolkit` installed. If you observe the error "could not select device driver with capabilities gpu", you should follow the instructions to install `nvidia-container-toolkit` [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#setting-up-nvidia-container-toolkit). You will need to follow the steps to:
+
+- Setup the package repository and the GPG key (ignore the box about experimental releases)
+- Update package listings
+- Install nvidia-container-toolkit
+- Configure the Docker daemon to recognize the NVIDIA Container Runtime
+- Restart the Docker daemon to complete the installation after setting the default runtime
+
+This section will be kept up to date with latest advice for running our workflows on the GPU.
+
 
 
 
