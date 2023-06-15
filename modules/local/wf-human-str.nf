@@ -92,7 +92,6 @@ process merge_vcf {
 
 
 process make_report {
-    label "wf_human_str"
     input:
         path(vcf)
         path(straglr_tsv) 

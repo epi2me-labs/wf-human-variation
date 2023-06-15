@@ -159,13 +159,13 @@ workflow {
 
     // Check if the genome build in the BAM is suitable for any workflows that have restrictions
     // NOTE getGenome will exit non-zero if the build is neither hg19 or hg38, so don't call it unless needed
-    if (params.str || params.cnv){
-        // CNV requires hg19 or hg38
-        // STR requires hg38
+    if (params.str || params.cnv || params.snp || params.sv || params.phase_methyl){
+        // cnv, snp (and therefore phase_methyl) and sv require hg19 or hg38
+        // str requires hg38
         genome_build = getGenome(bam_channel)
     }
     else {
-        genome_build = null // only CNV consumes genome_build currently
+        genome_build = null 
     }
 
     // Build ref cache for CRAM steps that do not take a reference
@@ -277,7 +277,8 @@ workflow {
             ref_channel,
             bed,
             mosdepth.out.summary,
-            OPTIONAL
+            OPTIONAL,
+            genome_build
         )
         artifacts = results.report.flatten()
         sniffles_vcf = results.sniffles_vcf
@@ -312,7 +313,8 @@ workflow {
             snp_bed,
             ref_channel,
             clair3_model,
-            sniffles_vcf
+            sniffles_vcf,
+            genome_build
         )
         output_snp(clair_vcf.clair3_results.flatten())
     }

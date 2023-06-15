@@ -104,6 +104,43 @@ process indexVCF {
 }
 
 
+process annotate_vcf {
+    // use SnpEff to generate basic functional annotations, SnpSift annotate to add 
+    // ClinVar annotations, and SnpSift filter to produce a separate VCF of Clinvar-annotated 
+    // variants  for the report
+    label "snpeff_annotation"
+    cpus 4
+    input:
+        path(vcf)
+        path(vcf_index)
+        val(genome)
+    output:
+        path("${params.sample_name}.wf_sv_annotated.vcf.gz"), emit: vcf_annotated_gz
+        path("${params.sample_name}.wf_sv_annotated.vcf.gz.tbi"), emit: vcf_annotated_tbi
+        path("${params.sample_name}.wf_sv.snpEff_genes.txt"), emit: vcf_annotated_genes
+        path("${params.sample_name}.wf_sv_annotated_clinvar.vcf"), emit: vcf_clinvar
+    shell:
+    '''
+    if [[ "!{genome}" == "hg38" ]]; then
+            snpeff_db="GRCh38.105"
+            clinvar_vcf="${CLINVAR_PATH}/clinvar_GRCh38.vcf.gz"
+    elif [[ "!{genome}" == "hg19" ]]; then
+            snpeff_db="GRCh37.75"
+            clinvar_vcf="${CLINVAR_PATH}/clinvar_GRCh37.vcf.gz"
+    fi
+
+    # Specify 4G of memory otherwise SnpEff will crash with the default 1G
+    snpEff -Xmx4g ann $snpeff_db !{vcf} > !{params.sample_name}.snpeff_annotated.vcf
+    SnpSift annotate $clinvar_vcf !{params.sample_name}.snpeff_annotated.vcf > !{params.sample_name}.wf_sv_annotated.vcf
+    cat !{params.sample_name}.wf_sv_annotated.vcf | SnpSift filter "( exists CLNSIG )" > !{params.sample_name}.wf_sv_annotated_clinvar.vcf
+
+    bgzip -c !{params.sample_name}.wf_sv_annotated.vcf > !{params.sample_name}.wf_sv_annotated.vcf.gz
+    tabix !{params.sample_name}.wf_sv_annotated.vcf.gz
+    
+    mv snpEff_genes.txt !{params.sample_name}.wf_sv.snpEff_genes.txt
+    '''
+}
+
 process getVersions {
     label "wf_human_sv"
     cpus 1

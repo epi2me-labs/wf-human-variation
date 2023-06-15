@@ -323,3 +323,59 @@ process getParams {
         echo '$paramsJSON' > params.json
         """
 }
+
+
+process annotate_vcf {
+    // use SnpEff to generate basic functional annotations, SnpSift annotate to add 
+    // ClinVar annotations, and SnpSift filter to produce a separate VCF of Clinvar-annotated 
+    // variants - if any variants are present in this file, it is used to populate a table in 
+    // the report.
+    label "snpeff_annotation"
+    cpus {params.annotation_threads}
+    input:
+        tuple path("input.vcf.gz"), path("input.vcf.gz.tbi")
+        val(genome)
+        val(output_label)
+    output:
+        tuple path("${params.sample_name}.wf_${output_label}.vcf.gz"), path("${params.sample_name}.wf_${output_label}.vcf.gz.tbi"), emit: final_vcf
+        path("${params.sample_name}.wf_snp.snpEff_genes.txt")
+        path("${params.sample_name}.wf_snp_clinvar.vcf"), emit: final_vcf_clinvar
+    shell:
+    '''
+    # deal with samples which aren't hg19 or hg38
+    if [[ "!{genome}" != "hg38" ]] && [[ "!{genome}" != "hg19" ]]; then
+        # return the original VCF and index as the outputs
+        cp input.vcf.gz !{params.sample_name}.wf_!{output_label}.vcf.gz
+        cp input.vcf.gz.tbi !{params.sample_name}.wf_!{output_label}.vcf.gz.tbi
+        # create an empty snpEff_genes file
+        touch !{params.sample_name}.wf_!{output_label}.snpEff_genes.txt
+        # create an empty ClinVar VCF
+        touch !{params.sample_name}.wf_!{output_label}_clinvar.vcf
+    else
+        # do some annotation
+        if [[ "!{genome}" == "hg38" ]]; then
+            snpeff_db="GRCh38.105"
+            clinvar_vcf="${CLINVAR_PATH}/clinvar_GRCh38.vcf.gz"
+            
+        elif [[ "!{genome}" == "hg19" ]]; then
+            snpeff_db="GRCh37.75"
+            clinvar_vcf="${CLINVAR_PATH}/clinvar_GRCh37.vcf.gz"
+        fi
+
+        # Specify 4G of memory otherwise SnpEff will crash with the default 1G
+        snpEff -Xmx4g ann $snpeff_db input.vcf.gz > !{params.sample_name}.snpeff_annotated.vcf
+        # Add ClinVar annotations
+        SnpSift annotate $clinvar_vcf !{params.sample_name}.snpeff_annotated.vcf > !{params.sample_name}.wf_!{output_label}.vcf
+        # Get the ClinVar-annotated variants into a separate VCF
+        cat !{params.sample_name}.wf_!{output_label}.vcf | SnpSift filter "( exists CLNSIG )" > !{params.sample_name}.wf_!{output_label}_clinvar.vcf
+    
+        bgzip -c !{params.sample_name}.wf_!{output_label}.vcf > !{params.sample_name}.wf_!{output_label}.vcf.gz
+        tabix !{params.sample_name}.wf_!{output_label}.vcf.gz
+    
+        # tidy up
+        rm !{params.sample_name}.snpeff_annotated.vcf
+        rm !{params.sample_name}.wf_!{output_label}.vcf
+        mv snpEff_genes.txt !{params.sample_name}.wf_!{output_label}.snpEff_genes.txt
+    fi
+    '''
+}

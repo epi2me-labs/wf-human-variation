@@ -142,12 +142,12 @@ nextflow run epi2me-labs/wf-human-variation \
 
 The primary outputs of the workflow include:
 
-* a gzipped VCF file containing SNPs found in the dataset (`--snp`)
-* a gzipped VCF file containing the SVs called from the dataset (`--sv`)
+* a gzipped VCF file containing annotated SNPs found in the dataset (`--snp`). Annotation is turned on by default, but can be switched off using the `--skip_annotation` parameter
+* a gzipped VCF file containing SVs called from the dataset (`--sv`)
 * a gzipped [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file aggregating modified CpG base counts (`--methyl`)
 * a VCF of CNV calls, QDNAseq-generated plots, and BED files of both raw read counts per bin and corrected, normalised, and smoothed read counts per bin (`--cnv`)
 * a gzipped VCF file containing STRs found in the dataset, TSV Straglr output containing reads spanning STRs, and a haplotagged BAM (`--str`)
-* an HTML report detailing the primary findings of the workflow, for SNP, SV, CNV calling, and STR genotyping.
+* an HTML report detailing the primary findings of the workflow, for SNP, SV, CNV calling, and STR genotyping
 * if basecalling and alignment was conducted, the workflow will output two sorted, indexed CRAMs of basecalls aligned to the provided references, with reads separated by their quality score:
     * `<sample_name>.pass.cram` contains reads with `qscore >= threshold` (only pass reads are used to make downstream variant cals)
     * `<sample_name>.fail.cram` contains reads with `qscore < threshold`
@@ -165,6 +165,7 @@ The secondary outputs of the workflow include:
 
 - Users familiar with `wf-human-snp` and `wf-human-sv` are recommended to familiarise themselves with any parameter changes by using `--help`, in particular:
     - All arms of the variation calling workflow use `--ref` (not `--reference`) and `--bed` (not `--target_bedfile`)
+- Annotations for `--snp` are generated using [SnpEff](https://pcingola.github.io/SnpEff/), with additional [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) annotations where available.
 - Specifying a suitable [tandem repeat BED for your reference](https://raw.githubusercontent.com/fritzsedlazeck/Sniffles/master/annotations/) with `--tr_bed` can improve the accuracy of SV calling.
 - Aggregation of methylation calls with `--methyl` requires data to be basecalled with a model that includes base modifications, providing the `MM` and `ML` BAM tags
 - Refer to the [Dorado documentation](https://github.com/nanoporetech/dorado#available-basecalling-models) for a list of available basecalling models
