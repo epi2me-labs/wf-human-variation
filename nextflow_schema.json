@@ -107,6 +107,12 @@
                     "format": "file-path",
                     "description": "An optional BED file enumerating regions to process for variant calling.",
                     "help_text": ""
+                },
+                "skip_annotation": {
+                    "type": "boolean",
+                    "description": "Disable SnpEff annotation.",
+                    "help_text": "If this option is selected, VCFs will not be annotated with SnpEff.",
+                    "default": false
                 }
             },
             "required": [
@@ -468,6 +474,11 @@
                     "type": "integer",
                     "default": 4,
                     "description": "Set max number of threads to use for uncompressing uBAM and generating FASTQ for alignment (limited by config executor cpus)"
+                },
+                "annotation_threads": {
+                    "type": "integer",
+                    "default": 8,
+                    "description": "Set max number of threads to use for annotating VCFs using SnpEff (limited by config executor cpus)"
                 }
             }
         },

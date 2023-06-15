@@ -60,7 +60,6 @@ process getParams {
 
 
 process makeReport {
-    label "wf_cnv"
     cpus 1
     input:
         path(read_stats)

@@ -3,6 +3,7 @@ import os
 
 import pandas as pd
 from pandas.api import types as pd_types
+from pysam import VariantFile
 
 from .common import CATEGORICAL, CHROMOSOMES  # noqa: ABS101
 
@@ -244,3 +245,20 @@ def depths(depths_dir, faidx, winsize):
                 'sample_name': CATEGORICAL,
                 'length': int}))
     return pd.concat(dfs).astype({"sample_name": CATEGORICAL, "chrom": CATEGORICAL})
+
+
+def parse_vcf(fname):
+    """Parse input VCF using pysam."""
+    vcf_file = VariantFile(fname)
+    all_variants = vcf_file.fetch()
+    return (all_variants)
+
+
+def parse_vcf_for_size(fname):
+    """Read VCF into a dataframe."""
+    try:
+        df = pd.read_csv(fname, comment='#', nrows=10, header=None, delimiter='\t')
+        return False, df
+    except pd.errors.EmptyDataError:
+        df = pd.DataFrame()
+        return True, df

@@ -199,24 +199,22 @@ def create_str_histogram(
     max_cols = histogram_data.max(axis=0)
     max_rectangle_height = max_cols[2]
 
-    xaxis = list()
-    xaxis.append({
+    xaxis = {
         'name': "Repeat number",
         'nameGap': '30',
         'nameLocation': 'middle',
         'nameTextStyle': {'fontSize': '14', 'fontStyle': 'bold'},
         'min': '0',
         'max': pathologic_max
-    })
+    }
 
-    yaxis = list()
-    yaxis.append({
+    yaxis = {
         'name': "Number of supporting reads",
         'nameGap': '30',
         'nameLocation': 'middle',
         'nameTextStyle': {'fontSize': '14', 'fontStyle': 'bold'},
         'max': max_rectangle_height
-    })
+    }
 
     plt.xAxis = xaxis
     plt.yAxis = yaxis

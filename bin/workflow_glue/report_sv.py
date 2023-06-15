@@ -14,6 +14,7 @@ from ezcharts.plots.categorical import barplot
 from ezcharts.plots.ideogram import ideogram
 import numpy as np
 import pandas as pd
+
 from .report_utils.common import CHROMOSOMES  # noqa: ABS101
 from .util import wf_parser  # noqa: ABS101
 

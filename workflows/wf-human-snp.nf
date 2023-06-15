@@ -22,6 +22,7 @@ include {
     makeReport;
 } from "../modules/local/wf-human-snp.nf"
 
+include { annotate_vcf as annotate_snp_vcf } from '../modules/local/common.nf'
 
 // workflow module
 workflow snp {
@@ -31,11 +32,12 @@ workflow snp {
         ref
         model
         sniffles_vcf
+        genome_build
     main:
 
         // truncate bam channel to remove meta to keep compat with snp pipe
         bam = bam_channel.map{ it -> tuple(it[0], it[1]) }
-
+        
         // Run preliminaries to find contigs and generate regions to process in
         // parallel.
         // > Step 0
@@ -164,6 +166,7 @@ workflow snp {
             post_clair_phase_contig(data)
                 .map { it -> [it[1]] }
                 .set { final_vcfs }
+            
         } else {
             merge_pileup_and_full_vars.out.merged_vcf
                 .map { it -> [it[1]] }
@@ -199,12 +202,26 @@ workflow snp {
         software_versions = getVersions()
         workflow_params = getParams()
         vcf_stats = vcfStats(final_snp_vcf)
-        report = makeReport(
-            vcf_stats[0], software_versions.collect(), workflow_params)
+
+        if (params.skip_annotation) {
+            final_vcf = clair_final.final_vcf
+            // no ClinVar VCF, pass empty file to makeReport
+            empty_file = projectDir.resolve("./data/empty.txt").toString()
+            report = makeReport(
+                vcf_stats[0], software_versions.collect(), workflow_params, empty_file)
+        }
+        else {
+            // do annotation and get a list of ClinVar variants for the report
+            annotations = annotate_snp_vcf(clair_final.final_vcf, genome_build, "snp")
+            final_vcf = annotations.final_vcf
+            report = makeReport(
+                vcf_stats[0], software_versions.collect(), workflow_params, annotations.final_vcf_clinvar)
+        }
+
         telemetry = workflow_params
 
     emit:
-        clair3_results = final_snp_vcf.concat(clair_final.final_gvcf).concat(report).concat(haplotagged_bam).flatten()
+        clair3_results = report.concat(haplotagged_bam).concat(final_vcf).flatten()
         str_bams = bam_for_str
         hp_bams = haplotagged_bam.combine(bam_channel.map{it[2]})
         telemetry = telemetry

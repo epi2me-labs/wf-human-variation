@@ -612,9 +612,12 @@ process makeReport {
         file vcfstats
         path versions
         path "params.json"
+        path clinvar_vcf
     output:
         path "*report.html"
     script:
+        def clinvar = clinvar_vcf ?: ""
+
         report_name = "${params.sample_name}.wf-human-snp-report.html"
         wfversion = workflow.manifest.version
         if( workflow.commitId ){
@@ -626,7 +629,8 @@ process makeReport {
         --versions $versions \
         --params params.json \
         --vcf_stats $vcfstats \
-        --sample_name $params.sample_name
+        --sample_name $params.sample_name \
+        --clinvar_vcf $clinvar
         """
 }
 
