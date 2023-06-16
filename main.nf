@@ -112,6 +112,16 @@ workflow {
         if (!params.basecaller_cfg && !params.basecaller_model_path) {
             throw new Exception(colors.red + "You must provide a basecaller profile with --basecaller_cfg <profile>" + colors.reset)
         }
+        // Ensure basecaller config is not Clair3 only
+        if (params.basecaller_cfg.startsWith("clair3:")) {
+            throw new Exception(colors.red + "You have chosen a --basecaller_cfg that can only be used for Clair3 SNP calling.\nPlease review the list of available models with --help and pick a model that is not prefixed with 'clair3:' to enable basecalling with Dorado." + colors.reset)
+        }
+        if (params.basecaller_cfg == "custom" && !params.basecaller_model_path){
+            throw new Exception(colors.red + "You have selected a custom basecalling model but have not provided the path of the custom model with --basecaller_model_path" + colors.reset)
+        }
+        if (params.remora_cfg == "custom" && !params.remora_model_path){
+            throw new Exception(colors.red + "You have selected a custom modbasecalling model but have not provided the path of the custom model with --remora_model_path" + colors.reset)
+        }
         // Ensure modbase threads are set if calling them
         if ((params.remora_cfg || params.remora_model_path) && params.basecaller_basemod_threads == 0) {
             throw new Exception(colors.red + "--remora_cfg modbase aware config requires setting --basecaller_basemod_threads > 0" + colors.reset)
@@ -317,7 +327,10 @@ workflow {
             // map basecalling model to clair3 model
             lookup_table = Channel.fromPath("${projectDir}/data/clair3_models.tsv", checkIfExists: true)
             // TODO basecaller_model_path
-            clair3_model = lookup_clair3_model(lookup_table, params.basecaller_cfg)
+            clair3_model = lookup_clair3_model(lookup_table, params.basecaller_cfg - "clair3:").map {
+                log.info "Autoselected Clair3 model: ${it[0]}" // use model name for log message
+                it[1] // then just return the path to match the interface above
+            }
         }
 
         clair_vcf = snp(

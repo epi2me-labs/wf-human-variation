@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated wf-basecalling subworkflow to 0.7.1 (Dorado 0.3.0)
 - Enum choices are enumerated in the `--help` output
 - Enum choices are enumerated as part of the error message when a user has selected an invalid choice
+- Made it easier to see which basecaller configurations can be used for basecalling and which configurations are presented to allow small variant calling of existing datasets
+    - Basecaller configurations prefixed with `clair3:` cannot be used for basecalling
 
 ### Added
 - v4.2.0 basecalling models, which must be used for sequencing runs performed at new 5 kHz sampling rate

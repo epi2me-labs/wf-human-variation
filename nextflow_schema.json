@@ -86,7 +86,7 @@
                 "basecaller_cfg": {
                     "type": "string",
                     "description": "Name of the model to use for converting signal and selecting a small variant calling model.",
-                    "help_text": "Required for basecalling and small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list only shows models that are compatible with this workflow. You should select 'custom' to override the basecaller_cfg with basecaller_model_path.",
+                    "help_text": "Required for basecalling and/or small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. Only a subset of these models can be used for basecalling with the workflow, these are shown at the top of the list. Models that begin with 'clair3:' cannot be used for basecalling and are included to allow SNP calling on existing datasets. You should select 'custom' to override the basecaller_cfg with basecaller_model_path.",
                     "default": "dna_r10.4.1_e8.2_400bps_sup@v4.1.0",
                     "enum": [
                         "dna_r10.4.1_e8.2_260bps_fast@v4.1.0",
@@ -101,7 +101,17 @@
                         "dna_r9.4.1_e8_fast@v3.4",
                         "dna_r9.4.1_e8_hac@v3.3",
                         "dna_r9.4.1_e8_sup@v3.3",
-                        "custom"
+                        "custom",
+                        "clair3:dna_r10.4.1_e8.2_260bps_hac@v4.0.0",
+                        "clair3:dna_r10.4.1_e8.2_260bps_sup@v4.0.0",
+                        "clair3:dna_r10.4.1_e8.2_400bps_hac",
+                        "clair3:dna_r10.4.1_e8.2_400bps_hac@v3.5.2",
+                        "clair3:dna_r10.4.1_e8.2_400bps_hac@v4.0.0",
+                        "clair3:dna_r10.4.1_e8.2_400bps_hac_prom",
+                        "clair3:dna_r10.4.1_e8.2_400bps_sup@v3.5.2",
+                        "clair3:dna_r10.4.1_e8.2_400bps_sup@v4.0.0",
+                        "clair3:dna_r9.4.1_450bps_hac",
+                        "clair3:dna_r9.4.1_450bps_hac_prom"
                     ]
                 },
                 "bam_min_coverage": {
@@ -153,7 +163,7 @@
                 },
                 "cluster_merge_pos": {
                     "type": "number",
-                    "default": 150.0,
+                    "default": 150,
                     "description": "Maximum merging distance for insertions and deletions on the same read and cluster in non-repeat regions.",
                     "hidden": true
                 },
@@ -238,19 +248,19 @@
                 },
                 "min_cov": {
                     "type": "number",
-                    "default": 2.0,
+                    "default": 2,
                     "description": "Minimum coverage required to call a variant (experimental).",
                     "hidden": true
                 },
                 "min_mq": {
                     "type": "number",
-                    "default": 5.0,
+                    "default": 5,
                     "description": "Reads with mapping quality < min_mq are filtered (experimental).",
                     "hidden": true
                 },
                 "min_contig_size": {
                     "type": "number",
-                    "default": 0.0,
+                    "default": 0,
                     "description": "Contigs with contig size < min_contig_size are filtered (experimental).",
                     "hidden": true
                 },

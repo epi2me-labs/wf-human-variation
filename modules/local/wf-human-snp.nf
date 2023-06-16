@@ -644,7 +644,7 @@ process lookup_clair3_model {
         path("lookup_table")
         val basecall_model
     output:
-        path("model/")
+        tuple env(clair3_model), path("model/")
     shell:
     '''
     clair3_model=$(resolve_clair3_model.py lookup_table '!{basecall_model}')
