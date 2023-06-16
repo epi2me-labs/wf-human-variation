@@ -1,21 +1,17 @@
 name: Bug Report
 description: File a bug report
-title: "[Bug]: "
-labels: ["bug", "triage"]
+labels: ["triage"]
 body:
   - type: markdown
     attributes:
       value: |
         Thanks for taking the time to fill out this bug report!
-  - type: textarea
-    id: what-happened
+
+
+  - type: markdown
     attributes:
-      label: What happened?
-      description: Also tell us, what did you expect to happen?
-      placeholder: Tell us what you see!
-      value: "A bug happened!"
-    validations:
-      required: true
+      value: |
+          # Background
   - type: dropdown
     id: os
     attributes:
@@ -25,8 +21,22 @@ body:
         - Windows 10
         - Windows 11
         - macOS
-        - ubuntu 18.04
-        - ubuntu 20.04
+        - Ubuntu 22.04
+        - CentOS 7
+        - Other Linux (please specify below)
+    validations:
+      required: true
+  - type: input
+    id: other-os
+    attributes:
+      label: Other Linux
+      placeholder: e.g. Fedora 38
+  - type: input
+    id: version
+    attributes:
+      label: Workflow Version
+      description: This is most easily found in the workflow output log
+      placeholder: v1.2.3
     validations:
       required: true
   - type: dropdown
@@ -35,41 +45,80 @@ body:
       label: Workflow Execution
       description: Where are you running the workflow?
       options:
-        - EPI2ME Labs desktop application
+        - EPI2ME Desktop application
         - Command line
-        - EPI2ME
+        - EPI2ME cloud agent
         - Other (please describe)
     validations:
       required: true
+
+
+  - type: markdown
+    attributes:
+      value: |
+        # EPI2ME Desktop Application
+        If you are using the application please provide the following.
   - type: input
     id: labs-version
     attributes:
-      label: Workflow Execution - EPI2ME Labs Versions
-      description: If you're running using EPI2ME Labs please provide the version and the environment version (Click the blue help icon bottom left and select ":bout")?
+      label: EPI2ME Version
+      description: Available from the application settings page.
+      placeholder: v5.1.1
+    validations:
+      required: false
+
+
+  - type: markdown
+    attributes:
+      value: |
+        # Command-line execution
+        If you are using nextflow on a command-line, please provide the following.
+  - type: textarea
+    id: cli-command
+    attributes:
+      label: CLI command run
+      description: Please tell us the command you are running
+      placeholder: e.g. nextflow run epi2me-labs/wf-human-variations -profile standard --fastq my-reads/fastq
     validations:
       required: false
   - type: dropdown
     id: profile
     attributes:
       label: Workflow Execution - CLI Execution Profile
-      description: If you're using the CLI to run the workflow, what profile are you using?
+      description: Which execution profile are you using? If you are using a custom profile or nextflow configuration, please give details below.
       options:
-        - Docker
-        - Singularity
+        - standard (default)
+        - singularity
+        - custom
     validations:
       required: false
-  - type: input
-    id: version
+
+
+  - type: markdown
     attributes:
-      label: Workflow Version
-      description: What version of the workflow are you running?
+      value: |
+        # Report details
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
       label: Relevant log output
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      description: For CLI execution please include the full output from running nextflow. For execution from the EPI2ME application please copy the contents of the "Workflow logs" panel from the "Logs" tab corresponding to your workflow instance. (This will be automatically formatted into code, so no need for backticks).
       render: shell
     validations:
       required: true
+  - type: textarea
+    id: activity-log
+    attributes:
+      label: Application activity log entry
+      description: For use with the EPI2ME application please see the Settings > View Activity Log page, and copy the contents of any items listed in red using the Copy to clipboard button.
+      render: shell
+    validations:
+      required: false

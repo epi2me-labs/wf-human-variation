@@ -1,0 +1,17 @@
+name: Question
+description: Ask a generic question about this project unrelated to features or bugs.
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please reserve this form for issues not related to bugs or feature requests. If our developers deem your questions to be related to bugs or features you will be asked to fill in the appropriate form.
+  - type: textarea
+    id: question1
+    attributes:
+      label: Ask away!
+      placeholder: |
+          Bad question: How do I use this workflow in my HPC cluster?
+          Good question: My HPC cluster uses a GridEngine scheduler. Can you point me to documentation for how to use your workflows to efficiently submit jobs to my cluster?
+    validations:
+      required: true
