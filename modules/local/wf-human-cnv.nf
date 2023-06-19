@@ -1,6 +1,6 @@
 import groovy.json.JsonBuilder
 
-
+// fix_vcf was unglued to avoid installing base deps in CNV container
 process callCNV {
     label "wf_cnv"
     cpus 1
@@ -15,18 +15,12 @@ process callCNV {
         """
         run_qdnaseq.r --bam ${bam} --out_prefix ${params.sample_name} --binsize ${params.bin_size} --reference ${genome_build}
         cut -f5 ${params.sample_name}_calls.bed | paste ${params.sample_name}_bins.bed - > ${params.sample_name}_combined.bed
-        check=`awk -F "\t" 'NF != 6' ${params.sample_name}_segs.seg`
-    
-        if [ -n "\${check}" ]; then \
-            echo "vcf is malformed"; \
-            workflow-glue fix_vcf --vcf ${params.sample_name}_calls.vcf --fixed_vcf ${params.sample_name}_calls_fixed.vcf --sample_id ${params.sample_name}; \
-            workflow-glue fix_vcf --vcf ${params.sample_name}_segs.vcf --fixed_vcf ${params.sample_name}_segs_fixed.vcf --sample_id ${params.sample_name}; \
 
-            rm ${params.sample_name}_calls.vcf
-            mv ${params.sample_name}_calls_fixed.vcf ${params.sample_name}_calls.vcf
-            rm ${params.sample_name}_segs.vcf
-            mv ${params.sample_name}_segs_fixed.vcf ${params.sample_name}_segs.vcf
-        fi
+        # VCF will be malformed if it contains one CNV (CW-1491), check and fix if necessary
+        mv ${params.sample_name}_calls.vcf raw.vcf
+        mv ${params.sample_name}_segs.vcf raw_segs.vcf
+        fix_1491_vcf.py -i raw.vcf -o ${params.sample_name}_calls.vcf --sample_id ${params.sample_name}
+        fix_1491_vcf.py -i raw_segs.vcf -o ${params.sample_name}_segs.vcf --sample_id ${params.sample_name}
         """
 }
 
