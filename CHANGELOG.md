@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v1.6.1]
 ### Fixed
 - ModuleNotFoundError on callCNV step when transforming some VCFs
+- Malformed VCF created by annotation step if Java emits a warning
 
 ## [v1.6.0]
 ### Changed
