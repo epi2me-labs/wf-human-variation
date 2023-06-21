@@ -23,6 +23,10 @@ process dorado {
     def remora_args = (params.basecaller_basemod_threads > 0 && (params.remora_cfg || remora_model_override)) ? "--modified-bases-models ${remora_model}" : ''
     def model_arg = basecaller_model_override ? "dorado_model" : "\${DRD_MODELS_PATH}/${basecaller_cfg}"
     def basecaller_args = params.basecaller_args ?: ''
+    // we can't set maxForks dynamically, but we can detect it might be wrong!
+    if (task.executor != "local" && task.maxForks == 1) {
+        log.warn "Non-local workflow execution detected but GPU tasks are currently configured to run in serial, perhaps you should be using '-profile discrete_gpus' to parallelise GPU tasks for better performance?"
+    }
     """
     set +e
     source /opt/nvidia/entrypoint.d/*-gpu-driver-check.sh # runtime driver check msg
