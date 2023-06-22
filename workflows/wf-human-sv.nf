@@ -24,10 +24,11 @@ workflow bam {
         mosdepth_stats
         optional_file
         genome_build
+        extensions
     main:
         // truncate bam channel to remove meta to keep compat with sv pipe
         bam = bam_channel.map{ it -> tuple(it[0], it[1]) }
-        called = variantCall(bam, reference, target, mosdepth_stats, optional_file, genome_build)
+        called = variantCall(bam, reference, target, mosdepth_stats, optional_file, genome_build, extensions)
 
         // benchmark
         if (params.sv_benchmark) {
@@ -110,6 +111,7 @@ workflow variantCall {
         mosdepth_stats
         optional_file
         genome_build
+        extensions
     main:
 
         // tandom_repeat bed
@@ -119,8 +121,8 @@ workflow variantCall {
             tr_bed = Channel.fromPath(params.tr_bed, checkIfExists: true)
         }
 
-        filterBam(bam, reference)
-        sniffles2(filterBam.out.cram, tr_bed, reference)
+        filterBam(bam, reference, extensions)
+        sniffles2(filterBam.out.xam, tr_bed, reference)
         filterCalls(sniffles2.out.vcf, mosdepth_stats, target_bed)
         sortVCF(filterCalls.out.vcf)
         indexVCF(sortVCF.out.vcf)

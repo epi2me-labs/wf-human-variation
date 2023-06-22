@@ -8,8 +8,8 @@ process make_chunks {
     label "wf_human_snp"
     cpus 1
     input:
-        tuple path(bam), path(bai)
-        tuple path(ref), path(fai), path(ref_cache)
+        tuple path(xam), path(xam_idx)
+        tuple path(ref), path(ref_idx), path(ref_cache)
         path bed
     output:
         path "clair_output/tmp/CONTIGS", emit: contigs_file
@@ -19,7 +19,7 @@ process make_chunks {
         """
         mkdir -p clair_output
         python \$(which clair3.py) CheckEnvs \
-            --bam_fn ${bam} \
+            --bam_fn ${xam} \
             ${bedargs} \
             --output_fn_prefix clair_output \
             --ref_fn ${ref} \
@@ -47,8 +47,8 @@ process pileup_variants {
     errorStrategy 'retry'
     input:
         each region
-        tuple path(bam), path(bai)
-        tuple path(ref), path(fai), path(ref_cache)
+        tuple path(xam), path(xam_idx)
+        tuple path(ref), path(ref_idx), path(ref_cache)
         path model
     output:
         // TODO: make this explicit, why is pileup VCF optional?
@@ -63,7 +63,7 @@ process pileup_variants {
         export REF_PATH=!{ref_cache}/%2s/%2s/%s
         python $(which clair3.py) CallVariantsFromCffi \
             --chkpnt_fn !{model}/pileup \
-            --bam_fn !{bam} \
+            --bam_fn !{xam} \
             --call_fn pileup_!{region.contig}_!{region.chunk_id}.vcf \
             --ref_fn !{ref} \
             --ctgName !{region.contig} \
@@ -90,7 +90,7 @@ process aggregate_pileup_variants {
     label "wf_human_snp"
     cpus 2
     input:
-        tuple path(ref), path(fai), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache)
         // these need to be named as original, as program uses info from
         // contigs file to filter
         path "input_vcfs/*"
@@ -149,37 +149,38 @@ process phase_contig_haplotag {
     label "wf_human_snp"
     cpus 4
     input:
-        tuple val(contig), path(het_snps), path(het_snps_tbi), path(bam), path(bai), path(ref), path(fai), path(ref_cache)
+        tuple val(contig), path(het_snps), path(het_snps_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache)
+        tuple val(xam_fmt), val(xai_fmt)
     output:
         tuple val(contig), path("${contig}_hp.bam"), path("${contig}_hp.bam.bai"), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
-    shell:
-        '''
+    script:
+        """
         # REF_PATH points to the reference cache and allows faster parsing of CRAM files
-        export REF_PATH=!{ref_cache}/%2s/%2s/%s
+        export REF_PATH=${ref_cache}/%2s/%2s/%s
             echo "Using whatshap for phasing"
             whatshap phase \
-                --output phased_!{contig}.vcf.gz \
-                --reference !{ref} \
-                --chromosome !{contig} \
+                --output phased_${contig}.vcf.gz \
+                --reference ${ref} \
+                --chromosome ${contig} \
                 --distrust-genotypes \
                 --ignore-read-groups \
-                !{het_snps} \
-                !{bam}
+                ${het_snps} \
+                ${xam}
 
-        tabix -f -p vcf phased_!{contig}.vcf.gz
+        tabix -f -p vcf phased_${contig}.vcf.gz
 
         whatshap haplotag \
-            --reference !{ref} \
+            --reference ${ref} \
             --ignore-read-groups \
-            --regions !{contig} \
-            phased_!{contig}.vcf.gz \
-            !{bam} \
-        | samtools view -b -1 -@3 -o !{contig}_hp.bam
+            --regions ${contig} \
+            phased_${contig}.vcf.gz \
+            ${xam} \
+        | samtools view -b -1 -@3 -o ${contig}_hp.bam
 
         # --write-index produces .csi not .bai, which downstream things seem not to like
-        samtools index -@!{task.cpus} !{contig}_hp.bam
+        samtools index -@${task.cpus} ${contig}_hp.bam
 
-        '''
+        """
 }
 
 process phase_contig {
@@ -191,9 +192,9 @@ process phase_contig {
     label "wf_human_snp"
     cpus 4
     input:
-        tuple val(contig), path(het_snps), path(het_snps_tbi), path(bam), path(bai), path(ref), path(fai), path(ref_cache)
+        tuple val(contig), path(het_snps), path(het_snps_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache)
     output:
-        tuple val(contig), path(bam), path(bai), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
+        tuple val(contig), path(xam), path(xam_idx), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
     shell:
         '''
         # REF_PATH points to the reference cache and allows faster parsing of CRAM files
@@ -203,7 +204,7 @@ process phase_contig {
             # longphase needs decompressed 
             bgzip -@ !{task.cpus} -dc !{het_snps} > snps.vcf
             longphase phase --ont -o phased_!{contig} \
-                -s snps.vcf -b !{bam} -r !{ref} -t !{task.cpus}
+                -s snps.vcf -b !{xam} -r !{ref} -t !{task.cpus}
             bgzip phased_!{contig}.vcf
         else
             echo "Using whatshap for phasing"
@@ -214,7 +215,7 @@ process phase_contig {
                 --distrust-genotypes \
                 --ignore-read-groups \
                 !{het_snps} \
-                !{bam}
+                !{xam}
         fi
 
         tabix -f -p vcf phased_!{contig}.vcf.gz
@@ -223,15 +224,16 @@ process phase_contig {
 
 process merge_haplotagged_contigs {
     cpus params.threads
-    // merge the haplotagged contigs to produce a single BAM file
     label "wf_human_snp"
     input:
-        path contig_bams
+        path contig_xams
+        tuple val(xam_fmt), val(xai_fmt)
     output:
-        tuple path("*haplotagged.bam"), path("*haplotagged.bam.bai"), emit: merged_bam
+        tuple path("*haplotagged.${xam_fmt}"), path("*haplotagged.${xam_fmt}.${xai_fmt}"), emit: merged_bam
+    script:
     """
-    samtools merge -@ $task.cpus -o ${params.sample_name}.haplotagged.bam ${contig_bams}
-    samtools index -@ $task.cpus ${params.sample_name}.haplotagged.bam
+    samtools merge -@ $task.cpus -O ${xam_fmt} -o ${params.sample_name}.haplotagged.${xam_fmt} ${contig_xams}
+    samtools index -@ $task.cpus ${params.sample_name}.haplotagged.${xam_fmt}
     """
 }
 
@@ -267,7 +269,7 @@ process create_candidates {
     cpus 2
     input:
         each contig
-        tuple path(ref), path(fai), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache)
         tuple path("pileup.vcf.gz"), path("pileup.vcf.gz.tbi")
         // this is used implicitely by the program
         // https://github.com/HKU-BAL/Clair3/blob/329d09b39c12b6d8d9097aeb1fe9ec740b9334f6/preprocess/SelectCandidates.py#L146
@@ -303,9 +305,9 @@ process evaluate_candidates {
     cpus 1
     errorStrategy 'retry'
     input:
-        tuple val(contig), path(phased_bam), path(phased_bam_index), path(phased_vcf)
+        tuple val(contig), path(phased_xam), path(phased_xam_idx), path(phased_vcf)
         tuple val(contig), path(candidate_bed)
-        tuple path(ref), path(fai), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache)
         path(model)
     output:
         path "output/full_alignment_*.vcf", emit: full_alignment
@@ -317,8 +319,8 @@ process evaluate_candidates {
         mkdir output
         echo "[INFO] 6/7 Call low-quality variants using full-alignment model"
         python \$(which clair3.py) CallVariantsFromCffi \
-            --chkpnt_fn $model/full_alignment \
-            --bam_fn $phased_bam \
+            --chkpnt_fn ${model}/full_alignment \
+            --bam_fn ${phased_xam} \
             --call_fn output/full_alignment_${filename}.vcf \
             --sampleName ${params.sample_name} \
             --ref_fn ${ref} \
@@ -341,7 +343,7 @@ process aggregate_full_align_variants {
     label "wf_human_snp"
     cpus 2
     input:
-        tuple path(ref), path(fai), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache)
         path "full_alignment/*"
         path contigs
         path "gvcf_tmp_path/*"
@@ -382,7 +384,7 @@ process merge_pileup_and_full_vars{
     cpus 2
     input:
         each contig
-        tuple path(ref), path(fai), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache)
         tuple path(pile_up_vcf), path(pile_up_vcf_tbi)
         tuple path(full_aln_vcf), path(full_aln_vcf_tbi)
         path "non_var.gvcf"
@@ -420,7 +422,7 @@ process post_clair_phase_contig {
     label "wf_human_snp"
     cpus 4
     input:
-        tuple val(contig), path(vcf), path(vcf_tbi), path(bam), path(bai), path(ref), path(fai), path(ref_cache)
+        tuple val(contig), path(vcf), path(vcf_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache)
     output:
         tuple val(contig), path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"), emit: vcf
     shell:
@@ -432,7 +434,7 @@ process post_clair_phase_contig {
             # longphase needs decompressed 
             gzip -dc !{vcf} > variants.vcf
             longphase phase --ont -o phased_!{contig} \
-                -s variants.vcf -b !{bam} -r !{ref} -t !{task.cpus}
+                -s variants.vcf -b !{xam} -r !{ref} -t !{task.cpus}
             bgzip phased_!{contig}.vcf
         else
             echo "Using whatshap for phasing"
@@ -443,7 +445,7 @@ process post_clair_phase_contig {
                 --distrust-genotypes \
                 --ignore-read-groups \
                 !{vcf} \
-                !{bam}
+                !{xam}
         fi
 
         tabix -f -p vcf phased_!{contig}.vcf.gz
@@ -456,7 +458,7 @@ process aggregate_all_variants{
     label "wf_human_snp"
     cpus 4
     input:
-        tuple path(ref), path(fai), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache)
         path "merge_output/*"
         path "merge_outputs_gvcf/*"
         val(phase_vcf)
@@ -507,9 +509,9 @@ process refine_with_sv {
     label "wf_human_snp"
     cpus 1
     input:
-        tuple path(ref), path(fai), path(ref_cache) 
+        tuple path(ref), path(ref_idx), path(ref_cache) 
         tuple path(clair_vcf, stageAs: 'clair.vcf.gz'), path(clair_tbi, stageAs: 'clair.vcf.gz.tbi')
-        tuple path(xam), path(xai) // this may be a haplotagged_bam or input CRAM 
+        tuple path(xam), path(xam_idx) // this may be a haplotagged_bam or input CRAM 
         path sniffles_vcf
     output:
         tuple path("${params.sample_name}.wf_snp.vcf.gz"), path("${params.sample_name}.wf_snp.vcf.gz.tbi"), emit: final_vcf
