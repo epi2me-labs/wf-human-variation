@@ -33,6 +33,7 @@ workflow snp {
         model
         sniffles_vcf
         genome_build
+        extensions
     main:
 
         // truncate bam channel to remove meta to keep compat with snp pipe
@@ -70,13 +71,13 @@ workflow snp {
         // > Step 4 (haplotagging performed as part of STR sub-workflow only)
 
         if (params.str || params.phase_methyl) {
-            phase_contig_haplotag(phase_inputs)
+            phase_contig_haplotag(phase_inputs, extensions)
             phase_contig_haplotag.out.phased_bam_and_vcf.set { phased_bam_and_vcf }
 
             phase_contig_haplotag.out.phased_bam_and_vcf.map{it -> tuple(it[0], it[1], it[2])}.set { bam_for_str }
             // Merge the haplotagged contigs into a single BAM
             phase_contig_haplotag.out.phased_bam_and_vcf.collect{it[1]}.set { contig_bams }
-            haplotagged_bam = merge_haplotagged_contigs(contig_bams)
+            haplotagged_bam = merge_haplotagged_contigs(contig_bams, extensions)
 
         }
         else {

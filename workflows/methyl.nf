@@ -3,12 +3,12 @@ process modbam2bed {
     cpus params.threads
     input:
         tuple path(alignment), path(alignment_index), val(alignment_meta), val(hap)
-        tuple path(reference), path(reference_index), path(reference_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache)
     output:
         path "${params.sample_name}*.methyl.*", emit: methyl_outputs
 
     script:
-    def ref_path = "${reference_cache}/%2s/%2s/%s:" + System.getenv("REF_PATH")
+    def ref_path = "${ref_cache}/%2s/%2s/%s:" + System.getenv("REF_PATH")
     def modbam2bed_args = params.modbam2bed_args ?: ''
     // Define the haplotype, if required
     def is_phased = hap != 0 ? "--haplotype ${hap}" : ""
@@ -17,7 +17,7 @@ process modbam2bed {
     export REF_PATH=${ref_path}
     modbam2bed \
         -e -m 5mC --cpg -t ${task.cpus} \
-        ${reference} \
+        ${ref} \
         ${alignment} \
         --aggregate \
         --prefix ${params.sample_name}${haptag}.methyl \

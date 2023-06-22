@@ -5,13 +5,15 @@ process filterBam {
     label "wf_human_sv"
     cpus params.threads
     input:
-        tuple path(bam), path(bam_idx)
-        tuple path(reference), path(ref_idx), path(ref_cache)
+        tuple path(xam), path(xam_idx)
+        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple val(xam_fmt), val(xai_fmt)
     output:
-        tuple path("${params.sample_name}.filtered.cram"), path("${params.sample_name}.filtered.cram.crai"), emit: cram
+        tuple path("${params.sample_name}.filtered.${xam_fmt}"), path("${params.sample_name}.filtered.${xam_fmt}.${xai_fmt}"), emit: xam
     script:
     """
-    samtools view -@ $task.cpus -F 2308 -o ${params.sample_name}.filtered.cram -O CRAM --write-index ${bam} --reference ${reference}
+    export REF_PATH=${ref_cache}/%2s/%2s/%s
+    samtools view -@ $task.cpus -F 2308 -o ${params.sample_name}.filtered.${xam_fmt} -O ${xam_fmt} --write-index ${xam} --reference ${ref}
     """
 }
 
@@ -22,9 +24,9 @@ process sniffles2 {
     label "wf_human_sv"
     cpus params.threads
     input:
-        tuple path(bam), path(bam_index)
+        tuple path(xam), path(xam_idx)
         file tr_bed
-        tuple path(reference), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache)
     output:
         path "*.sniffles.vcf", emit: vcf
     script:
@@ -38,7 +40,7 @@ process sniffles2 {
         --sample-id ${params.sample_name} \
         --output-rnames \
         --cluster-merge-pos $params.cluster_merge_pos \
-        --input $bam \
+        --input $xam \
         $tr_arg \
         $sniffles_args \
         --vcf ${params.sample_name}.sniffles.vcf

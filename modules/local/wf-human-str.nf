@@ -5,8 +5,8 @@ process call_str {
     label "wf_human_str"
     cpus 1
     input:
-        tuple val(chr), path(bam), path(bai)
-        tuple path(ref), path(fai), path(ref_cache)
+        tuple val(chr), path(xam), path(xam_idx)
+        tuple path(ref), path(ref_idx), path(ref_cache) 
         path(repeat_bed)
     output:
         path "*.vcf.gz", emit: straglr_vcf, optional: true
@@ -20,7 +20,7 @@ process call_str {
                 --sample !{params.sample_name} \
                 --tsv !{chr}_straglr.tsv \
                 -v !{chr}_tmp.vcf \
-                --sex !{params.sex} !{bam} !{ref} \
+                --sex !{params.sex} !{xam} !{ref} \
                 --min_support 1 \
                 --min_cluster_size 1
             cat !{chr}_tmp.vcf | vcfstreamsort | bgziptabix !{chr}_straglr.vcf.gz

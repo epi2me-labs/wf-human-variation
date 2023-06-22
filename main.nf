@@ -291,6 +291,11 @@ workflow {
                     .flatten()
                     .collect() | makeAlignmentReport
     }
+    // Set extensions for analyses
+    extensions = pass_bam_channel.map{
+        xam, xai, meta -> 
+        meta.is_cram ? ['cram', 'crai'] : ['bam', 'bai']
+    }
 
     // wf-human-sv
     if(params.sv) {
@@ -300,7 +305,8 @@ workflow {
             bed,
             mosdepth.out.summary,
             OPTIONAL,
-            genome_build
+            genome_build,
+            extensions
         )
         artifacts = results.report.flatten()
         sniffles_vcf = results.sniffles_vcf
@@ -339,7 +345,8 @@ workflow {
             ref_channel,
             clair3_model,
             sniffles_vcf,
-            genome_build
+            genome_build,
+            extensions
         )
         output_snp(clair_vcf.clair3_results.flatten())
     }

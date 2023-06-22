@@ -150,11 +150,11 @@ process publish_artifact {
 process getAllChromosomesBed {
     cpus 1
     input:
-        tuple path(reference), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache)
     output:
         path "allChromosomes.bed", emit: all_chromosomes_bed
     """
-    faidx --transform bed $reference > allChromosomes.bed
+    faidx --transform bed $ref > allChromosomes.bed
     """
 }
 
@@ -166,7 +166,7 @@ process getAllChromosomesBed {
 //TODO --variant locations should be constructed legitimately instead of guessed
 process configure_jbrowse {
     input:
-        tuple path(reference), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache)
         tuple path(xam), path(xam_idx), val(xam_meta)
     output:
         path("jbrowse.json")
@@ -177,7 +177,7 @@ process configure_jbrowse {
     def alignment = output_bam ? "--alignment ${params.out_dir}/${xam.name} ${params.out_dir}/${xam_idx.name}" : ''
     """
     workflow-glue configure_jbrowse \
-        --reference ${reference} ${params.out_dir}/${reference.name} ${params.out_dir}/${ref_idx.name} \
+        --reference ${ref} "${params.out_dir}/${ref.name}" "${params.out_dir}/${ref_idx.name}" \
         ${alignment} \
         ${snp_variant} \
         ${sv_variant} > jbrowse.json

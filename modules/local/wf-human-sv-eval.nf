@@ -47,7 +47,7 @@ process truvari {
     label "wf_human_sv"
     cpus 1
     input:
-        tuple path(reference), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache)
         tuple path(calls_vcf), path(calls_vcf_tbi)
         tuple path(user_truthset_vcf), path(user_truthset_tbi)
         file include_bed
@@ -63,7 +63,7 @@ process truvari {
         --dup-to-ins \
         -b ${tru_vcf_arg} \
         -c $calls_vcf \
-        -f $reference \
+        -f ${ref} \
         -o ${params.sample_name} \
         --includebed $include_bed
     mv ${params.sample_name}/summary.txt ${params.sample_name}.truvari.json
