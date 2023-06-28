@@ -3,19 +3,22 @@
 
 import json
 
-from dominate.tags import a, h4, p
+from dominate.tags import a, h4, h6, p
 from ezcharts.components.ezchart import EZChart
 from ezcharts.components.reports.labs import LabsReport
 from ezcharts.components.theme import LAB_head_resources
 from ezcharts.layout.snippets import DataTable, Grid, Stats, Tabs
 from ezcharts.layout.snippets import Progress
+from ezcharts.layout.util import isolate_context
 from ezcharts.plots import util
 from ezcharts.plots.categorical import barplot
 from ezcharts.plots.ideogram import ideogram
 import numpy as np
 import pandas as pd
 
+from .report_utils import read_data  # noqa: ABS101
 from .report_utils.common import CHROMOSOMES  # noqa: ABS101
+from .report_utils.common import CLINVAR_BASE, NCBI_GENE_BASE  # noqa: ABS101
 from .util import wf_parser  # noqa: ABS101
 
 vcf_cols = [
@@ -194,6 +197,18 @@ def main(args):
         vcf_df = read_vcf(sample_vcf)
         vcf_data.append((index, sample_vcf.split('.')[0], vcf_df))
 
+    # Input all ClinVar VCFs
+    clinvar_vcf_data = []
+    for index, sample_vcf in enumerate(args.clinvar_vcf):
+        # Annotation is on
+        if not args.skip_annotation:
+            vcf_df = read_data.parse_vcf(sample_vcf)
+            vcf_is_empty = read_data.parse_vcf_for_size(sample_vcf)
+            clinvar_vcf_data.append((
+                index, sample_vcf.split('.')[0], vcf_data, vcf_is_empty[0]))
+        else:
+            continue
+
     # Create report file
     report = LabsReport(
         "Structural variants analysis", "wf-human-variation",
@@ -219,6 +234,115 @@ def main(args):
                     p("The workflow found no structural variants to report.")
                 else:
                     DataTable.from_pandas(get_sv_summary_table(vcf_df))
+
+    if not args.skip_annotation:
+        with report.add_section('ClinVar variant annotations', 'ClinVar'):
+            clinvar_docs_url = "https://www.ncbi.nlm.nih.gov/clinvar/docs/clinsig/"
+            p(
+                "The ",
+                a("SnpEff", href="https://pcingola.github.io/SnpEff/"),
+                " annotation tool has been used to annotate with",
+                a("ClinVar", href="https://www.ncbi.nlm.nih.gov/clinvar/"), '.'
+                " If any variants have ClinVar annotations, they will appear in a ",
+                "table below. Please note, this table excludes variants with 'Benign'",
+                " or 'Likely benign' significance, however these variants will appear",
+                "in the VCF output by the workflow. For further details on the terms",
+                " in the 'Significance' column, please visit ",
+                a("this page", href=clinvar_docs_url),
+                '.')
+            tabs = Tabs()
+            for (index, sample_name, vcf_data, vcf_is_empty) in clinvar_vcf_data:
+                with tabs.add_tab(sample_name):
+                    if vcf_is_empty:
+                        h6('No ClinVar sites were found.')
+                    else:
+                        # display ClinVar records
+                        data_table = DataTable(
+                            headers=[
+                                'Chrom',
+                                'Pos',
+                                'Gene(s)',
+                                'ClinVar',
+                                'Significance',
+                                'Type',
+                                'Consequence',
+                                'HGVSg'],
+                            export=True,
+                            file_name=(
+                                f'{sample_name}-wf-human-variation-sv-clinvar'))
+
+                        for variant in vcf_data:
+                            significance = ", ".join(variant.info['CLNSIG'])
+                            benigns = ["Benign", "benign"]
+                            if any([x in significance for x in benigns]):
+                                continue
+                            else:
+                                try:
+                                    all_ncbi_urls = []
+                                    clinvar_gene_string = variant.info['GENEINFO']
+                                    all_genes = clinvar_gene_string.split('|')
+                                    for gene in all_genes:
+                                        gene_symbol, gene_id = gene.split(':')
+                                        ncbi_url = f"""
+                                            <a href=
+                                                \"{NCBI_GENE_BASE}{gene_id}\">{
+                                                    gene_symbol}</a>"""
+                                        all_ncbi_urls.append(ncbi_url)
+                                    ncbi_gene_url = ", ".join(all_ncbi_urls)
+                                except KeyError:
+                                    ncbi_gene_url = "No affected genes found"
+
+                                clinvar_id = variant.id
+                                with isolate_context():
+                                    clinvar_url = a(
+                                        clinvar_id, href='%s%s' % (
+                                            CLINVAR_BASE, clinvar_id))
+
+                                significance = significance.replace(
+                                    "_", " ").capitalize()
+
+                                variant_type = variant.info['CLNVC']
+                                variant_type = variant_type.replace(
+                                    "_", " ").capitalize()
+                                if variant_type == 'Single nucleotide variant':
+                                    variant_type = 'SNV'
+
+                                consequences = []
+                                try:
+                                    all_consequences = variant.info['MC']
+                                    for each_conseq in all_consequences:
+                                        ontology, consequence = each_conseq.split('|')
+                                        consequence = consequence.replace(
+                                            "_", " ").capitalize()
+                                        consequence = consequence.replace(
+                                            "5 prime utr", "5' UTR")
+                                        consequence = consequence.replace(
+                                            "3 prime utr", "3' UTR")
+                                        consequences.append(consequence)
+                                    consequences = ", ".join(consequences)
+                                except KeyError:
+                                    consequences = "No consequences found"
+
+                                hgvs = variant.info['CLNHGVS']
+                                hgvs = ", ".join(hgvs)
+
+                                data_table.add_row(
+                                    title=None,
+                                    columns=[
+                                        variant.chrom,
+                                        variant.pos,
+                                        ncbi_gene_url,
+                                        clinvar_url,
+                                        significance,
+                                        variant_type,
+                                        consequences,
+                                        hgvs])
+    else:
+        # Annotations were skipped
+        with report.add_section('ClinVar variant annotations', 'ClinVar'):
+            p(
+                "This report was generated without annotations. To see"
+                " them, re-run the workflow without --skip_annotation.")
 
     with report.add_section('Karyogram', 'Karyogram'):
         karyoplot(vcf_data, args)
@@ -312,6 +436,10 @@ def argparser():
         nargs='+',
         required=True)
     parser.add_argument(
+        "--clinvar_vcf",
+        nargs='+',
+        required=False)
+    parser.add_argument(
         "--genome",
         default='hg38',
         required=False)
@@ -334,5 +462,8 @@ def argparser():
     parser.add_argument(
         "--versions", required=True,
         help="directory contained CSVs containing name,version.")
+    parser.add_argument(
+        "--skip_annotation", action="store_true",
+        help="Do not show ClinVar variants in report.")
 
     return parser
