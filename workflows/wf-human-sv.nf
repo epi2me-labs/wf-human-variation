@@ -15,6 +15,9 @@ include {
     intersectBedWithTruthset;
     truvari;
 } from "../modules/local/wf-human-sv-eval.nf"
+include { 
+    annotate_vcf as annotate_sv_vcf
+} from '../modules/local/common.nf'
 
 workflow bam {
     take:
@@ -38,14 +41,31 @@ workflow bam {
             benchmark_result = Channel.fromPath(optional_file)
         }
 
-        report = runReport(
-            called.vcf.collect(),
-            benchmark_result
-        )
+        if (params.skip_annotation) {
+            final_vcf = called.vcf.combine(called.vcf_index)
+            // no ClinVar VCF, pass empty file to makeReport
+            empty_file = projectDir.resolve("./data/empty.txt").toString()
+            report = runReport(
+                called.vcf.collect(),
+                empty_file,
+                benchmark_result
+            )
+        }
+        else {
+            vcf_for_annotation = called.vcf.combine(called.vcf_index)
+            // do annotation and get a list of ClinVar variants for the report
+            annotations = annotate_sv_vcf(vcf_for_annotation, genome_build, "sv")
+            final_vcf = annotations.final_vcf
+            report = runReport(
+                final_vcf.map{it[0]},
+                annotations.final_vcf_clinvar,
+                benchmark_result
+            )
+        }
+
     emit:
         report = report.html.concat(
-            called.vcf,
-            called.vcf_index,
+            final_vcf,
             benchmark_result
         )
         sniffles_vcf = called.vcf
@@ -136,12 +156,14 @@ workflow variantCall {
 workflow runReport {
     take:
         vcf
+        clinvar_vcf
         eval_json
     main:
         software_versions = getVersions()
         workflow_params = getParams()
         report(
             vcf.collect(),
+            clinvar_vcf,
             eval_json,
             software_versions,
             workflow_params,

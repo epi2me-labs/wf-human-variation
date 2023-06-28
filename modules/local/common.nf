@@ -320,8 +320,8 @@ process annotate_vcf {
         val(output_label)
     output:
         tuple path("${params.sample_name}.wf_${output_label}.vcf.gz"), path("${params.sample_name}.wf_${output_label}.vcf.gz.tbi"), emit: final_vcf
-        path("${params.sample_name}.wf_snp.snpEff_genes.txt")
-        path("${params.sample_name}.wf_snp_clinvar.vcf"), emit: final_vcf_clinvar
+        path("${params.sample_name}.wf_${output_label}.snpEff_genes.txt")
+        path("${params.sample_name}.wf_${output_label}_clinvar.vcf"), emit: final_vcf_clinvar
     shell:
     '''
     # deal with samples which aren't hg19 or hg38

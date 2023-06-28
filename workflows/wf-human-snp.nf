@@ -22,7 +22,9 @@ include {
     makeReport;
 } from "../modules/local/wf-human-snp.nf"
 
-include { annotate_vcf as annotate_snp_vcf } from '../modules/local/common.nf'
+include { 
+    annotate_vcf as annotate_snp_vcf 
+} from '../modules/local/common.nf'
 
 // workflow module
 workflow snp {
