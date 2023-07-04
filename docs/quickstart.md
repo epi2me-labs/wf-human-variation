@@ -93,12 +93,23 @@ nextflow run epi2me-labs/wf-human-variation \
     --out_dir ${OUTPUT}
 ```
 
+**Genome build compatibility**
+
+The workflow carries out a check to determine the version of the human genome build used during alignment, as certain subworkflows
+are only compatible with specific genome versions:
+
+* By default, `--snp`, `--sv`, and `--phase_methyl` require either hg19/GRCh37 or hg38/GRCh38 to enable generation of annotations using SnpEff.
+However, by disabling annotations with `--skip_annotation`, these subworkflows can be run with other human genome builds (and non-human genomes).
+* `--str`: requires genome build hg38/GRCh38.
+* `--cnv`: requires genome builds hg19/GRCh37 or hg38/GRCh38.
+
+
 **Workflow outputs**
 
 The primary outputs of the workflow include:
 
-* a gzipped VCF file containing annotated SNPs found in the dataset (`--snp`). Annotation is turned on by default, but can be switched off using the `--skip_annotation` parameter
-* a gzipped VCF file containing SVs called from the dataset (`--sv`)
+* a gzipped VCF file containing annotated SNPs found in the dataset (`--snp`)
+* a gzipped VCF file containing annotated SVs called from the dataset (`--sv`)
 * a gzipped [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file aggregating modified CpG base counts (`--methyl`)
 * a VCF of CNV calls, QDNAseq-generated plots, and BED files of both raw read counts per bin and corrected, normalised, and smoothed read counts per bin (`--cnv`)
 * a gzipped VCF file containing STRs found in the dataset, TSV Straglr output containing reads spanning STRs, and a haplotagged BAM (`--str`)
@@ -120,13 +131,14 @@ The secondary outputs of the workflow include:
 
 - Users familiar with `wf-human-snp` and `wf-human-sv` are recommended to familiarise themselves with any parameter changes by using `--help`, in particular:
     - All arms of the variation calling workflow use `--ref` (not `--reference`) and `--bed` (not `--target_bedfile`)
-- Annotations for `--snp` are generated using [SnpEff](https://pcingola.github.io/SnpEff/), with additional [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) annotations where available.
+- Annotations for `--snp` and `--sv` are generated using [SnpEff](https://pcingola.github.io/SnpEff/), with additional [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) annotations displayed in the report where available (please note, the report will not display any variants classified as 'Benign' or 'Likely benign', however these variants will be present in the
+output VCF).
 - Specifying a suitable [tandem repeat BED for your reference](https://raw.githubusercontent.com/fritzsedlazeck/Sniffles/master/annotations/) with `--tr_bed` can improve the accuracy of SV calling.
 - Aggregation of methylation calls with `--methyl` requires data to be basecalled with a model that includes base modifications, providing the `MM` and `ML` BAM tags
 - Refer to the [Dorado documentation](https://github.com/nanoporetech/dorado#available-basecalling-models) for a list of available basecalling models
 - Take care to retain the input reference when basecalling or alignment has been performed as CRAM files cannot be read without the corresponding reference!
 - Refer to our [blogpost](https://labs.epi2me.io/copy-number-calling/) and [CNV workflow documentation](https://github.com/epi2me-labs/wf-cnv) for more information on running the copy number calling subworkflow.
-- The STR workflow performs genotyping of specific repeats, which can be found [here](https://github.com/epi2me-labs/wf-human-variation/blob/master/data/wf_str_repeats.bed), and is only compatible with genome build 38.
+- The STR workflow performs genotyping of specific repeats, which can be found [here](https://github.com/epi2me-labs/wf-human-variation/blob/master/data/wf_str_repeats.bed).
 
 ### Support for basecalling on GPU
 
