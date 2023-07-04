@@ -180,14 +180,20 @@ workflow {
     }
 
     // Check if the genome build in the BAM is suitable for any workflows that have restrictions
-    // NOTE getGenome will exit non-zero if the build is neither hg19 or hg38, so don't call it unless needed
-    if (params.str || params.cnv || params.snp || params.sv || params.phase_methyl){
-        // cnv, snp (and therefore phase_methyl) and sv require hg19 or hg38
-        // str requires hg38
+    // NOTE getGenome will exit non-zero if the build is neither hg19 or hg38, so it shouldn't be called
+    // if annotation is skipped for snp, sv and phase_methyl, to allow other genomes (including non-human)
+    // to be processed
+
+    // always getGenome for CNV and STR
+    if (params.cnv || params.str) {
+        genome_build = getGenome(bam_channel)
+    }
+    // getGenome for STP, SV and phase_methyl as long as annotation not disabled
+    else if ((params.snp || params.sv || params.phase_methyl) && !params.skip_annotation) {
         genome_build = getGenome(bam_channel)
     }
     else {
-        genome_build = null 
+        genome_build = null
     }
 
     // Build ref cache for CRAM steps that do not take a reference
