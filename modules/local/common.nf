@@ -200,6 +200,41 @@ process getGenome {
 }
 
 
+process eval_downsampling {
+    cpus 1
+    input:
+        path mosdepth_summary
+    output:
+        path "ratio.txt", emit: downsampling_ratio
+    shell:
+        '''
+        workflow-glue downsampling_ratio \
+            --downsample_depth !{params.downsample_coverage_target} \
+            --margin !{params.downsample_coverage_margin} \
+            --summary !{mosdepth_summary} > ratio.txt
+        '''
+}
+
+
+process downsampling {
+    cpus 4
+    input:
+        tuple path(xam), path(xam_idx), val(xam_meta)
+        tuple val(to_downsample), val(downsampling_rate)
+    output:
+        tuple path("downsampled.bam"), path("downsampled.bam.bai"), val(xam_meta), emit: bam optional true
+    script:
+        """
+        samtools view \\
+            -@ ${task.cpus} \\
+            -hb \\
+            --subsample ${downsampling_rate} \\
+            $xam > downsampled.bam
+        samtools index -@ ${task.cpus} downsampled.bam
+        """
+}
+
+
 // Process to get the genome coverage from the mosdepth summary.
 process get_coverage {
     cpus 1

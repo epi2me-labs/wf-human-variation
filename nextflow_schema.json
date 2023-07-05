@@ -127,6 +127,25 @@
                     "help_text": "This options specify the window size to use when computing the coverage along the genome.",
                     "hidden": true
                 },
+                "downsample_coverage": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Downsample the coverage to along the genome.",
+                    "help_text": "This options will trigger a downsampling of the read alignments to the target coverage specified by --downsample_coverage_target. Downsampling will make the workflow run faster but could lead to non-deterministic variant calls."
+                },
+                "downsample_coverage_target": {
+                    "type": "number",
+                    "default": 60,
+                    "description": "Average coverage or reads to use for the analyses.",
+                    "help_text": "This options will set the target coverage for the downsampling stage, if downsampling has been enabled."
+                },
+                "downsample_coverage_margin": {
+                    "type": "number",
+                    "default": 1.1,
+                    "description": "Downsample if the bam effective coverage / target coverage if greater than this value.",
+                    "help_text": "By default, if the coverage of the input alignments is within 1.1x the target coverage, downsampling will not be performed even if it was enabled. This is to avoid triggering the downsampling of alignments when coverage is already close to the target coverage.",
+                    "hidden": true
+                },
                 "bed": {
                     "type": "string",
                     "format": "file-path",

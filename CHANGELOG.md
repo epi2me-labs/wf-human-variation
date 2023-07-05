@@ -11,8 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - This can be switched off with `--skip_annotation`
 - `—-skip_annotation` disables attempt to determine human genome version, enabling `--snp`, `--sv` and `--phase_methyl` to be called on genomes which aren’t hg19 or hg38 
 - Updated example command displayed when running `--help`
+
 ### Fixed
 - Workflow crashing when providing a reference with spaces/brackets in file name
+
+### Added
+- Add downsampling of large bam files
 
 ## [v1.6.1]
 ### Changed
@@ -45,7 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CRAM inputs are now converted internally to BAM to avoid CNV subworkflow crash
 - Basecalls and alignments are emitted in BAM to support CNV subworkflow if selected
 - Workflow incorrectly prompting for an `--old_ref` when providing unaligned CRAM
-
 
 ## [v1.5.2]
 ### Added

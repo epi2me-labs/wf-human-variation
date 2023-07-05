@@ -19,6 +19,7 @@ include {
     cram_cache;
     decompress_ref;
     mosdepth;
+    mosdepth as mosdepth_downsampled;
     readStats;
     mapula;
     getAllChromosomesBed;
@@ -29,7 +30,10 @@ include {
     makeAlignmentReport; 
     getParams; 
     getVersions;
-    getGenome; } from './modules/local/common'
+    getGenome; 
+    eval_downsampling;
+    downsampling;
+    } from './modules/local/common'
 
 include {
     bam_ingress;
@@ -216,6 +220,7 @@ workflow {
     // mosdepth for depth traces -- passed into wf-snp :/
     mosdepth(bam_channel, bed, ref_channel)
     mosdepth_stats = mosdepth.out.mosdepth_tuple
+    mosdepth_summary = mosdepth.out.summary
     if (params.depth_intervals){
         mosdepth_perbase = mosdepth.out.perbase
     } else {
@@ -256,7 +261,7 @@ workflow {
             .map{it ->
                 it.size > 0 ? [it[2], it[3], it[4]] : it
             }
-            .set{pass_bam_channel }
+            .set{pass_bam_channel}
         // If it doesn't pass the minimum depth required, 
         // emit a bam channel of discarded bam files.
         bamdepth_filter.not_pass
@@ -268,34 +273,10 @@ workflow {
             .subscribe {
                 log.error "ERROR: File ${it[1].getName()} will not be processed by the workflow as the detected coverage of ${it[0]}x is below the minimum coverage threshold of ${params.bam_min_coverage}x required for analysis."
             }
-        // Create a report if the discarded bam channel is not empty.
-        report_fail = failedQCReport(
-            discarded_bams, bam_stats, mosdepth_stats,
-            software_versions.collect(), workflow_params)
-
-        // Create passing bam report
-        report_pass = pass_bam_channel
-                    .combine(bam_stats)
-                    .combine(bam_flag)
-                    .combine(mosdepth_stats.map{it[0]})
-                    .combine(ref_channel)
-                    .combine(software_versions.collect())
-                    .combine(workflow_params)
-                    .flatten()
-                    .collect() | makeAlignmentReport
     } else {
         // If the bam_min_depth is 0, then create alignment report for everything.
         bam_channel.set{pass_bam_channel}
-        report_fail = Channel.empty()
-        report_pass = pass_bam_channel
-                    .combine(bam_stats)
-                    .combine(bam_flag)
-                    .combine(mosdepth_stats.map{it[0]})
-                    .combine(ref_channel)
-                    .combine(software_versions.collect())
-                    .combine(workflow_params)
-                    .flatten()
-                    .collect() | makeAlignmentReport
+        discarded_bams = Channel.empty()
     }
     // Set extensions for analyses
     extensions = pass_bam_channel.map{
@@ -303,6 +284,110 @@ workflow {
         meta.is_cram ? ['cram', 'crai'] : ['bam', 'bai']
     }
 
+    // Check and perform downsampling if needed.
+    if (params.downsample_coverage){
+        // Define reduction rate
+        eval_downsampling(mosdepth.out.summary)
+        eval_downsampling.out.downsampling_ratio
+            .splitCsv()
+            .branch{
+                subset: it[0] == 'true'
+                ready: it[0] == 'false'
+            }
+            .set{ratio}
+
+        // Perform downsampling
+        downsampling(pass_bam_channel, ratio.subset)
+
+        // prepare ready files
+        ratio.ready
+            .combine(pass_bam_channel)
+            .map{ready, ratio, xam, xai, meta -> [xam, xai, meta]}
+            .set{ready_bam_channel}
+
+        // Join allowing a remainder, so that only one for each is retained.
+        // we drop all null, and due to the structure the joined channel can only be:
+        // - [meta, null, xam, xai], or
+        // - [meta, xam, xai, null]
+        // Using it - null removes the inputs from the wrong channel, retaining 
+        // Before merging properly, we first check that the merged channel size is not malformed
+        downsampling.out.bam
+            .join(ready_bam_channel, by:2, remainder: true)
+            .filter{it.size() > 4}
+            .subscribe{
+                throw new Exception(colors.red + "Unexpected channel size when merging." + colors.reset) 
+            }
+        // If this passes, then we can create the proper channel.
+        downsampling.out.bam
+            .join(ready_bam_channel, by:2, remainder: true)
+            .map{it - null}
+            .map{meta, xam, xai -> [xam, xai, meta]}
+            .set{pass_bam_channel}
+
+        // Prepare the output files for mosdepth.
+        // First, we compute the depth for the downsampled files, if it
+        // exists 
+        mosdepth_downsampled(downsampling.out, bed, ref_channel)
+        // Then, choose which output will be used in the report. 
+        // If it needs to be subset, then the combined output exists, whereas 
+        // the original mosdepth file is merged with the empty ready channel, leaving 
+        // the correct file to output. Otherwise, the reverse happens and it emits 
+        // the original mosdepth files. 
+        mosdepth_summary = 
+            mosdepth_downsampled.out.summary
+                .combine(ratio.subset)
+                .map{it[0]}
+                .join(
+                    mosdepth.out.summary
+                        .combine(ratio.ready)
+                        .map{it[0]}
+                    , remainder: true
+                    )
+        mosdepth_stats = 
+            mosdepth_downsampled.out.mosdepth_tuple
+                .combine(ratio.subset)
+                .map{[it[0], it[1], it[2]]}
+                .join(
+                    mosdepth.out.mosdepth_tuple
+                        .combine(ratio.ready)
+                        .map{[it[0], it[1], it[2]]}
+                    , remainder: true
+                    )
+                .map{it - null}
+        if (params.depth_intervals){
+            mosdepth_perbase = 
+                mosdepth_downsampled.out.perbase
+                    .combine(ratio.subset)
+                    .map{it[0]}
+                    .join(
+                        mosdepth.out.perbase
+                            .combine(ratio.ready)
+                            .map{it[0]}
+                        , remainder: true
+                        )
+                    .map{it - null}
+        } else {
+            mosdepth_perbase = Channel.from("$projectDir/data/OPTIONAL_FILE")
+        }
+    }
+
+    // Create reports for pass and fail channels
+    // Create a report if the discarded bam channel is not empty.
+    report_fail = failedQCReport(
+        discarded_bams, bam_stats, mosdepth_stats,
+        software_versions.collect(), workflow_params)
+
+    // Create passing bam report
+    report_pass = pass_bam_channel
+                .combine(bam_stats)
+                .combine(bam_flag)
+                .combine(mosdepth_stats.map{it[0]})
+                .combine(ref_channel)
+                .combine(software_versions.collect())
+                .combine(workflow_params)
+                .flatten()
+                .collect() | makeAlignmentReport
+    
     // wf-human-sv
     if(params.sv) {
         results = sv(
@@ -406,6 +491,7 @@ workflow {
             bam_fail.flatten(),
             bam_stats.flatten(),
             mosdepth_stats.flatten(),
+            mosdepth_summary.flatten(),
             mosdepth_perbase.flatten(),
             methyl_stats.flatten(),
             mapula_stats.flatten(),

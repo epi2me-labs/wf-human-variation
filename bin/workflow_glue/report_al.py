@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 """Report using ezcharts."""
-import os
-
 from ezcharts.components.fastcat import SeqSummary
 from ezcharts.components.reports import labs
 import pandas as pd
@@ -46,11 +44,8 @@ def main(args):
     sections.summary(report, sample_names, stats_df, flagstat_df)
 
     # Combine multiple input files
-    infiles = pd.concat([
-        pd.read_csv(f"{args.stats_dir}/{x}", sep='\t')
-        for x in os.listdir(args.stats_dir)])
     with report.add_section("Read statistics", "Stats"):
-        SeqSummary(infiles)
+        SeqSummary(f"{args.stats_dir}/")
 
     # extract the mapped reads and some other metrics used in the report sections
     stats_df_mapped = stats_df.query('ref != "*"')
