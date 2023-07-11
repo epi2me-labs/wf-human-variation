@@ -223,8 +223,15 @@ workflow snp {
 
         telemetry = workflow_params
 
+        // Define clair3 results, adding GVCF if needed
+        if (params.GVCF){
+            clair3_results = report.concat(haplotagged_bam).concat(final_vcf).concat(clair_final.final_gvcf).flatten()
+        } else {
+            clair3_results = report.concat(haplotagged_bam).concat(final_vcf).flatten()
+        }
+
     emit:
-        clair3_results = report.concat(haplotagged_bam).concat(final_vcf).flatten()
+        clair3_results = clair3_results
         str_bams = bam_for_str
         hp_bams = haplotagged_bam.combine(bam_channel.map{it[2]})
         telemetry = telemetry
