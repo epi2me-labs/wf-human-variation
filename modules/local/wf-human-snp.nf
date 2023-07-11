@@ -494,10 +494,15 @@ process aggregate_all_variants{
                 --input_dir merge_outputs_gvcf \
                 --vcf_fn_prefix merge \
                 --vcf_fn_suffix .gvcf \
-                --output_fn !{params.sample_name}.wf_snp.gvcf \
+                --output_fn tmp.gvcf \
                 --sampleName !{params.sample_name} \
                 --ref_fn !{ref} \
                 --contigs_fn !{contigs}
+
+                # Reheading samples named "SAMPLE" to params.sample_name. If no 
+                echo "SAMPLE" "!{params.sample_name}" > rename.txt
+                bcftools reheader -s rename.txt tmp.gvcf.gz > !{params.sample_name}.wf_snp.gvcf.gz
+                bcftools index -t !{params.sample_name}.wf_snp.gvcf.gz && rm tmp.gvcf.gz rename.txt
         fi
 
         echo "[INFO] Finish calling, output file: merge_output.vcf.gz"

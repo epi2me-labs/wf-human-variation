@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Workflow crashing when providing a reference with spaces/brackets in file name
+- Workflow not emitting GVCF even when requested
+- GVCF sample name not matching `sample_name`
 
 ### Added
 - Add downsampling of large bam files
