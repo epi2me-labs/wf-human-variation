@@ -18,7 +18,7 @@ include {
     index_ref_fai;
     cram_cache;
     decompress_ref;
-    mosdepth;
+    mosdepth as mosdepth_input;
     mosdepth as mosdepth_downsampled;
     readStats;
     mapula;
@@ -218,11 +218,11 @@ workflow {
     }
 
     // mosdepth for depth traces -- passed into wf-snp :/
-    mosdepth(bam_channel, bed, ref_channel)
-    mosdepth_stats = mosdepth.out.mosdepth_tuple
-    mosdepth_summary = mosdepth.out.summary
+    mosdepth_input(bam_channel, bed, ref_channel)
+    mosdepth_stats = mosdepth_input.out.mosdepth_tuple
+    mosdepth_summary = mosdepth_input.out.summary
     if (params.depth_intervals){
-        mosdepth_perbase = mosdepth.out.perbase
+        mosdepth_perbase = mosdepth_input.out.perbase
     } else {
         mosdepth_perbase = Channel.from("$projectDir/data/OPTIONAL_FILE")
     }
@@ -247,7 +247,7 @@ workflow {
     workflow_params = getParams()
     if (params.bam_min_coverage > 0){
         // Define if a dataset passes or not the filtering
-        get_coverage(mosdepth.out.summary)
+        get_coverage(mosdepth_input.out.summary)
         // Combine with the bam and branch by passing the depth filter
         get_coverage.out.pass
             .combine(bam_channel)
@@ -287,7 +287,7 @@ workflow {
     // Check and perform downsampling if needed.
     if (params.downsample_coverage){
         // Define reduction rate
-        eval_downsampling(mosdepth.out.summary)
+        eval_downsampling(mosdepth_input.out.summary)
         eval_downsampling.out.downsampling_ratio
             .splitCsv()
             .branch{
@@ -338,7 +338,7 @@ workflow {
                 .combine(ratio.subset)
                 .map{it[0]}
                 .join(
-                    mosdepth.out.summary
+                    mosdepth_input.out.summary
                         .combine(ratio.ready)
                         .map{it[0]}
                     , remainder: true
@@ -348,7 +348,7 @@ workflow {
                 .combine(ratio.subset)
                 .map{[it[0], it[1], it[2]]}
                 .join(
-                    mosdepth.out.mosdepth_tuple
+                    mosdepth_input.out.mosdepth_tuple
                         .combine(ratio.ready)
                         .map{[it[0], it[1], it[2]]}
                     , remainder: true
@@ -360,7 +360,7 @@ workflow {
                     .combine(ratio.subset)
                     .map{it[0]}
                     .join(
-                        mosdepth.out.perbase
+                        mosdepth_input.out.perbase
                             .combine(ratio.ready)
                             .map{it[0]}
                         , remainder: true
@@ -394,7 +394,7 @@ workflow {
             pass_bam_channel ,
             ref_channel,
             bed,
-            mosdepth.out.summary,
+            mosdepth_input.out.summary,
             OPTIONAL,
             genome_build,
             extensions
