@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Workflow crashing when providing a reference with spaces/brackets in file name
 - Workflow not emitting GVCF even when requested
 - GVCF sample name not matching `sample_name`
+- `--cnv` subworkflow sometimes reporting incorrect genetic sex, due to the way segment copy numbers were aggregated across chromosomes
 
 ### Added
 - Add downsampling of large bam files

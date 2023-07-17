@@ -127,7 +127,9 @@ def process_qdna(qdnaseq_results):
         qdnaseq_results, sep="\t", skiprows=1,
         names=['chr', 'start', 'stop', 'bin', 'reads', 'strand', 'segs'])
 
-    dict_of_calls = dict(list(zip(d.chr, d.segs)))
+    # get the most frequent seg count for each chromosome
+    aggregate_segs = d.groupby(['chr'])['segs'].agg(pd.Series.mode)
+    dict_of_calls = aggregate_segs.to_dict()
 
     return d, dict_of_calls
 
