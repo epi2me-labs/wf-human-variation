@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated example command displayed when running `--help`
 
 ### Fixed
+- 'mosdepth_downsampled' is defined more than once warning
 - Workflow crashing when providing a reference with spaces/brackets in file name
 - Workflow not emitting GVCF even when requested
 - GVCF sample name not matching `sample_name`
