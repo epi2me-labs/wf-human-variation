@@ -193,7 +193,7 @@ workflow {
         genome_build = getGenome(bam_channel)
     }
     // getGenome for STP, SV and phase_methyl as long as annotation not disabled
-    else if ((params.snp || params.sv || params.phase_methyl) && !params.skip_annotation) {
+    else if ((params.snp || params.sv || params.phase_methyl) && params.annotation) {
         genome_build = getGenome(bam_channel)
     }
     else {

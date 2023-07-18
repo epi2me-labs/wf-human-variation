@@ -152,7 +152,7 @@ process report {
         path "*report.html", emit: html
     script:
         def clinvar = clinvar_vcf ?: ""
-        def annotation = params.skip_annotation as Boolean ? "--skip_annotation" : ""
+        def annotation = params.annotation ? "" : "--skip_annotation"
         def report_name = "${params.sample_name}.wf-human-sv-report.html"
         def evalResults = eval_json.name != 'OPTIONAL_FILE' ? "--eval_results ${eval_json}" : ""
     """

@@ -187,7 +187,7 @@ workflow snp {
             make_chunks.out.contigs_file)
 
         // Refine the SNP phase using SVs from Sniffles
-        if (!params.skip_refine_snp_with_sv && params.sv){
+        if (params.refine_snp_with_sv && params.sv){
             // If we request phase_methyl or str, then we use the haplotagged
             // bam files (because why not).
             if (params.str || params.phase_methyl){
@@ -206,7 +206,7 @@ workflow snp {
         workflow_params = getParams()
         vcf_stats = vcfStats(final_snp_vcf)
 
-        if (params.skip_annotation) {
+        if (!params.annotation) {
             final_vcf = clair_final.final_vcf
             // no ClinVar VCF, pass empty file to makeReport
             empty_file = projectDir.resolve("./data/empty.txt").toString()
