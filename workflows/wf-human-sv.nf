@@ -41,7 +41,7 @@ workflow bam {
             benchmark_result = Channel.fromPath(optional_file)
         }
 
-        if (params.skip_annotation) {
+        if (!params.annotation) {
             final_vcf = called.vcf.combine(called.vcf_index)
             // no ClinVar VCF, pass empty file to makeReport
             empty_file = projectDir.resolve("./data/empty.txt").toString()

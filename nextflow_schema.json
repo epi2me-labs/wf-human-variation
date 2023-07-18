@@ -18,13 +18,13 @@
                     "type": "boolean",
                     "description": "Call for structural variants.",
                     "help_text": "If this option is selected, structural variant calling will be carried out using Sniffles2.",
-                    "default": false
+                    "default": true
                 },
                 "snp": {
                     "type": "boolean",
                     "description": "Call for small variants",
                     "help_text": "If this option is selected, small variant calling will be carried out using Clair3.",
-                    "default": false
+                    "default": true
                 },
                 "cnv": {
                     "type": "boolean",
@@ -152,11 +152,11 @@
                     "description": "An optional BED file enumerating regions to process for variant calling.",
                     "help_text": ""
                 },
-                "skip_annotation": {
+                "annotation": {
                     "type": "boolean",
-                    "description": "Disable SnpEff annotation.",
-                    "help_text": "If this option is selected, VCFs will not be annotated with SnpEff.",
-                    "default": false
+                    "description": "SnpEff annotation.",
+                    "help_text": "If this option is unselected, VCFs will not be annotated with SnpEff.",
+                    "default": true
                 }
             },
             "required": [
@@ -289,12 +289,12 @@
                     "description": "The name of the sequence to be processed.",
                     "hidden": true
                 },
-                "skip_refine_snp_with_sv": {
+                "refine_snp_with_sv": {
                     "type": "boolean",
                     "hidden": true,
-                    "default": false,
-                    "description": "Do not refine SNP calls using calls from the SV subworkflow.",
-                    "help_text": "By default when the SNP and SV subworkflows are both selected, the workflow will use the results of the SV subworkflow to refine the SNP calls. Enabling this option will disable the use of SV calls to refine low-coverage variant zygosity and variant phase to avoid impossible overlaps (e.g. homozygous SNPs falling in a large deletion called by Sniffles)."
+                    "default": true,
+                    "description": "Refine SNP calls using calls from the SV subworkflow.",
+                    "help_text": "By default when the SNP and SV subworkflows are both selected, the workflow will use the results of the SV subworkflow to refine the SNP calls. Disabling this option will stop the use of SV calls to refine low-coverage variant zygosity and variant phase to avoid impossible overlaps (e.g. homozygous SNPs falling in a large deletion called by Sniffles)."
                 }
             }
         },

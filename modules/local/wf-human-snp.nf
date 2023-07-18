@@ -624,7 +624,7 @@ process makeReport {
         path "*report.html"
     script:
         def clinvar = clinvar_vcf ?: ""
-        def annotation = params.skip_annotation as Boolean ? "--skip_annotation" : ""
+        def annotation = params.annotation ? "" : "--skip_annotation"
 
         report_name = "${params.sample_name}.wf-human-snp-report.html"
         wfversion = workflow.manifest.version
