@@ -50,7 +50,17 @@ def fastq_ingress(Map arguments)
     def ch_result
     if (margs.fastcat_stats) {
         // run fastcat regardless of input type
-        ch_result = fastcat(ch_input.reads_found, margs["fastcat_extra_args"])
+        ch_result = fastcat(ch_input.reads_found, margs["fastcat_extra_args"]).map {
+            meta, reads, stats ->
+                // extract run_ids parsed by fastcat into metadata
+                ArrayList run_ids = stats.resolve("run_ids").splitText().collect {
+                    it.strip()
+                }
+                // `meta + [...]` returns a new map which is handy to avoid any
+                // modifying-maps-in-closures weirdness
+                // See https://github.com/nextflow-io/nextflow/issues/2660
+                [meta + [run_ids: run_ids], reads, stats]
+        }
     } else {
         // the fastcat stats were not requested --> run fastcat only on directories with
         // more than one FASTQ file (and not on single files or directories with a
@@ -187,9 +197,11 @@ def watch_path(Map margs) {
 
 
 process move_or_compress {
-    label params.process_label
+    label "fastq_ingress"
+    label "wf_common"
     cpus 1
     input:
+        // don't stage `input` with a literal because we check the file extension
         tuple val(meta), path(input)
     output:
         tuple val(meta), path("seqs.fastq.gz")
@@ -199,21 +211,22 @@ process move_or_compress {
             // we need to take into account that the file could already be named
             // "seqs.fastq.gz" in which case `mv` would fail
             """
-            [ "$input" == "$out" ] || mv $input $out
+            [ "$input" == "$out" ] || mv "$input" $out
             """
         } else {
             """
-            cat $input | bgzip -@ $task.cpus > $out
+            cat "$input" | bgzip -@ $task.cpus > $out
             """
         }
 }
 
 
 process fastcat {
-    label params.process_label
+    label "fastq_ingress"
+    label "wf_common"
     cpus 3
     input:
-        tuple val(meta), path(input)
+        tuple val(meta), path("input")
         val extra_args
     output:
         tuple val(meta), path("seqs.fastq.gz"), path("fastcat_stats")
@@ -227,8 +240,9 @@ process fastcat {
             -r $fastcat_stats_outdir/per-read-stats.tsv \
             -f $fastcat_stats_outdir/per-file-stats.tsv \
             $extra_args \
-            $input \
+            input \
             | bgzip -@ $task.cpus > $out
+        csvtk cut -tf runid $fastcat_stats_outdir/per-read-stats.tsv | csvtk del-header | sort | uniq > $fastcat_stats_outdir/run_ids
         """
 }
 
@@ -373,6 +387,7 @@ Map create_metamap(Map arguments) {
         kwargs: [
             "barcode": null,
             "type": "test_sample",
+            "run_ids": [],
         ],
         name: "create_metamap",
     )
@@ -430,15 +445,16 @@ def get_sample_sheet(Path sample_sheet, ArrayList required_sample_types) {
  * @return: string (optional)
  */
 process validate_sample_sheet {
-    label params.process_label
-    input: 
-        path csv
+    label "fastq_ingress"
+    label "wf_common"
+    input:
+        path "sample_sheet.csv"
         val required_sample_types
     output: stdout
     script:
     String req_types_arg = required_sample_types ? "--required_sample_types "+required_sample_types.join(" ") : ""
     """
-    workflow-glue check_sample_sheet $csv $req_types_arg
+    workflow-glue check_sample_sheet sample_sheet.csv $req_types_arg
     """
 }
 

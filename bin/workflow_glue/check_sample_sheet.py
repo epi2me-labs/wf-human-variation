@@ -1,8 +1,33 @@
 """Check if a sample sheet is valid."""
+import codecs
 import csv
+import os
 import sys
 
 from .util import get_named_logger, wf_parser  # noqa: ABS101
+
+
+# Some Excel users save their CSV as UTF-8 (and occasionally for a reason beyond my
+# comprehension, UTF-16); Excel then adds a byte order mark (unnecessarily for UTF-8
+# I should add). If we do not handle this with the correct encoding, the mark will
+# appear in the parsed data, causing the header to be malformed.
+# See CW-2310
+def determine_codec(f):
+    """Peek at a file and return an appropriate reading codec."""
+    with open(f, 'rb') as f_bytes:
+        # Could use chardet here if we need to expand codec support
+        initial_bytes = f_bytes.read(8)
+
+        for codec, encoding_name in [
+            [codecs.BOM_UTF8, "utf-8-sig"],  # use the -sig codec to drop the mark
+            [codecs.BOM_UTF16_BE, "utf-16"],  # don't specify LE or BE to drop mark
+            [codecs.BOM_UTF16_LE, "utf-16"],
+            [codecs.BOM_UTF32_BE, "utf-32"],  # handle 32 for completeness
+            [codecs.BOM_UTF32_LE, "utf-32"],  # again skip LE or BE to drop mark
+        ]:
+            if initial_bytes.startswith(codec):
+                return encoding_name
+        return None  # will cause file to be opened with default encoding
 
 
 def main(args):
@@ -14,10 +39,15 @@ def main(args):
     sample_types = []
     allowed_sample_types = [
         "test_sample", "positive_control", "negative_control", "no_template_control"
-        ]
+    ]
+
+    if not os.path.exists(args.sample_sheet) or not os.path.isfile(args.sample_sheet):
+        sys.stdout.write(f"Could not open sample sheet '{args.sample_sheet}'.")
+        sys.exit()
 
     try:
-        with open(args.sample_sheet, "r") as f:
+        encoding = determine_codec(args.sample_sheet)
+        with open(args.sample_sheet, "r", encoding=encoding) as f:
             csv_reader = csv.DictReader(f)
             n_row = 0
             for row in csv_reader:
