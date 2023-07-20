@@ -611,12 +611,6 @@
         }
     ],
     "properties": {
-        "process_label": {
-            "type": "string",
-            "description": "The main process label for template processes to use by default",
-            "hidden": true,
-            "default": "wf-template"
-        },
         "aws_image_prefix": {
             "type": "string",
             "hidden": true
