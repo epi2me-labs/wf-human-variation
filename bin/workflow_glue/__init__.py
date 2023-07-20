@@ -13,13 +13,23 @@ _package_name = "workflow_glue"
 
 def get_components():
     """Find a list of workflow command scripts."""
+    logger = get_main_logger(_package_name)
     path = os.path.dirname(os.path.abspath(__file__))
     components = list()
     for fname in glob.glob(os.path.join(path, "*.py")):
         name = os.path.splitext(os.path.basename(fname))[0]
         if name in ("__init__", "util"):
             continue
-        mod = importlib.import_module(f"{_package_name}.{name}")
+
+        # leniently attempt to import module
+        try:
+            mod = importlib.import_module(f"{_package_name}.{name}")
+        except ModuleNotFoundError as e:
+            # if imports cannot be satisifed, refuse to add the component
+            # rather than exploding
+            logger.warn(f"Could not load {name} due to missing module {e.name}")
+            continue
+
         # if theres a main() and and argparser() thats good enough for us.
         try:
             req = "main", "argparser"
