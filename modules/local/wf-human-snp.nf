@@ -9,7 +9,7 @@ process make_chunks {
     cpus 1
     input:
         tuple path(xam), path(xam_idx)
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path bed
     output:
         path "clair_output/tmp/CONTIGS", emit: contigs_file
@@ -48,7 +48,7 @@ process pileup_variants {
     input:
         each region
         tuple path(xam), path(xam_idx)
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path model
     output:
         // TODO: make this explicit, why is pileup VCF optional?
@@ -60,7 +60,6 @@ process pileup_variants {
         // note: snp_min_af and indel_min_af have an impact on performance
         // TODO Fix REF_PATH
         '''
-        export REF_PATH=!{ref_cache}/%2s/%2s/%s
         python $(which clair3.py) CallVariantsFromCffi \
             --chkpnt_fn !{model}/pileup \
             --bam_fn !{xam} \
@@ -90,7 +89,7 @@ process aggregate_pileup_variants {
     label "wf_human_snp"
     cpus 2
     input:
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         // these need to be named as original, as program uses info from
         // contigs file to filter
         path "input_vcfs/*"
@@ -149,14 +148,12 @@ process phase_contig_haplotag {
     label "wf_human_snp"
     cpus 4
     input:
-        tuple val(contig), path(het_snps), path(het_snps_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache)
+        tuple val(contig), path(het_snps), path(het_snps_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple val(xam_fmt), val(xai_fmt)
     output:
         tuple val(contig), path("${contig}_hp.bam"), path("${contig}_hp.bam.bai"), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
     script:
         """
-        # REF_PATH points to the reference cache and allows faster parsing of CRAM files
-        export REF_PATH=${ref_cache}/%2s/%2s/%s
             echo "Using whatshap for phasing"
             whatshap phase \
                 --output phased_${contig}.vcf.gz \
@@ -192,13 +189,11 @@ process phase_contig {
     label "wf_human_snp"
     cpus 4
     input:
-        tuple val(contig), path(het_snps), path(het_snps_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache)
+        tuple val(contig), path(het_snps), path(het_snps_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         tuple val(contig), path(xam), path(xam_idx), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
     shell:
         '''
-        # REF_PATH points to the reference cache and allows faster parsing of CRAM files
-        export REF_PATH=!{ref_cache}/%2s/%2s/%s
         if [[ "!{params.use_longphase_intermediate}" == "true" ]]; then
             echo "Using longphase for phasing"
             # longphase needs decompressed 
@@ -269,7 +264,7 @@ process create_candidates {
     cpus 2
     input:
         each contig
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple path("pileup.vcf.gz"), path("pileup.vcf.gz.tbi")
         // this is used implicitely by the program
         // https://github.com/HKU-BAL/Clair3/blob/329d09b39c12b6d8d9097aeb1fe9ec740b9334f6/preprocess/SelectCandidates.py#L146
@@ -307,15 +302,13 @@ process evaluate_candidates {
     input:
         tuple val(contig), path(phased_xam), path(phased_xam_idx), path(phased_vcf)
         tuple val(contig), path(candidate_bed)
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path(model)
     output:
         path "output/full_alignment_*.vcf", emit: full_alignment
     script:
         filename = candidate_bed.name
-        def ref_path = "${ref_cache}/%2s/%2s/%s:" + System.getenv("REF_PATH")
         """
-        export REF_PATH=${ref_path}
         mkdir output
         echo "[INFO] 6/7 Call low-quality variants using full-alignment model"
         python \$(which clair3.py) CallVariantsFromCffi \
@@ -343,7 +336,7 @@ process aggregate_full_align_variants {
     label "wf_human_snp"
     cpus 2
     input:
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path "full_alignment/*"
         path contigs
         path "gvcf_tmp_path/*"
@@ -384,7 +377,7 @@ process merge_pileup_and_full_vars{
     cpus 2
     input:
         each contig
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple path(pile_up_vcf), path(pile_up_vcf_tbi)
         tuple path(full_aln_vcf), path(full_aln_vcf_tbi)
         path "non_var.gvcf"
@@ -422,13 +415,11 @@ process post_clair_phase_contig {
     label "wf_human_snp"
     cpus 4
     input:
-        tuple val(contig), path(vcf), path(vcf_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache)
+        tuple val(contig), path(vcf), path(vcf_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         tuple val(contig), path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"), emit: vcf
     shell:
         '''
-        # REF_PATH points to the reference cache and allows faster parsing of CRAM files
-        export REF_PATH=!{ref_cache}/%2s/%2s/%s
         if [[ "!{params.use_longphase}" == "true" ]]; then
             echo "Using longphase for phasing"
             # longphase needs decompressed 
@@ -458,7 +449,7 @@ process aggregate_all_variants{
     label "wf_human_snp"
     cpus 4
     input:
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path "merge_output/*"
         path "merge_outputs_gvcf/*"
         val(phase_vcf)
@@ -514,7 +505,7 @@ process refine_with_sv {
     label "wf_human_snp"
     cpus 1
     input:
-        tuple path(ref), path(ref_idx), path(ref_cache) 
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH) 
         tuple path(clair_vcf, stageAs: 'clair.vcf.gz'), path(clair_tbi, stageAs: 'clair.vcf.gz.tbi')
         tuple path(xam), path(xam_idx) // this may be a haplotagged_bam or input CRAM 
         path sniffles_vcf
@@ -522,7 +513,6 @@ process refine_with_sv {
         tuple path("${params.sample_name}.wf_snp.vcf.gz"), path("${params.sample_name}.wf_snp.vcf.gz.tbi"), emit: final_vcf
     shell:
         '''
-        export REF_PATH=!{ref_cache}/%2s/%2s/%s
         pypy $(which clair3.py) SwitchZygosityBasedOnSVCalls \\
             --bam_fn !{xam} \\
             --clair3_vcf_input clair.vcf.gz \\

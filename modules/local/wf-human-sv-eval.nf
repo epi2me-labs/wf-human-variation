@@ -47,7 +47,7 @@ process truvari {
     label "wf_human_sv"
     cpus 1
     input:
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple path(calls_vcf), path(calls_vcf_tbi)
         tuple path(user_truthset_vcf), path(user_truthset_tbi)
         file include_bed
