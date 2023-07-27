@@ -391,7 +391,9 @@ Map create_metamap(Map arguments) {
         ],
         name: "create_metamap",
     )
-    return parser.parse_known_args(arguments)
+    def metamap = parser.parse_known_args(arguments)
+    metamap['alias'] = metamap['alias'].replaceAll(" ","_")
+    return metamap
 }
 
 

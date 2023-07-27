@@ -28,6 +28,7 @@ process modbam2bed {
     """
 }
 
+
 // NOTE uses base image
 //process bigwig {
 //    input:
@@ -49,11 +50,10 @@ workflow methyl {
         alignment
         reference
     main:
-        if (params.phase_methyl) {
-            haps = Channel.of(1, 2)
-        } else {
-            haps = Channel.of(0)
-        }
+        // CW-2457: modbam2bed with --haplotype ignores untagged reads, causing 
+        // to not call regions that are not phased. Adding 0 as haplotype allows to
+        // call sites on all regions. 
+        haps = params.phase_methyl ? Channel.of(0, 1, 2) : Channel.of(0)
         out = modbam2bed(alignment.combine(haps), reference.collect())
         //bw = bigwig(out.methyl_bed, reference)
     emit:
