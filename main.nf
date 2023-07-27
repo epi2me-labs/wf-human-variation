@@ -201,10 +201,11 @@ workflow {
     }
 
     // Build ref cache for CRAM steps that do not take a reference
-    ref_cache = cram_cache(ref)
-
+    cram_cache(ref)
+    ref_cache = cram_cache.out.ref_cache
+    ref_path = cram_cache.out.ref_path
     // canonical ref and BAM channels to pass around to all processes
-    ref_channel = ref.concat(ref_index).concat(ref_cache).buffer(size: 3)
+    ref_channel = ref.concat(ref_index).concat(ref_cache).concat(ref_path).buffer(size: 4)
 
     // Set BED (and create the default all chrom BED if necessary)
     bed = null
@@ -484,7 +485,8 @@ workflow {
     )
 
     publish_artifact(
-        ref_channel.flatten().mix(
+        // CW-1033: remove environment variable from output
+        ref_channel.map{it[0..2]}.flatten().mix(
             // emit bams with the "output" meta tag
             bam_channel.filter( { it[2].output } ),
             // bam_fail can only exist if basecalling was performed

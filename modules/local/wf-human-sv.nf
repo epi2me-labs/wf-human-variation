@@ -6,13 +6,12 @@ process filterBam {
     cpus params.threads
     input:
         tuple path(xam), path(xam_idx)
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple val(xam_fmt), val(xai_fmt)
     output:
         tuple path("${params.sample_name}.filtered.${xam_fmt}"), path("${params.sample_name}.filtered.${xam_fmt}.${xai_fmt}"), emit: xam
     script:
     """
-    export REF_PATH=${ref_cache}/%2s/%2s/%s
     samtools view -@ $task.cpus -F 2308 -o ${params.sample_name}.filtered.${xam_fmt} -O ${xam_fmt} --write-index ${xam} --reference ${ref}
     """
 }
@@ -26,15 +25,13 @@ process sniffles2 {
     input:
         tuple path(xam), path(xam_idx)
         file tr_bed
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         path "*.sniffles.vcf", emit: vcf
     script:
         def tr_arg = tr_bed.name != 'OPTIONAL_FILE' ? "--tandem-repeats ${tr_bed}" : ''
         def sniffles_args = params.sniffles_args ?: ''
-        def ref_path = "${ref_cache}/%2s/%2s/%s:" + System.getenv("REF_PATH")
     """
-    export REF_PATH=${ref_path}
     sniffles \
         --threads $task.cpus \
         --sample-id ${params.sample_name} \

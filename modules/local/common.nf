@@ -4,20 +4,14 @@ process cram_cache {
     input:
         path reference
     output:
-        path("ref_cache/"), emit: cram_cache
-    script:
-    def is_conda = workflow.profile.toLowerCase().contains("conda")
-    """
-    if [[ "${is_conda}" == "true" ]]; then
-        wget https://raw.githubusercontent.com/samtools/samtools/master/misc/seq_cache_populate.pl;
-        # Invoke without messing with PATH and +x
-        INVOCATION='perl seq_cache_populate.pl'
-    else
-        # Invoke from binary installed to container PATH
-        INVOCATION='seq_cache_populate.pl'
-    fi
-    \$INVOCATION -root ref_cache/ ${reference}
-    """
+        path("ref_cache/"), emit: ref_cache
+        env(REF_PATH), emit: ref_path
+    shell:
+    '''
+    # Invoke from binary installed to container PATH
+    seq_cache_populate.pl -root ref_cache/ !{reference}
+    REF_PATH="ref_cache/%2s/%2s/%s"
+    '''
 }
 
 process index_ref_fai {
@@ -61,7 +55,7 @@ process mosdepth {
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
         file target_bed
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH) 
     output:
         tuple \
             path("${params.sample_name}.regions.bed.gz"),
@@ -98,15 +92,13 @@ process mapula {
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
         path target_bed
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         tuple \
             path("${params.sample_name}.mapula.csv"),
             path("${params.sample_name}.mapula.json")
     script:
-        def ref_path = "${ref_cache}/%2s/%2s/%s:" + System.getenv("REF_PATH")
         """
-        export REF_PATH=${ref_path}
         mapula count -r ${ref} -f all -n '${params.sample_name}.mapula' ${xam}
         """
 }
@@ -118,14 +110,13 @@ process readStats {
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
         path target_bed
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         path "${params.sample_name}.readstats.tsv.gz", emit: read_stats
         path "${params.sample_name}.flagstat.tsv", emit: flagstat
     script:
-        def ref_path = "${ref_cache}/%2s/%2s/%s:" + System.getenv("REF_PATH")
         """
-        export REF_PATH="${ref_path}"
+        echo \$REF_PATH
         bamstats -s ${params.sample_name} -u -f ${params.sample_name}.flagstat.tsv --threads 3 "${xam}" | gzip > "${params.sample_name}.readstats.tsv.gz"
         """
 }
@@ -150,7 +141,7 @@ process publish_artifact {
 process getAllChromosomesBed {
     cpus 1
     input:
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         path "allChromosomes.bed", emit: all_chromosomes_bed
     """
@@ -166,7 +157,7 @@ process getAllChromosomesBed {
 //TODO --variant locations should be constructed legitimately instead of guessed
 process configure_jbrowse {
     input:
-        tuple path(ref), path(ref_idx), path(ref_cache)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple path(xam), path(xam_idx), val(xam_meta)
     output:
         path("jbrowse.json")
@@ -293,6 +284,7 @@ process makeAlignmentReport {
             path('ref.fasta'),
             path('ref.fasta.fai'),
             path('ref_cache/'),
+            env(REF_PATH),
             path("versions.txt"),
             path("params.json")
 
