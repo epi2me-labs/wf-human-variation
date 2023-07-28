@@ -54,11 +54,17 @@
             }
         },
         "input": {
-            "title": "Input Options",
+            "title": "Main options",
             "type": "object",
             "fa_icon": "fas fa-arrow-right",
-            "description": "Parameters for finding and handling input data for analysis.",
+            "description": "Primary parameters for the data analysis.",
             "properties": {
+                "sample_name": {
+                    "type": "string",
+                    "default": "SAMPLE",
+                    "description": "Sample name to be displayed in workflow outputs.",
+                    "help_text": ""
+                },
                 "fast5_dir": {
                     "type": "string",
                     "format": "directory-path",
@@ -127,25 +133,6 @@
                     "help_text": "This options specify the window size to use when computing the coverage along the genome.",
                     "hidden": true
                 },
-                "downsample_coverage": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Downsample the coverage to along the genome.",
-                    "help_text": "This options will trigger a downsampling of the read alignments to the target coverage specified by --downsample_coverage_target. Downsampling will make the workflow run faster but could lead to non-deterministic variant calls."
-                },
-                "downsample_coverage_target": {
-                    "type": "number",
-                    "default": 60,
-                    "description": "Average coverage or reads to use for the analyses.",
-                    "help_text": "This options will set the target coverage for the downsampling stage, if downsampling has been enabled."
-                },
-                "downsample_coverage_margin": {
-                    "type": "number",
-                    "default": 1.1,
-                    "description": "Downsample if the bam effective coverage / target coverage if greater than this value.",
-                    "help_text": "By default, if the coverage of the input alignments is within 1.1x the target coverage, downsampling will not be performed even if it was enabled. This is to avoid triggering the downsampling of alignments when coverage is already close to the target coverage.",
-                    "hidden": true
-                },
                 "bed": {
                     "type": "string",
                     "format": "file-path",
@@ -157,6 +144,12 @@
                     "description": "SnpEff annotation.",
                     "help_text": "If this option is unselected, VCFs will not be annotated with SnpEff.",
                     "default": true
+                },
+                "out_dir": {
+                    "type": "string",
+                    "default": "output",
+                    "format": "directory-path",
+                    "description": "Directory for output of all workflow results."
                 }
             },
             "required": [
@@ -209,12 +202,6 @@
                     "default": false,
                     "description": "Call for variants on all sequences in the reference, otherwise small variants will only be called on chr{1..22,X,Y}.",
                     "help_text": "Enabling this option will call for variants on all contigs of the input reference sequence. Typically this option is not required as standard human reference sequences contain decoy and unplaced contigs that are usually omitted for the purpose of variant calling. This option might be useful for non-standard reference sequence databases."
-                },
-                "GVCF": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Enable to output a gVCF file in addition to the VCF outputs (experimental).",
-                    "help_text": "By default the the workflow outputs a VCF file containing only records where a variant has been detected. Enabling this option will output additionally a gVCF with records spanning all reference positions regardless of whether a variant was detected in the sample."
                 },
                 "use_longphase": {
                     "type": "boolean",
@@ -405,6 +392,73 @@
             },
             "required": []
         },
+        "sv_benchmark_options": {
+            "title": "Structural variant benchmarking options",
+            "type": "object",
+            "description": "Options specific to automated benchmarking of the SV calling subworkflow.",
+            "properties": {
+                "sv_benchmark": {
+                    "type": "boolean",
+                    "description": "Benchmark called structural variants.",
+                    "help_text": "If this option is selected, automated benchmarking of structural variant calls will be carried out using Truvari.",
+                    "default": false
+                },
+                "sv_benchmark_vcf": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Override truthset VCF for benchmarking structural variants.",
+                    "help_text": "This option will use a custom VCF in place of the one bundled with the default 'NIST_SVs_Integration_v0.6' truth set. A Tabix index is required and will be expected to have the same path as the VCF with a '.tbi' extension.",
+                    "hidden": true
+                },
+                "sv_benchmark_bed": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Override truthset BED for benchmarking structural variants.",
+                    "help_text": "This option will use a custom BED in place of the one bundled with the default 'NIST_SVs_Integration_v0.6' truth set.",
+                    "hidden": true
+                }
+            }
+        },
+        "advanced_options": {
+            "title": "Advanced Options",
+            "type": "object",
+            "fa_icon": "far fa-question-circle",
+            "description": "Advanced options for configuring processes inside the workflow.",
+            "help_text": "These advanced options do not need to be changed for typical use, but allow fine tuning of workflows for users who want more control over the workflow.",
+            "properties": {
+                "depth_intervals": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Output a bedGraph file with entries for each genomic interval featuring homogeneous depth.",
+                    "help_text": "The output [bedGraph](https://genome.ucsc.edu/goldenPath/help/bedgraph.html) file will have an entry for each genomic interval in which all positions have the same alignment depth. By default this workflow outputs summary depth information from your aligned reads. Per-base depth outputs are slower to generate but may be required for some downstream applications."
+                },
+                "GVCF": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable to output a gVCF file in addition to the VCF outputs (experimental).",
+                    "help_text": "By default the the workflow outputs a VCF file containing only records where a variant has been detected. Enabling this option will output additionally a gVCF with records spanning all reference positions regardless of whether a variant was detected in the sample."
+                },
+                "downsample_coverage": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Downsample the coverage to along the genome.",
+                    "help_text": "This options will trigger a downsampling of the read alignments to the target coverage specified by --downsample_coverage_target. Downsampling will make the workflow run faster but could lead to non-deterministic variant calls."
+                },
+                "downsample_coverage_target": {
+                    "type": "number",
+                    "default": 60,
+                    "description": "Average coverage or reads to use for the analyses.",
+                    "help_text": "This options will set the target coverage for the downsampling stage, if downsampling has been enabled."
+                },
+                "downsample_coverage_margin": {
+                    "type": "number",
+                    "default": 1.1,
+                    "description": "Downsample if the bam effective coverage / target coverage if greater than this value.",
+                    "help_text": "By default, if the coverage of the input alignments is within 1.1x the target coverage, downsampling will not be performed even if it was enabled. This is to avoid triggering the downsampling of alignments when coverage is already close to the target coverage.",
+                    "hidden": true
+                }
+            }
+        },
         "advanced_basecalling_options": {
             "title": "Advanced basecalling options",
             "fa_icon": "fas fa-gears",
@@ -450,59 +504,6 @@
                 }
             },
             "required": []
-        },
-        "output": {
-            "title": "Output Options",
-            "type": "object",
-            "fa_icon": "fas fa-arrow-left",
-            "description": "Parameters for saving and naming workflow outputs.",
-            "properties": {
-                "sample_name": {
-                    "type": "string",
-                    "default": "SAMPLE",
-                    "description": "Sample name to be displayed in workflow outputs.",
-                    "help_text": ""
-                },
-                "out_dir": {
-                    "type": "string",
-                    "default": "output",
-                    "format": "directory-path",
-                    "description": "Directory for output of all workflow results."
-                },
-                "depth_intervals": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Output a bedGraph file with entries for each genomic interval featuring homogeneous depth.",
-                    "help_text": "The output [bedGraph](https://genome.ucsc.edu/goldenPath/help/bedgraph.html) file will have an entry for each genomic interval in which all positions have the same alignment depth. By default this workflow outputs summary depth information from your aligned reads. Per-base depth outputs are slower to generate but may be required for some downstream applications."
-                }
-            }
-        },
-        "sv_benchmark_options": {
-            "title": "Structural variant benchmarking options",
-            "type": "object",
-            "description": "Options specific to automated benchmarking of the SV calling subworkflow.",
-            "properties": {
-                "sv_benchmark": {
-                    "type": "boolean",
-                    "description": "Benchmark called structural variants.",
-                    "help_text": "If this option is selected, automated benchmarking of structural variant calls will be carried out using Truvari.",
-                    "default": false
-                },
-                "sv_benchmark_vcf": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "Override truthset VCF for benchmarking structural variants.",
-                    "help_text": "This option will use a custom VCF in place of the one bundled with the default 'NIST_SVs_Integration_v0.6' truth set. A Tabix index is required and will be expected to have the same path as the VCF with a '.tbi' extension.",
-                    "hidden": true
-                },
-                "sv_benchmark_bed": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "Override truthset BED for benchmarking structural variants.",
-                    "help_text": "This option will use a custom BED in place of the one bundled with the default 'NIST_SVs_Integration_v0.6' truth set.",
-                    "hidden": true
-                }
-            }
         },
         "multiprocessing_options": {
             "title": "Multiprocessing Options",
@@ -589,6 +590,9 @@
             "$ref": "#/definitions/advanced_basecalling_options"
         },
         {
+            "$ref": "#/definitions/advanced_options"
+        },
+        {
             "$ref": "#/definitions/methyl_options"
         },
         {
@@ -596,9 +600,6 @@
         },
         {
             "$ref": "#/definitions/str_options"
-        },
-        {
-            "$ref": "#/definitions/output"
         },
         {
             "$ref": "#/definitions/sv_benchmark_options"
