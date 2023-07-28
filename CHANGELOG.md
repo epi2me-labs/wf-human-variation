@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `--skip_annotation` is now `--annotation false`
     - `--skip_refine_snp_with_sv` is now `--refine_snp_with_sv false`
 - `--phase_methyl` also calls modifications using all reads to account for unphased regions
+- `Input options` and `Output options` have been combined in the `Main options` category
 
 ### Fixed
 - 'mosdepth_downsampled' is defined more than once warning
