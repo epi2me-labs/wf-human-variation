@@ -40,7 +40,7 @@ include {
 } from './lib/bamingress'
 
 include { basecalling } from './workflows/basecalling'
-include { methyl; } from './workflows/methyl'
+include { methyl; validate_modbam} from './workflows/methyl'
 
 include { str } from './workflows/wf-human-str'
 
@@ -444,15 +444,31 @@ workflow {
     }
 
     // wf-human-methyl
-    if (params.methyl || params.phase_methyl) {
+    // Validate modified bam
+    if (params.methyl){
         if (params.phase_methyl){
-            results = methyl(clair_vcf.hp_bams, ref_channel)
+            validate_modbam(clair_vcf.hp_bams, ref_channel)
         } else {
-            results = methyl(pass_bam_channel, ref_channel)
+            validate_modbam(pass_bam_channel, ref_channel)
         }
+
+        // Warn of input without modified base tags
+        validate_modbam.out.branch{
+            stdbam: it[-1] == '65'
+            modbam: it[-1] == '0'
+            }.set{validation_results}
+        // Log warn if it is not modbam
+        validation_results.stdbam.subscribe{
+            it -> log.warn "Input ${it[0]} does not contain modified base tags. Was a modified basecalling model selected when basecalling this data?"
+        }
+
+        // Save the other as input, keeping only the necessary elements
+        validated_bam = validation_results.modbam.map{cram, crai, meta, code -> [cram, crai, meta]}
+        validation_results.modbam.ifEmpty{it -> log.warn "Alignment files do not contain modified base tags. Skipping methyl aggregation and reporting."}
+
+        results = methyl(validated_bam, ref_channel)
         methyl_stats = results.modbam2bed.flatten()
-    }
-    else {
+    } else {
         methyl_stats = Channel.empty()
     }
 

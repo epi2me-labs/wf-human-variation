@@ -6,7 +6,7 @@ process call_str {
     cpus 1
     input:
         tuple val(chr), path(xam), path(xam_idx)
-        tuple path(ref), path(ref_idx), path(ref_cache) 
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path(repeat_bed)
     output:
         path "*.vcf.gz", emit: straglr_vcf, optional: true

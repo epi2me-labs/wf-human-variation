@@ -27,6 +27,34 @@ process modbam2bed {
 }
 
 
+// Check that the bam has modifications
+process validate_modbam {
+    label "wf_common"
+    input:
+        tuple path(alignment), 
+            path(alignment_index), 
+            val(meta) 
+        tuple path(reference), 
+            path(reference_index), 
+            path(reference_cache),
+            env(REF_PATH)
+    output:
+        tuple path(alignment), 
+            path(alignment_index), 
+            val(meta),
+            env(valid)
+
+    script:
+    """
+    valid=0
+    workflow-glue check_valid_modbam ${alignment} || valid=\$?
+
+    # Allow EX_OK and EX_DATAERR, otherwise explode
+    if [ \$valid -ne 0 ] && [ \$valid -ne 65 ]; then
+        exit 1
+    fi
+    """
+}
 // NOTE uses base image
 //process bigwig {
 //    input:
