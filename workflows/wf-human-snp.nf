@@ -207,15 +207,15 @@ workflow snp {
         vcf_stats = vcfStats(final_snp_vcf)
 
         if (!params.annotation) {
-            final_vcf = clair_final.final_vcf
-            // no ClinVar VCF, pass empty file to makeReport
-            empty_file = projectDir.resolve("./data/empty.txt").toString()
+            final_vcf = final_snp_vcf
+            // no ClinVar VCF, pass empty VCF to makeReport
+            empty_vcf = projectDir.resolve("./data/empty_clinvar.vcf").toString()
             report = makeReport(
-                vcf_stats[0], software_versions.collect(), workflow_params, empty_file)
+                vcf_stats[0], software_versions.collect(), workflow_params, empty_vcf)
         }
         else {
             // do annotation and get a list of ClinVar variants for the report
-            annotations = annotate_snp_vcf(clair_final.final_vcf, genome_build, "snp")
+            annotations = annotate_snp_vcf(final_snp_vcf, genome_build, "snp")
             final_vcf = annotations.final_vcf
             report = makeReport(
                 vcf_stats[0], software_versions.collect(), workflow_params, annotations.final_vcf_clinvar)
