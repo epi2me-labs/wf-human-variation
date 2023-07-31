@@ -120,7 +120,7 @@ docker-run:
           variables:
               NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-methyl/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "workflows/methyl.nf"
-              NF_IGNORE_PROCESSES: "index_ref_gzi,mapula,getGenome,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf,eval_downsampling,downsampling"
+              NF_IGNORE_PROCESSES: "index_ref_gzi,mapula,getGenome,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf,eval_downsampling,downsampling,modbam2bed"
               NF_WORKFLOW_OPTS: "--snp false --sv false --methyl --cnv false --str false --bam demo_data/demo.ucram --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 --bam_min_coverage 0.00001"
 
         - if: $MATRIX_NAME == "gzref-bam-methyl-hap"
