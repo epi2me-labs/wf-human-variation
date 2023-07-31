@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - This can be switched off with `--skip_annotation`
 - `—-skip_annotation` disables attempt to determine human genome version, enabling `--snp`, `--sv` and `--phase_methyl` to be called on genomes which aren’t hg19 or hg38 
 - Updated example command displayed when running `--help`
+- The ClinVar table in `--snp` and `--sv` reports is now sorted according to clinical significance, and includes HGVS cDNA and protein descriptions
 - SNP and SV analyses enabled by default
     - Disable these subworkflows from the CLI with `--snp false` and `--sv false`, respectively
 - Workflow options for disabling steps have been updated for consistency:

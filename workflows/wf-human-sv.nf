@@ -43,8 +43,8 @@ workflow bam {
 
         if (!params.annotation) {
             final_vcf = called.vcf.combine(called.vcf_index)
-            // no ClinVar VCF, pass empty file to makeReport
-            empty_file = projectDir.resolve("./data/empty.txt").toString()
+            // no ClinVar VCF, pass empty VCF to makeReport
+            empty_file = Channel.fromPath("${projectDir}/data/empty_clinvar.vcf")
             report = runReport(
                 called.vcf.collect(),
                 empty_file,

@@ -363,11 +363,11 @@ process annotate_vcf {
     else
         # do some annotation
         if [[ "!{genome}" == "hg38" ]]; then
-            snpeff_db="GRCh38.105"
+            snpeff_db="GRCh38.p13"
             clinvar_vcf="${CLINVAR_PATH}/clinvar_GRCh38.vcf.gz"
             
         elif [[ "!{genome}" == "hg19" ]]; then
-            snpeff_db="GRCh37.75"
+            snpeff_db="GRCh37.p13"
             clinvar_vcf="${CLINVAR_PATH}/clinvar_GRCh37.vcf.gz"
         fi
 
