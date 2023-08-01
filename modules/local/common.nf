@@ -105,7 +105,7 @@ process mapula {
 
 
 process readStats {
-    label "wf_human_snp"
+    label "wf_common"
     cpus 4
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
@@ -116,7 +116,6 @@ process readStats {
         path "${params.sample_name}.flagstat.tsv", emit: flagstat
     script:
         """
-        echo \$REF_PATH
         bamstats -s ${params.sample_name} -u -f ${params.sample_name}.flagstat.tsv --threads 3 "${xam}" | gzip > "${params.sample_name}.readstats.tsv.gz"
         """
 }

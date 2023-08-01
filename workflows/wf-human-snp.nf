@@ -44,19 +44,19 @@ workflow snp {
         // Run preliminaries to find contigs and generate regions to process in
         // parallel.
         // > Step 0
-        make_chunks(bam, ref, bed)
+        make_chunks(bam, ref, bed, model)
         chunks = make_chunks.out.chunks_file
             .splitText(){ 
                 cols = (it =~ /(.+)\s(.+)\s(.+)/)[0]
                 ["contig": cols[1], "chunk_id":cols[2], "total_chunks":cols[3]]}
         contigs = make_chunks.out.contigs_file.splitText() { it.trim() }
-
+        cmd_file = make_chunks.out.cmd_file
         // Run the "pileup" caller on all chunks and collate results
         // > Step 1 
-        pileup_variants(chunks, bam, ref, model)
+        pileup_variants(chunks, bam, ref, model, cmd_file)
         aggregate_pileup_variants(
             ref, pileup_variants.out.pileup_vcf_chunks.collect(),
-            make_chunks.out.contigs_file)
+            make_chunks.out.contigs_file, cmd_file)
 
         // Filter collated results to produce per-contig SNPs for phasing.
         // > Step 2
@@ -116,6 +116,7 @@ workflow snp {
             .cross(candidate_beds)
             .combine(ref.map {it->[it]})
             .combine(model)
+            .combine(cmd_file)
         // take the above and destructure it for easy reading
         bams_beds_and_stuff.multiMap {
             it ->
@@ -123,11 +124,12 @@ workflow snp {
                 candidates: it[1]
                 ref: it[2]
                 model: it[3]
+                cmd_file: it[4]
             }.set { mangled }
         // phew! Run all-the-things
 
         evaluate_candidates(
-            mangled.bams, mangled.candidates, mangled.ref, mangled.model)
+            mangled.bams, mangled.candidates, mangled.ref, mangled.model, mangled.cmd_file)
 
         // merge and sort all files for all chunks for all contigs
         // gvcf is optional, stuff an empty file in, so we have at least one
@@ -141,7 +143,8 @@ workflow snp {
             ref,
             evaluate_candidates.out.full_alignment.collect(),
             make_chunks.out.contigs_file,
-            gvcfs)
+            gvcfs,
+            cmd_file)
 
         // merge "pileup" and "full alignment" variants, per contig
         // note: we never create per-contig VCFs, so this process
@@ -184,7 +187,8 @@ workflow snp {
             final_vcfs.collect(),
             gvcfs.collect(),
             params.phase_vcf,
-            make_chunks.out.contigs_file)
+            make_chunks.out.contigs_file,
+            cmd_file)
 
         // Refine the SNP phase using SVs from Sniffles
         if (params.refine_snp_with_sv && params.sv){

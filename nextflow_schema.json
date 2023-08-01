@@ -265,6 +265,12 @@
                     "description": "Reads with mapping quality < min_mq are filtered (experimental).",
                     "hidden": true
                 },
+                "min_qual": {
+                    "type": "number",
+                    "default": 2,
+                    "description": "Variants with >=min_qual will be marked 'PASS', or 'LowQual' otherwise, optional.",
+                    "hidden": true
+                },
                 "min_contig_size": {
                     "type": "number",
                     "default": 0,
