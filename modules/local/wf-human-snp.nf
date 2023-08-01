@@ -11,13 +11,19 @@ process make_chunks {
         tuple path(xam), path(xam_idx)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path bed
+        path model_path
     output:
         path "clair_output/tmp/CONTIGS", emit: contigs_file
         path "clair_output/tmp/CHUNK_LIST", emit: chunks_file
+        path "clair_output/tmp/CMD", emit: cmd_file
     script:
         def bedargs = bed.name != 'OPTIONAL_FILE' ? "--bed_fn ${bed}" : ''
+        def bedprnt = bed.name != 'OPTIONAL_FILE' ? "--bed_fn=${bed}" : ''
         """
-        mkdir -p clair_output
+        # CW-2456: save command line to add to VCF file (very long command...)
+        mkdir -p clair_output/tmp
+        echo "run_clair3.sh --bam_fn=${xam} ${bedprnt} --ref_fn=${ref} --vcf_fn=${params.vcf_fn} --output=clair_output --platform=ont --sample_name=${params.sample_name} --model_path=${model_path.simpleName} --ctg_name=${params.ctg_name} --include_all_ctgs=${params.include_all_ctgs} --chunk_num=0 --chunk_size=5000000 --qual=${params.min_qual} --var_pct_full=${params.var_pct_full} --ref_pct_full=${params.ref_pct_full} --snp_min_af=${params.snp_min_af} --indel_min_af=${params.indel_min_af} --min_contig_size=${params.min_contig_size}" > clair_output/tmp/CMD
+        # CW-2456: prepare other inputs normally
         python \$(which clair3.py) CheckEnvs \
             --bam_fn ${xam} \
             ${bedargs} \
@@ -29,13 +35,14 @@ process make_chunks {
             --chunk_size 5000000 \
             --include_all_ctgs ${params.include_all_ctgs} \
             --threads 1  \
-            --qual 2 \
+            --qual ${params.min_qual} \
             --sampleName ${params.sample_name} \
             --var_pct_full ${params.var_pct_full} \
             --ref_pct_full ${params.ref_pct_full} \
             --snp_min_af ${params.snp_min_af} \
             --indel_min_af ${params.indel_min_af} \
-            --min_contig_size ${params.min_contig_size}
+            --min_contig_size ${params.min_contig_size} \
+            --cmd_fn clair_output/tmp/CMD
         """
 }
 
@@ -50,6 +57,7 @@ process pileup_variants {
         tuple path(xam), path(xam_idx)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path model
+        path command
     output:
         // TODO: make this explicit, why is pileup VCF optional?
         path "pileup_*.vcf", optional: true, emit: pileup_vcf_chunks
@@ -77,6 +85,7 @@ process pileup_variants {
             --call_snp_only False \
             --gvcf !{params.GVCF} \
             --temp_file_dir gvcf_tmp_path \
+            --cmd_fn !{command} \
             --pileup
         ''' 
 }
@@ -94,6 +103,7 @@ process aggregate_pileup_variants {
         // contigs file to filter
         path "input_vcfs/*"
         path contigs
+        path command
     output:
         tuple path("pileup.vcf.gz"), path("pileup.vcf.gz.tbi"), emit: pileup_vcf
         path "phase_qual", emit: phase_qual
@@ -105,7 +115,8 @@ process aggregate_pileup_variants {
             --output_fn pileup.vcf \
             --sampleName !{params.sample_name} \
             --ref_fn !{ref} \
-            --contigs_fn !{contigs}
+            --contigs_fn !{contigs} \
+            --cmd_fn !{command}
 
         # Replaced bgzip with the faster bcftools index -n
         if [ "$( bcftools index -n pileup.vcf.gz )" -eq 0 ]; \
@@ -304,6 +315,7 @@ process evaluate_candidates {
         tuple val(contig), path(candidate_bed)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path(model)
+        path(command)
     output:
         path "output/full_alignment_*.vcf", emit: full_alignment
     script:
@@ -326,6 +338,7 @@ process evaluate_candidates {
             --snp_min_af ${params.snp_min_af} \
             --indel_min_af ${params.indel_min_af} \
             --platform ont \
+            --cmd_fn ${command} \
             --phased_vcf_fn ${phased_vcf}
         """
 }
@@ -340,6 +353,7 @@ process aggregate_full_align_variants {
         path "full_alignment/*"
         path contigs
         path "gvcf_tmp_path/*"
+        path command
     output:
         tuple path("full_alignment.vcf.gz"), path("full_alignment.vcf.gz.tbi"), emit: full_aln_vcf
         path "non_var.gvcf", optional: true, emit: non_var_gvcf
@@ -350,6 +364,7 @@ process aggregate_full_align_variants {
             --output_fn full_alignment.vcf \
             --sampleName !{params.sample_name} \
             --ref_fn !{ref} \
+            --cmd_fn !{command} \
             --contigs_fn !{contigs}
 
         if [ "$( bcftools index -n full_alignment.vcf.gz )" -eq 0 ]; then
@@ -365,6 +380,7 @@ process aggregate_full_align_variants {
                 --output_fn non_var.gvcf \
                 --sampleName !{params.sample_name} \
                 --ref_fn !{ref} \
+                --cmd_fn !{command} \
                 --contigs_fn !{contigs}
         fi
         '''
@@ -454,6 +470,7 @@ process aggregate_all_variants{
         path "merge_outputs_gvcf/*"
         val(phase_vcf)
         path contigs
+        path command
     output:
         tuple path("${params.sample_name}.wf_snp.vcf.gz"), path("${params.sample_name}.wf_snp.vcf.gz.tbi"), emit: final_vcf
         tuple path("${params.sample_name}.wf_snp.gvcf.gz"), path("${params.sample_name}.wf_snp.gvcf.gz.tbi"), emit: final_gvcf, optional: true
@@ -472,6 +489,7 @@ process aggregate_all_variants{
             --output_fn !{params.sample_name}.wf_snp.vcf \
             --sampleName !{params.sample_name} \
             --ref_fn !{ref} \
+            --cmd_fn !{command} \
             --contigs_fn !{contigs}
 
         if [ "$( bgzip -fdc !{params.sample_name}.wf_snp.vcf.gz | grep -v '#' | wc -l )" -eq 0 ]; then
@@ -488,6 +506,7 @@ process aggregate_all_variants{
                 --output_fn tmp.gvcf \
                 --sampleName !{params.sample_name} \
                 --ref_fn !{ref} \
+                --cmd_fn !{command} \
                 --contigs_fn !{contigs}
 
                 # Reheading samples named "SAMPLE" to params.sample_name. If no 

@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Input options` and `Output options` have been combined in the `Main options` category
 - `--methyl` no longer required to enable methylation aggregation, workflow will check for modification tags in the alignment data.
     - Set `--methyl false` to disable methylation aggregation.
+- Updated Clair3 to v1.0.4
 
 ### Fixed
 - 'mosdepth_downsampled' is defined more than once warning
