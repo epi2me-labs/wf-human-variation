@@ -28,18 +28,15 @@ Colors = util.Colors
 
 def read_vcf(fname):
     """Read input VCF as pandas dataframe."""
-    new_types = {
-        'CHROM': str,
-        'SVLEN': int,
-        'END': int,
-    }
+    # CW-2492: BND have no END/SVLEN flags, so we do conversion to int/flow
+    # contextually when needed
     try:
         df = pd.read_csv(fname, comment='#', header=None, delimiter='\t')
         df = df.rename(columns=dict(enumerate(vcf_cols)))
         df = expand_column(df)
-        df = df.drop('RNAMES', 1)
-        for (key, dtype) in new_types.items():
-            df[key] = df[key].astype(dtype)
+        df = df.drop(columns='RNAMES').astype({'CHROM': str})
+        df['CHROM'] = df['CHROM'].str.replace('chr', '')
+        df['CHROM'] = df['CHROM'].astype(str)
         df['CHROM'] = df['CHROM'].str.replace('chr', '')
         df = df.loc[df['CHROM'].isin(CHROMOSOMES)]
     except pd.errors.EmptyDataError:
@@ -72,11 +69,18 @@ def expand_column(df, column='INFO', row_split_delim=';', key_val_delim='='):
 
 def get_sv_summary_table(vcf_df):
     """Aggregate summary info for SV calls per type."""
-    return vcf_df.groupby('SVTYPE').agg(**{
-        'Count': ('POS', 'count'),
-        'Min. Length': ('SVLEN', lambda x: np.min(x.abs())),
-        'Ave. Length': ('SVLEN', lambda x: np.median(x.abs())),
-        'Max. Length': ('SVLEN', lambda x: np.max(x.abs()))}).transpose()
+    # CW-2492: replace missing values with 0s to allow stats, and ensure
+    # int type for SVTYPE
+    return vcf_df\
+        .replace('', 0)\
+        .astype({'SVLEN': int})\
+        .groupby('SVTYPE')\
+        .agg(**{
+            'Count': ('POS', 'count'),
+            'Min. Length': ('SVLEN', lambda x: np.min(x.abs())),
+            'Ave. Length': ('SVLEN', lambda x: np.median(x.abs())),
+            'Max. Length': ('SVLEN', lambda x: np.max(x.abs()))})\
+        .transpose()
 
 
 def sv_stats(vcf_data):
@@ -89,16 +93,22 @@ def sv_stats(vcf_data):
             else:
                 inserts = vcf_df.loc[vcf_df['SVTYPE'] == 'INS']
                 delets = vcf_df.loc[vcf_df['SVTYPE'] == 'DEL']
+                # CW-2492: count other SV types as well
+                other = vcf_df\
+                    .loc[(vcf_df['SVTYPE'] != 'INS') & (vcf_df['SVTYPE'] != 'DEL')]
                 Stats(
-                    columns=3,
+                    columns=4,
                     items=[
                         (f'{"{:,}".format(inserts.shape[0])}',
                          'Number of Insertions'),
                         (f'{"{:,}".format(delets.shape[0])}',
                          'Number of Deletions'),
+                        (f'{"{:,}".format(other.shape[0])}',
+                         'Other SV types'),
                         (f'{"{:,}".format(vcf_df.CHROM.unique().shape[0])}',
                          'Chromosomes with SVs'),
                     ])
+                p('Other SV types are: inversions, duplications and translocations.')
 
 
 def sv_size_plots(vcf_data):
@@ -113,7 +123,10 @@ def sv_size_plots(vcf_data):
                     "Deletions have negative values.")
                 with Grid():
                     # Extract insertions
-                    inserts = vcf_df.loc[vcf_df['SVTYPE'] == 'INS']
+                    # CW-2492: ensure SVLEN is int
+                    inserts = vcf_df\
+                        .loc[vcf_df['SVTYPE'] == 'INS']\
+                        .astype({'SVLEN': int, 'END': int})
                     if not inserts.empty:
                         inserts = inserts[['SVTYPE', 'SVLEN']] \
                             .groupby('SVLEN') \
@@ -137,7 +150,10 @@ def sv_size_plots(vcf_data):
                     else:
                         h4("No insertions to plot")
                     # Extract deletions
-                    delets = vcf_df.loc[vcf_df['SVTYPE'] == 'DEL']
+                    # CW-2492: ensure SVLEN is int
+                    delets = vcf_df\
+                        .loc[vcf_df['SVTYPE'] == 'DEL']\
+                        .astype({'SVLEN': int, 'END': int})
                     if not delets.empty:
                         delets = delets[['SVTYPE', 'SVLEN']] \
                             .groupby('SVLEN') \
@@ -175,7 +191,11 @@ def karyoplot(vcf_data, args):
                     "INS": Colors.cinnabar,
                     "DEL": Colors.cerulean
                 }
-                df = vcf_df[['CHROM', 'POS', 'ID', 'SVLEN']]
+                # CW-2492: ensure SVLEN is int
+                df = vcf_df\
+                    .loc[(vcf_df['SVTYPE'] == 'INS') | (vcf_df['SVTYPE'] == 'DEL')]\
+                    .astype({'SVLEN': int})
+                df = df[['CHROM', 'POS', 'ID', 'SVLEN']]
                 df.columns = ['chr', 'start', 'name', 'length']
                 # Define end point to start+length...
                 df = df.eval('end=start + length')

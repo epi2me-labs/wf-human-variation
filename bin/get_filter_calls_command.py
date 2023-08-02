@@ -61,43 +61,12 @@ def parse_arguments():
         type=int
     )
 
-    parser.add_argument(
-        "--min_sv_length",
-        help="Set the minimum SV length to retain.",
-        required=True,
-        type=int
-    )
-
-    parser.add_argument(
-        "--max_sv_length",
-        help="Set the maximum SV length to retain.",
-        required=True,
-        type=int
-    )
-
-    parser.add_argument(
-        "--sv_types",
-        help="Space separated SV types to retain",
-        required=True,
-        nargs="+"
-    )
-
     return parser.parse_args()
 
 
 def main():
     """Run the entry point."""
     args = parse_arguments()
-
-    # Get SV type filters
-    sv_type_filters = []
-    for svtype in args.sv_types:
-        sv_type_filters.append(f'SVTYPE = \"{svtype}\"')
-    filter_sv_types = f"( {(' || ').join(sv_type_filters)} )"
-
-    # Get length filters
-    filter_min_len = f'ABS(SVLEN) >= {args.min_sv_length}'
-    filter_max_len = f'ABS(SVLEN) <= {args.max_sv_length}'
 
     # Get min read support filter
     # Todo: Check this
@@ -113,14 +82,8 @@ def main():
 
     filter_min_read_support = f'INFO/SUPPORT >= {min_read_support}'
 
-    # Build filter string
-    filters = [
-        filter_sv_types,
-        filter_min_len,
-        filter_max_len,
-        filter_min_read_support
-    ]
-    filter_string = f"-i '{' && '.join(filters)}'"
+    # Now, make string
+    filter_string = f"-i '{filter_min_read_support}'"
 
     # Add target_bed filter (optional)
     if args.target_bedfile:
