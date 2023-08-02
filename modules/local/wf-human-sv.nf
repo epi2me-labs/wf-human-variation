@@ -31,11 +31,13 @@ process sniffles2 {
     script:
         def tr_arg = tr_bed.name != 'OPTIONAL_FILE' ? "--tandem-repeats ${tr_bed}" : ''
         def sniffles_args = params.sniffles_args ?: ''
+        def min_sv_len = params.min_sv_length ? "--minsvlen ${params.min_sv_length}" : ""
     """
     sniffles \
         --threads $task.cpus \
         --sample-id ${params.sample_name} \
         --output-rnames \
+        ${min_sv_len} \
         --cluster-merge-pos $params.cluster_merge_pos \
         --input $xam \
         $tr_arg \
@@ -56,15 +58,11 @@ process filterCalls {
     output:
         path "*.filtered.vcf", emit: vcf
     script:
-        def sv_types_joined = params.sv_types.split(',').join(" ")
     """
     get_filter_calls_command.py \
         --target_bedfile $target_bed \
         --vcf $vcf \
         --depth_summary $mosdepth_summary \
-        --min_sv_length $params.min_sv_length \
-        --max_sv_length $params.max_sv_length \
-        --sv_types $sv_types_joined \
         --min_read_support $params.min_read_support \
         --min_read_support_limit $params.min_read_support_limit > filter.sh
 

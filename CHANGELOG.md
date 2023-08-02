@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--methyl` no longer required to enable methylation aggregation, workflow will check for modification tags in the alignment data.
     - Set `--methyl false` to disable methylation aggregation.
 - Updated Clair3 to v1.0.4
+- SV workflow does not filter the SV calls by size and type
 
 ### Fixed
 - 'mosdepth_downsampled' is defined more than once warning
@@ -32,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add downsampling of large bam files
+
+### Removed
+- `--sv_types`, all SV types are returned without filtering
+- `--max_sv_length`, all SVs are returned regardless of maximum size
 
 ## [v1.6.1]
 ### Changed

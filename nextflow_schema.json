@@ -168,17 +168,18 @@
                     "description": "Input BED file containing tandem repeat annotations for the reference genome.",
                     "help_text": "Providing a tandem repeat BED can improve calling in repetitive regions. An appropriate tandem repeat BED can be downloaded for your reference genome [from the Sniffles2 repository](https://github.com/fritzsedlazeck/Sniffles/tree/master/annotations)."
                 },
-                "sv_types": {
-                    "type": "string",
-                    "default": "DEL,INS",
-                    "description": "Comma delimited list of structural variant types to include in the VCF.",
-                    "help_text": "By default the VCF is filtered to include insertions (INS) and deletions (DEL). Duplications (DUP) and inversions (INV) can also be included by changing this to 'INS,DEL,DUP,INV'."
-                },
                 "cluster_merge_pos": {
                     "type": "number",
                     "default": 150,
                     "description": "Maximum merging distance for insertions and deletions on the same read and cluster in non-repeat regions.",
                     "hidden": true
+                },
+                "min_sv_length": {
+                    "type": "number",
+                    "default": 30,
+                    "description": "Minimum structural variant size called by Sniffles2.",
+                    "hidden": true,
+                    "minimum": 30
                 },
                 "sniffles_args": {
                     "type": "string",
