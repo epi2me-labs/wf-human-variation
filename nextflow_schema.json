@@ -15,35 +15,39 @@
             "description": "Select which sub-workflows of wf-human-variation you wish to run. Parameters for each sub-workflow can be changed using the sections below. Basecalling is run if you provide a FAST5 directory instead of a BAM in the Input Options.",
             "properties": {
                 "sv": {
+                    "title": "SV: Structural variants",
                     "type": "boolean",
                     "description": "Call for structural variants.",
                     "help_text": "If this option is selected, structural variant calling will be carried out using Sniffles2.",
                     "default": true
                 },
                 "snp": {
+                    "title": "SNP: Small variants",
                     "type": "boolean",
                     "description": "Call for small variants",
                     "help_text": "If this option is selected, small variant calling will be carried out using Clair3.",
                     "default": true
                 },
                 "cnv": {
+                    "title": "CNV: Copy number variants",
                     "type": "boolean",
                     "description": "Call for copy number variants.",
                     "help_text": "If this option is selected, copy number variant calling will be carried out using QDNAseq.",
                     "default": false
                 },
-                "methyl": {
-                    "type": "boolean",
-                    "description": "Enable output of methylation calls to a bedMethyl file [requires input BAM with Ml and Mm tags]",
-                    "help_text": "This option is automatically selected and aggregation of methylation calls with be carried out using modbam2bed if Ml and Mm tags are found. Disable this option to prevent output of a bedMethyl file.",
-                    "hidden": true,
-                    "default": true
-                },
                 "str": {
+                    "title": "STR: Short tandem repeat expansions",
                     "type": "boolean",
                     "description": "Enable Straglr to genotype STR expansions.",
                     "help_text": "If this option is selected, genotyping of STR expansions will be carried out using Straglr. This sub-workflow is only compatible with genome build 38.",
                     "default": false
+                },
+                "methyl": {
+                    "title": "METHYL: Methylation aggregation",
+                    "type": "boolean",
+                    "description": "Enable output of methylation calls to a bedMethyl file [requires input BAM with Ml and Mm tags]",
+                    "help_text": "This option is automatically selected and aggregation of methylation calls with be carried out using modbam2bed if Ml and Mm tags are found. Disable this option to prevent output of a bedMethyl file.",
+                    "default": true
                 },
                 "mapula": {
                     "type": "boolean",
@@ -52,7 +56,34 @@
                     "hidden": true,
                     "default": false
                 }
-            }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "sv"
+                    ]
+                },
+                {
+                    "required": [
+                        "snp"
+                    ]
+                },
+                {
+                    "required": [
+                        "cnv"
+                    ]
+                },
+                {
+                    "required": [
+                        "str"
+                    ]
+                },
+                {
+                    "required": [
+                        "methyl"
+                    ]
+                }
+            ]
         },
         "input": {
             "title": "Main options",
@@ -67,30 +98,35 @@
                     "help_text": ""
                 },
                 "fast5_dir": {
+                    "title": "Input: FAST5/POD5 signal directory",
                     "type": "string",
                     "format": "directory-path",
                     "description": "Directory containing FAST5 signal for basecalling.",
                     "help_text": "This directory will be searched recursively. All FAST5 or POD5 files (depending on which extension you select in the Basecalling Options) in this directory or any subdirectory (no matter how deep) will be basecalled. You may choose to provide a FAST5 directory, or a BAM/CRAM, but not both."
                 },
                 "bam": {
+                    "title": "Input: BAM or CRAM file",
                     "type": "string",
                     "format": "file-path",
                     "description": "Path to a BAM (or CRAM) containing aligned or unaligned reads.",
                     "help_text": "You may choose to provide a BAM/CRAM, or a FAST5 directory for basecalling, but not both."
                 },
                 "ref": {
+                    "title": "Reference file",
                     "type": "string",
                     "format": "file-path",
                     "description": "Path to a reference FASTA file.",
                     "help_text": "Reference against which to compare reads for variant calling."
                 },
                 "old_ref": {
+                    "title": "CRAM reference file for realignment",
                     "type": "string",
                     "format": "file-path",
                     "description": "Reference FASTA file for CRAM input (only required if the CRAM requires realignment)",
                     "help_text": "You do not need to provide this unless the workflow specifically asks you to. If your input CRAM headers do not match the metadata of the input reference, the workflow will assume you want to realign your reads to the new input reference. CRAM files are compressed using the reference, so the read sequences cannot be realigned without the old reference."
                 },
                 "basecaller_cfg": {
+                    "title": "Basecaller configuration",
                     "type": "string",
                     "description": "Name of the model to use for converting signal and selecting a small variant calling model.",
                     "help_text": "Required for basecalling and/or small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. Only a subset of these models can be used for basecalling with the workflow, these are shown at the top of the list. Models that begin with 'clair3:' cannot be used for basecalling and are included to allow SNP calling on existing datasets. You should select 'custom' to override the basecaller_cfg with basecaller_model_path.",
@@ -135,6 +171,7 @@
                     "hidden": true
                 },
                 "bed": {
+                    "title": "Target region BED file",
                     "type": "string",
                     "format": "file-path",
                     "description": "An optional BED file enumerating regions to process for variant calling.",
@@ -147,14 +184,33 @@
                     "default": true
                 },
                 "out_dir": {
+                    "title": "Output directory",
                     "type": "string",
                     "default": "output",
                     "format": "directory-path",
                     "description": "Directory for output of all workflow results."
                 }
             },
-            "required": [
-                "ref"
+            "allOf": [
+                {
+                    "required": [
+                        "ref"
+                    ]
+                },
+                {
+                    "oneOf": [
+                        {
+                            "required": [
+                                "fast5_dir"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "bam"
+                            ]
+                        }
+                    ]
+                }
             ]
         },
         "sv_options": {
@@ -163,6 +219,7 @@
             "description": "Options specific to the SV calling subworkflow.",
             "properties": {
                 "tr_bed": {
+                    "title": "Tandem repeat BED file",
                     "type": "string",
                     "format": "path",
                     "description": "Input BED file containing tandem repeat annotations for the reference genome.",
@@ -341,6 +398,7 @@
             "description": "Options related to the STR subworkflow.",
             "properties": {
                 "sex": {
+                    "title": "Sample sex",
                     "type": "string",
                     "default": "female",
                     "description": "Sex (male or female) to be passed to Straglr-genotype.",
@@ -365,6 +423,7 @@
                     "hidden": true
                 },
                 "remora_cfg": {
+                    "title": "Modified basecalling configuration",
                     "type": "string",
                     "description": "Name of the model to use for calling modified bases.",
                     "help_text": "Required for calling modified bases while basecalling. The model list only shows models that are compatible with this workflow. You should select 'custom' to override the remora_cfg with remora_model_path.",
@@ -425,6 +484,11 @@
                     "help_text": "This option will use a custom BED in place of the one bundled with the default 'NIST_SVs_Integration_v0.6' truth set.",
                     "hidden": true
                 }
+            },
+            "dependencies": {
+                "sv_benchmark": [
+                    "sv"
+                ]
             }
         },
         "advanced_options": {
