@@ -19,14 +19,14 @@
                     "type": "boolean",
                     "description": "Call for structural variants.",
                     "help_text": "If this option is selected, structural variant calling will be carried out using Sniffles2.",
-                    "default": true
+                    "default": false
                 },
                 "snp": {
                     "title": "SNP: Small variants",
                     "type": "boolean",
                     "description": "Call for small variants",
                     "help_text": "If this option is selected, small variant calling will be carried out using Clair3.",
-                    "default": true
+                    "default": false
                 },
                 "cnv": {
                     "title": "CNV: Copy number variants",
@@ -47,7 +47,7 @@
                     "type": "boolean",
                     "description": "Enable output of methylation calls to a bedMethyl file [requires input BAM with Ml and Mm tags]",
                     "help_text": "This option is automatically selected and aggregation of methylation calls with be carried out using modbam2bed if Ml and Mm tags are found. Disable this option to prevent output of a bedMethyl file.",
-                    "default": true
+                    "default": false
                 },
                 "mapula": {
                     "type": "boolean",
