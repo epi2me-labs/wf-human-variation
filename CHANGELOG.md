@@ -12,15 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `—-skip_annotation` disables attempt to determine human genome version, enabling `--snp`, `--sv` and `--phase_methyl` to be called on genomes which aren’t hg19 or hg38 
 - Updated example command displayed when running `--help`
 - The ClinVar table in `--snp` and `--sv` reports is now sorted according to clinical significance, and includes HGVS cDNA and protein descriptions
-- SNP and SV analyses enabled by default
-    - Disable these subworkflows from the CLI with `--snp false` and `--sv false`, respectively
 - Workflow options for disabling steps have been updated for consistency:
     - `--skip_annotation` is now `--annotation false`
     - `--skip_refine_snp_with_sv` is now `--refine_snp_with_sv false`
 - `--phase_methyl` also calls modifications using all reads to account for unphased regions
 - `Input options` and `Output options` have been combined in the `Main options` category
-- `--methyl` no longer required to enable methylation aggregation, workflow will check for modification tags in the alignment data.
-    - Set `--methyl false` to disable methylation aggregation.
 - Updated Clair3 to v1.0.4
 - SV workflow does not filter the SV calls by size and type
 

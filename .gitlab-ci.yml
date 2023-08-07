@@ -73,14 +73,14 @@ docker-run:
               NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "hap,phase_contig_haplotag,merge_haplotagged_contigs,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--methyl false --cnv false --str false --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --basecaller_cfg clair3:dna_r10.4.1_e8.2_400bps_hac_prom --phase_vcf --bam_min_coverage 0.00001 --annotation_threads 4"
+              NF_WORKFLOW_OPTS: "--snp --sv false --methyl false --cnv false --str false --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --basecaller_cfg clair3:dna_r10.4.1_e8.2_400bps_hac_prom --phase_vcf --bam_min_coverage 0.00001 --annotation_threads 4"
 
         - if: $MATRIX_NAME == "wf-human-snp_modelext"
           variables:
               NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "hap,lookup_clair3_model,phase_contig_haplotag,merge_haplotagged_contigs,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--sv false --methyl false --cnv false --str false --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --phase_vcf --bam_min_coverage 0.00001 --annotation_threads 4"
+              NF_WORKFLOW_OPTS: "--snp --sv false --methyl false --cnv false --str false --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --phase_vcf --bam_min_coverage 0.00001 --annotation_threads 4"
 
         - if: $MATRIX_NAME == "wf-human-snp_covblock"
           variables:
@@ -90,7 +90,7 @@ docker-run:
                                     getGenome,aggregate_all_variants,aggregate_full_align_variants,aggregate_pileup_variants,create_candidates,\
                                     evaluate_candidates,get_qual_filter,makeReport,make_chunks,merge_pileup_and_full_vars,output_snp,phase_contig,\
                                     pileup_variants,post_clair_phase_contig,select_het_snps,vcfStats,refine_with_sv,annotate_vcf"
-              NF_WORKFLOW_OPTS: "--sv false --methyl false --cnv false --str false --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --phase_vcf --bam_min_coverage 100"
+              NF_WORKFLOW_OPTS: "--snp --sv false --methyl false --cnv false --str false --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --phase_vcf --bam_min_coverage 100"
 
         - if: $MATRIX_NAME == "wf-human-snp_svrefine"
           variables:
@@ -100,14 +100,14 @@ docker-run:
                                     get_genome,aggregate_all_variants,aggregate_full_align_variants,aggregate_pileup_variants,create_candidates,\
                                     evaluate_candidates,get_qual_filter,makeReport,make_chunks,merge_pileup_and_full_vars,output_snp,phase_contig,\
                                     pileup_variants,post_clair_phase_contig,select_het_snps,vcfStats"
-              NF_WORKFLOW_OPTS: "--methyl false --cnv false --str false --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --phase_vcf --annotation_threads 4"
+              NF_WORKFLOW_OPTS: "--snp --sv --methyl false --cnv false --str false --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --phase_vcf --annotation_threads 4"
 
         - if: $MATRIX_NAME == "wf-human-sv"
           variables:
               NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-sv/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-sv.nf"
               NF_IGNORE_PROCESSES: "getAllChromosomesBed,minimap2_alignment,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf"
-              NF_WORKFLOW_OPTS: "--snp false --methyl false --cnv false --str false --bam demo_data/test.bam --ref demo_data/chr20_human_g1k_v37_part.fasta.gz --bed demo_data/target.bed --tr_bed demo_data/human_hs37d5.trf.bed --bam_min_coverage 0.00001 --annotation_threads 4"
+              NF_WORKFLOW_OPTS: "--snp false --sv --methyl false --cnv false --str false --bam demo_data/test.bam --ref demo_data/chr20_human_g1k_v37_part.fasta.gz --bed demo_data/target.bed --tr_bed demo_data/human_hs37d5.trf.bed --bam_min_coverage 0.00001 --annotation_threads 4"
 
         - if: $MATRIX_NAME == "wf-human-cnv"
           variables:
