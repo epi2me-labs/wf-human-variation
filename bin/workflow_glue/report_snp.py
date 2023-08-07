@@ -3,8 +3,8 @@
 
 import os
 
-from aplanat.parsers.bcfstats import parse_bcftools_stats_multi
 from dominate.tags import a, h6, p
+from ezcharts.components.bcfstats import load_bcfstats
 from ezcharts.components.ezchart import EZChart
 from ezcharts.components.reports.labs import LabsReport
 from ezcharts.components.theme import LAB_head_resources
@@ -94,8 +94,8 @@ def main(args):
 
     # Load the data
     try:
-        bcfstats = parse_bcftools_stats_multi(
-            [args.vcf_stats],
+        bcfstats = load_bcfstats(
+            args.vcf_stats,
             sample_names=[args.sample_name])
     except IndexError:
         bcfstats = {'SN': pd.DataFrame(), 'TSTV': pd.DataFrame()}
@@ -136,10 +136,10 @@ def main(args):
                 p('The bcftools stats file is empty.')
             else:
                 DataTable.from_pandas(
-                    bcfstats['SN'].drop(columns=['sample', 'samples']),
+                    bcfstats['SN'].drop(columns='id'),
                     use_index=False)
                 DataTable.from_pandas(
-                    bcfstats['TSTV'].drop(columns='sample'),
+                    bcfstats['TSTV'].drop(columns='id'),
                     use_index=False)
 
     # ClinVar variants

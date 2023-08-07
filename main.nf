@@ -266,14 +266,15 @@ workflow {
         // If it doesn't pass the minimum depth required, 
         // emit a bam channel of discarded bam files.
         bamdepth_filter.not_pass
+            .subscribe {
+                log.error "ERROR: File ${it[2].getName()} will not be processed by the workflow as the detected coverage of ${it[1]}x is below the minimum coverage threshold of ${params.bam_min_coverage}x required for analysis."
+            }
+        bamdepth_filter.not_pass
             .map{it ->
-                it.size > 0 ? [it[1], it[2], it[3], it[4]] : it
+                it.size > 0 ? [it[2], it[3], it[4]] : it
             }
             .set{discarded_bams}
-        discarded_bams
-            .subscribe {
-                log.error "ERROR: File ${it[1].getName()} will not be processed by the workflow as the detected coverage of ${it[0]}x is below the minimum coverage threshold of ${params.bam_min_coverage}x required for analysis."
-            }
+        discarded_bams.view()
     } else {
         // If the bam_min_depth is 0, then create alignment report for everything.
         bam_channel.set{pass_bam_channel}
@@ -373,11 +374,6 @@ workflow {
     }
 
     // Create reports for pass and fail channels
-    // Create a report if the discarded bam channel is not empty.
-    report_fail = failedQCReport(
-        discarded_bams, bam_stats, mosdepth_stats,
-        software_versions.collect(), workflow_params)
-
     // Create passing bam report
     report_pass = pass_bam_channel
                 .combine(bam_stats)
@@ -388,6 +384,16 @@ workflow {
                 .combine(workflow_params)
                 .flatten()
                 .collect() | makeAlignmentReport
+    // Create failing bam report
+    report_fail = discarded_bams
+                .combine(bam_stats)
+                .combine(bam_flag)
+                .combine(mosdepth_stats.map{it[0]})
+                .combine(ref_channel)
+                .combine(software_versions.collect())
+                .combine(workflow_params)
+                .flatten()
+                .collect() | failedQCReport
     
     // wf-human-sv
     if(params.sv) {
