@@ -243,30 +243,34 @@ process get_coverage {
 
 // Make bam QC reporting.
 process failedQCReport  {
-    cpus 1
-    input:
-        tuple val(cvg), path(xam), path(xam_idx), val(xam_meta)
-        file read_summary
-        tuple path(mosdepth_bed), path(mosdepth_dist), path(mosdepth_threshold) // MOSDEPTH_TUPLE
-        path versions
-        path "params.json"
+    input: 
+        tuple path(xam),
+            path(xam_idx),
+            val(xam_meta),
+            path("readstats/*"),
+            path("flagstats/*"),
+            path("depths/*"),
+            path('ref.fasta'),
+            path('ref.fasta.fai'),
+            path('ref_cache/'),
+            env(REF_PATH),
+            path("versions.txt"),
+            path("params.json")
+
     output:
-        path "*report.html"
+        path "*.html"
+
     script:
-        report_name = "${params.sample_name}.wf-human-qc-report.html"
-        wfversion = workflow.manifest.version
-        if( workflow.commitId ){
-            wfversion = workflow.commitId
-        }
         """
-        workflow-glue report_qc \
-            $report_name \
-            --versions $versions \
-            --params params.json \
-            --read_stats $read_summary \
-            --read_depth $mosdepth_dist \
-            --revision $wfversion \
-            --commit $workflow.commitId \
+        workflow-glue report_al \\
+            --name wf-human-variation \\
+            --stats_dir readstats/ \\
+            --reference_fai ref.fasta.fai \\
+            --flagstat_dir flagstats/ \\
+            --depths_dir depths/ \\
+            --versions versions.txt \\
+            --window_size ${params.depth_window_size} \\
+            --params params.json \\
             --low_cov ${params.bam_min_coverage}
         """
 }

@@ -29,7 +29,6 @@ process modbam2bed {
 
 // Check that the bam has modifications
 process validate_modbam {
-    label "wf_common"
     input:
         tuple path(alignment), 
             path(alignment_index), 

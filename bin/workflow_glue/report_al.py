@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Report using ezcharts."""
+from dominate.tags import p
 from ezcharts.components.fastcat import SeqSummary
 from ezcharts.components.reports import labs
 import pandas as pd
@@ -33,12 +34,24 @@ def main(args):
     depth_df = read_data.depths(args.depths_dir, faidx, args.window_size)
 
     # create the report
+    if args.low_cov:
+        report_name = f"{args.name} reads QC report - failing"
+    else:
+        report_name = f"{args.name} reads QC report"
     report = labs.LabsReport(
-        f"{args.name} reads QC report",
+        report_name,
         args.name,
         args.params,
         args.versions,
     )
+
+    # If low-cov provided, then display the error
+    if args.low_cov:
+        with report.add_section("Sample failing", "Fail"):
+            p(
+                f"""This dataset was not processed by the workflow as it did not
+                meet the minimum bam coverage of {args.low_cov}x required.
+                """)
 
     # Add summary table of the input flagstats
     sections.summary(report, sample_names, stats_df, flagstat_df)
@@ -56,10 +69,9 @@ def main(args):
         sections.depths(report, depth_df)
 
     # write the report to the output file
-    report_fname = f"{args.name}-alignment-report.html"
-    report.write(report_fname)
+    report.write(f"{args.name}-alignment-report.html")
 
-    logger.info(f"Written report to '{report_fname}'.")
+    logger.info(f"Written report to '{args.name}-alignment-report.html'.")
 
 
 def argparser():
@@ -90,6 +102,11 @@ def argparser():
         default=25000,
         type=int,
         help="Size of windows for the depth plot",
+    )
+    parser.add_argument(
+        "--low_cov",
+        type=int,
+        help="define if the QC report should be for low-cov bam"
     )
     parser.add_argument(
         "--params",

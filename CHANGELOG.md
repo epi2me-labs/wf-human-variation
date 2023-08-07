@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Set `--methyl false` to disable methylation aggregation.
 - Updated Clair3 to v1.0.4
 - SV workflow does not filter the SV calls by size and type
+- Report for bam files failing the depth threshold is now consistent with the report of bam passing the hard threshold
 
 ### Fixed
 - 'mosdepth_downsampled' is defined more than once warning
