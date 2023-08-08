@@ -5,6 +5,7 @@ import os
 
 from dominate.tags import a, h6, p
 from ezcharts.components.bcfstats import load_bcfstats
+from ezcharts.components.clinvar import load_clinvar_vcf
 from ezcharts.components.ezchart import EZChart
 from ezcharts.components.reports.labs import LabsReport
 from ezcharts.components.theme import LAB_head_resources
@@ -15,8 +16,6 @@ from ezcharts.plots.matrix import heatmap
 import numpy as np
 import pandas as pd
 
-from .report_utils import read_data  # noqa: ABS101
-from .report_utils.common import CLINVAR_DOCS_URL  # noqa: ABS101
 from .util import get_named_logger, wf_parser  # noqa: ABS101
 
 # Global variables
@@ -83,10 +82,7 @@ def parse_changes(bcftools_dt):
 def main(args):
     """Run the entry point."""
     logger = get_named_logger("report_snp")
-
-    # Load ClinVar VCF
-    clinvar_vcf_df = read_data.clinvar_to_df(args.clinvar_vcf)
-    clinvar_for_report = read_data.format_clinvar_table(clinvar_vcf_df)
+    clinvar_docs_url = "https://www.ncbi.nlm.nih.gov/clinvar/docs/clinsig/"
 
     # Check that the input files exist
     if not os.path.exists(args.vcf_stats):
@@ -136,7 +132,7 @@ def main(args):
                 p('The bcftools stats file is empty.')
             else:
                 DataTable.from_pandas(
-                    bcfstats['SN'].drop(columns='id'),
+                    bcfstats['SN'].drop(columns=['id']),
                     use_index=False)
                 DataTable.from_pandas(
                     bcfstats['TSTV'].drop(columns='id'),
@@ -144,26 +140,33 @@ def main(args):
 
     # ClinVar variants
     if not args.skip_annotation:
-        with report.add_section('ClinVar variant annotations', 'ClinVar'):
-            p(
-                "The ",
-                a("SnpEff", href="https://pcingola.github.io/SnpEff/"),
-                " annotation tool has been used to annotate with",
-                a("ClinVar", href="https://www.ncbi.nlm.nih.gov/clinvar/"), '.'
-                " Variants with ClinVar annotations will appear in the ",
-                "table below, ranked according to their significance. 'Pathogenic', ",
-                "'Likely pathogenic', and 'Unknown significance' will be displayed ",
-                "first, in that order. Please note that variants classified as ",
-                "'Benign' or 'Likely benign' are not reported in this table, but ",
-                "will appear in the VCF output by the workflow. For further details ",
-                "on the terms in the 'Significance' column, please visit ",
-                a("this page", href=CLINVAR_DOCS_URL),
-                '.')
-            # check if there are any ClinVar sites to report
-            if clinvar_for_report.empty:
-                h6('No ClinVar sites to report.')
-            else:
-                DataTable.from_pandas(clinvar_for_report, export=True, use_index=False)
+        if args.clinvar_vcf is not None:
+            if os.path.exists(args.clinvar_vcf):
+                with report.add_section('ClinVar variant annotations', 'ClinVar'):
+                    p(
+                        "The ",
+                        a("SnpEff", href="https://pcingola.github.io/SnpEff/"),
+                        " annotation tool has been used to annotate with",
+                        a("ClinVar", href="https://www.ncbi.nlm.nih.gov/clinvar/"), '.'
+                        " Variants with ClinVar annotations will appear in the ",
+                        "table below, ranked according to their significance. ",
+                        "'Pathogenic', 'Likely pathogenic', and 'Unknown ",
+                        "significance' will be displayed first, in that order. ",
+                        "Please note that variants classified as 'Benign' or ",
+                        "'Likely benign' are not reported in this table, but ",
+                        "will appear in the VCF output by the workflow. For further",
+                        " details on the terms in the 'Significance' column, please",
+                        " visit ",
+                        a("this page", href=clinvar_docs_url),
+                        '.')
+                    # check if there are any ClinVar sites to report
+                    clinvar_for_report = load_clinvar_vcf(args.clinvar_vcf)
+                    if clinvar_for_report.empty:
+                        h6('No ClinVar sites to report.')
+                    else:
+                        DataTable.from_pandas(
+                            clinvar_for_report, export=True, use_index=False)
+
     else:
         # Annotations were skipped
         with report.add_section('ClinVar variant annotations', 'ClinVar'):

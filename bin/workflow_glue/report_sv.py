@@ -4,6 +4,7 @@
 import json
 
 from dominate.tags import a, h4, h6, p
+from ezcharts.components.clinvar import load_clinvar_vcf
 from ezcharts.components.ezchart import EZChart
 from ezcharts.components.reports.labs import LabsReport
 from ezcharts.components.theme import LAB_head_resources
@@ -15,7 +16,6 @@ from ezcharts.plots.ideogram import ideogram
 import numpy as np
 import pandas as pd
 
-from .report_utils import read_data  # noqa: ABS101
 from .report_utils.common import CHROMOSOMES  # noqa: ABS101
 from .util import wf_parser  # noqa: ABS101
 
@@ -224,8 +224,7 @@ def main(args):
     # Input all ClinVar VCFs
     clinvar_vcf_data = []
     for index, sample_vcf in enumerate(args.clinvar_vcf):
-        vcf_df = read_data.clinvar_to_df(sample_vcf)
-        clinvar_for_report = read_data.format_clinvar_table(vcf_df)
+        clinvar_for_report = load_clinvar_vcf(sample_vcf)
         clinvar_vcf_data.append((index, sample_vcf.split('.')[0], clinvar_for_report))
 
     # Create report file
