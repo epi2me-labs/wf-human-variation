@@ -16,7 +16,8 @@ include {
     truvari;
 } from "../modules/local/wf-human-sv-eval.nf"
 include { 
-    annotate_vcf as annotate_sv_vcf
+    annotate_vcf as annotate_sv_vcf;
+    haploblocks as haploblocks_sv
 } from '../modules/local/common.nf'
 
 workflow bam {
@@ -44,6 +45,7 @@ workflow bam {
         if (!params.annotation) {
             final_vcf = called.vcf.combine(called.vcf_index)
             // no ClinVar VCF, pass empty VCF to makeReport
+            clinvar_vcf = Channel.empty()
             empty_file = Channel.fromPath("${projectDir}/data/empty_clinvar.vcf")
             report = runReport(
                 called.vcf.collect(),
@@ -56,6 +58,7 @@ workflow bam {
             // do annotation and get a list of ClinVar variants for the report
             annotations = annotate_sv_vcf(vcf_for_annotation, genome_build, "sv")
             final_vcf = annotations.final_vcf
+            clinvar_vcf = annotations.final_vcf_clinvar
             report = runReport(
                 final_vcf.map{it[0]},
                 annotations.final_vcf_clinvar,
@@ -66,9 +69,11 @@ workflow bam {
     emit:
         report = report.html.concat(
             final_vcf,
-            benchmark_result
+            benchmark_result,
+            clinvar_vcf
         )
         sniffles_vcf = called.vcf
+        for_phasing = final_vcf
 }
 
 

@@ -156,14 +156,34 @@ process phase_contig_haplotag {
     // Tags reads in an input BAM from heterozygous SNPs
     // Also haplotag for those modes that need it (--str)
 
-    label "wf_human_snp"
     cpus 4
     input:
-        tuple val(contig), path(het_snps), path(het_snps_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
-        tuple val(xam_fmt), val(xai_fmt)
+        tuple val(contig), 
+            path(het_snps), path(het_snps_tbi), 
+            path(xam), path(xam_idx), 
+            path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         tuple val(contig), path("${contig}_hp.bam"), path("${contig}_hp.bam.bai"), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
     script:
+    if (params.use_longphase_intermediate)
+        """
+        # REF_PATH points to the reference cache and allows faster parsing of CRAM files
+        longphase phase --ont -o phased_${contig} \
+            -s ${het_snps} -b ${xam} -r ${ref} -t ${task.cpus}
+        bgzip phased_${contig}.vcf
+
+        tabix -f -p vcf phased_${contig}.vcf.gz
+
+        whatshap haplotag \
+            --reference ${ref} \
+            --ignore-read-groups \
+            --regions ${contig} \
+            phased_${contig}.vcf.gz \
+            ${xam} \
+        | samtools view -b -1 -@3 -o ${contig}_hp.bam##idx##${contig}_hp.bam.bai --write-index
+
+        """
+    else
         """
             echo "Using whatshap for phasing"
             whatshap phase \
@@ -197,35 +217,34 @@ process phase_contig {
     //   the original BAM and BAI as phased_bam for compatability,
     //   but adds the VCF as it is now tagged with phasing information
     //   used later in the full-alignment model
-    label "wf_human_snp"
     cpus 4
     input:
         tuple val(contig), path(het_snps), path(het_snps_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         tuple val(contig), path(xam), path(xam_idx), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
-    shell:
-        '''
-        if [[ "!{params.use_longphase_intermediate}" == "true" ]]; then
-            echo "Using longphase for phasing"
-            # longphase needs decompressed 
-            bgzip -@ !{task.cpus} -dc !{het_snps} > snps.vcf
-            longphase phase --ont -o phased_!{contig} \
-                -s snps.vcf -b !{xam} -r !{ref} -t !{task.cpus}
-            bgzip phased_!{contig}.vcf
+    script:
+        if (params.use_longphase_intermediate)
+        """
+        echo "Using longphase for phasing"
+        longphase phase --ont -o phased_${contig} \
+            -s ${het_snps} -b ${xam} -r ${ref} -t ${task.cpus}
+        bgzip phased_${contig}.vcf
+        tabix -f -p vcf phased_${contig}.vcf.gz
+        """
         else
-            echo "Using whatshap for phasing"
-            whatshap phase \
-                --output phased_!{contig}.vcf.gz \
-                --reference !{ref} \
-                --chromosome !{contig} \
-                --distrust-genotypes \
-                --ignore-read-groups \
-                !{het_snps} \
-                !{xam}
-        fi
+        """
+        echo "Using whatshap for phasing"
+        whatshap phase \
+            --output phased_${contig}.vcf.gz \
+            --reference ${ref} \
+            --chromosome ${contig} \
+            --distrust-genotypes \
+            --ignore-read-groups \
+            ${het_snps} \
+            ${xam}
 
-        tabix -f -p vcf phased_!{contig}.vcf.gz
-        '''
+        tabix -f -p vcf phased_${contig}.vcf.gz
+        """
 }
 
 process merge_haplotagged_contigs {
@@ -233,6 +252,7 @@ process merge_haplotagged_contigs {
     label "wf_human_snp"
     input:
         path contig_xams
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple val(xam_fmt), val(xai_fmt)
     output:
         tuple path("*haplotagged.${xam_fmt}"), path("*haplotagged.${xam_fmt}.${xai_fmt}"), emit: merged_bam
@@ -428,36 +448,35 @@ process merge_pileup_and_full_vars{
 
 process post_clair_phase_contig {
     // Phase VCF for a contig
-    label "wf_human_snp"
+    // CW-2383: now uses base image to allow phasing of both snps and indels
     cpus 4
     input:
         tuple val(contig), path(vcf), path(vcf_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         tuple val(contig), path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"), emit: vcf
-    shell:
-        '''
-        if [[ "!{params.use_longphase}" == "true" ]]; then
-            echo "Using longphase for phasing"
-            # longphase needs decompressed 
-            gzip -dc !{vcf} > variants.vcf
-            longphase phase --ont -o phased_!{contig} \
-                -s variants.vcf -b !{xam} -r !{ref} -t !{task.cpus}
-            bgzip phased_!{contig}.vcf
-        else
-            echo "Using whatshap for phasing"
-            whatshap phase \
-                --output phased_!{contig}.vcf.gz \
-                --reference !{ref} \
-                --chromosome !{contig} \
-                --distrust-genotypes \
-                --ignore-read-groups \
-                !{vcf} \
-                !{xam}
-        fi
-
-        tabix -f -p vcf phased_!{contig}.vcf.gz
-
-        '''
+    script:
+    if (params.use_longphase)
+        """
+        echo "Using longphase for phasing"
+        longphase phase --ont -o phased_${contig} --indels \
+            -s ${vcf} -b ${xam} -r ${ref} -t ${task.cpus}
+        bgzip phased_${contig}.vcf
+        tabix -f -p vcf phased_${contig}.vcf.gz
+    """
+    else
+    """
+        # REF_PATH points to the reference cache and allows faster parsing of CRAM files
+        echo "Using whatshap for phasing"
+        whatshap phase \
+            --output phased_${contig}.vcf.gz \
+            --reference ${ref} \
+            --chromosome ${contig} \
+            --distrust-genotypes \
+            --ignore-read-groups \
+            ${vcf} \
+            ${xam}
+        tabix -f -p vcf phased_${contig}.vcf.gz
+        """
 }
 
 
@@ -526,7 +545,7 @@ process refine_with_sv {
     input:
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH) 
         tuple path(clair_vcf, stageAs: 'clair.vcf.gz'), path(clair_tbi, stageAs: 'clair.vcf.gz.tbi')
-        tuple path(xam), path(xam_idx) // this may be a haplotagged_bam or input CRAM 
+        tuple path(xam), path(xam_idx), val(meta) // this may be a haplotagged_bam or input CRAM 
         path sniffles_vcf
     output:
         tuple path("${params.sample_name}.wf_snp.vcf.gz"), path("${params.sample_name}.wf_snp.vcf.gz.tbi"), emit: final_vcf

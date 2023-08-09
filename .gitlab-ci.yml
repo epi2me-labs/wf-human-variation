@@ -49,17 +49,19 @@ docker-run:
         matrix:
             - MATRIX_NAME: [
                 "wf-human-snp_modelint",
+                "wf-human-snp_modelint_unphase",
                 "wf-human-snp_modelext",
                 "wf-human-snp_covblock",
                 "wf-human-snp_svrefine",
                 "wf-human-sv",
+                "wf-human-sv-phase",
                 "wf-human-str",
                 "wf-human-cnv-ubam-to-bam",
                 "wf-human-cnv-cram-to-bam",
+                "wf-human-phase_all",
                 "gzref-ucram-methyl",
                 "gzref-bam-methyl-hap",
-                "downsample",
-                "omni"
+                "downsample"
               ]
     rules:
         # NOTE As we're overriding the rules block for the included docker-run
@@ -72,14 +74,21 @@ docker-run:
           variables:
               NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
-              NF_IGNORE_PROCESSES: "hap,phase_contig_haplotag,merge_haplotagged_contigs,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_IGNORE_PROCESSES: "hap,phase_contig_haplotag,merge_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
               NF_WORKFLOW_OPTS: "--snp --sv false --methyl false --cnv false --str false --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --basecaller_cfg clair3:dna_r10.4.1_e8.2_400bps_hac_prom --phase_vcf --bam_min_coverage 0.00001 --annotation_threads 4"
+
+        - if: $MATRIX_NAME == "wf-human-snp_modelint_unphase"
+          variables:
+              NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
+              NF_IGNORE_PROCESSES: "hap,phase_contig_haplotag,post_clair_phase_contig,merge_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp --sv false --methyl false --cnv false --str false --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --basecaller_cfg clair3:dna_r10.4.1_e8.2_400bps_hac_prom --bam_min_coverage 0.00001 --annotation_threads 4"
 
         - if: $MATRIX_NAME == "wf-human-snp_modelext"
           variables:
               NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
-              NF_IGNORE_PROCESSES: "hap,lookup_clair3_model,phase_contig_haplotag,merge_haplotagged_contigs,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_IGNORE_PROCESSES: "hap,lookup_clair3_model,phase_contig,phase_contig_haplotag,merge_haplotagged_contigs,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
               NF_WORKFLOW_OPTS: "--snp --sv false --methyl false --cnv false --str false --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --phase_vcf --bam_min_coverage 0.00001 --annotation_threads 4"
 
         - if: $MATRIX_NAME == "wf-human-snp_covblock"
@@ -108,6 +117,13 @@ docker-run:
               NF_PROCESS_FILES: "modules/local/wf-human-sv.nf"
               NF_IGNORE_PROCESSES: "getAllChromosomesBed,minimap2_alignment,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf"
               NF_WORKFLOW_OPTS: "--snp false --sv --methyl false --cnv false --str false --bam demo_data/test.bam --ref demo_data/chr20_human_g1k_v37_part.fasta.gz --bed demo_data/target.bed --tr_bed demo_data/human_hs37d5.trf.bed --bam_min_coverage 0.00001 --annotation_threads 4"
+
+        - if: $MATRIX_NAME == "wf-human-sv-phase"
+          variables:
+              NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_PROCESS_FILES: "modules/local/wf-human-sv.nf"
+              NF_IGNORE_PROCESSES: "getAllChromosomesBed,minimap2_alignment,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf"
+              NF_WORKFLOW_OPTS: "--methyl false --cnv false --str false --sv true --snp true --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --annotation_threads 4 --phase_vcf"
 
         - if: $MATRIX_NAME == "wf-human-cnv"
           variables:
@@ -146,6 +162,13 @@ docker-run:
               NF_PROCESS_FILES: "modules/local/wf-human-str.nf"
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
               NF_WORKFLOW_OPTS: "--snp false --sv false --methyl false --cnv false --str --bam demo_data/demo.bam --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name demo --sex female --bam_min_coverage 0.00001 --annotation false"
+
+        - if: $MATRIX_NAME == "wf-human-phase_all"
+          variables:
+              NF_BEFORE_SCRIPT: "wget -qO demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-str/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_PROCESS_FILES: "modules/local/wf-human-sv.nf modules/local/wf-human-snp.nf workflows/phasing.nf"
+              NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,hap,phase_contig,post_clair_phase_contig"
+              NF_WORKFLOW_OPTS: "--methyl false --cnv false --str false --sv --snp --joint_phasing --bam demo_data/demo.bam --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name demo --sex female --bam_min_coverage 0.00001 --annotation false"
 
 
 aws-run:
