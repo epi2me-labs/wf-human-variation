@@ -2,8 +2,8 @@
 
 nextflow.enable.dsl = 2
 
-include { snp } from './workflows/wf-human-snp'
-include { lookup_clair3_model; output_snp } from './modules/local/wf-human-snp'
+include { snp; report_snp } from './workflows/wf-human-snp'
+include { lookup_clair3_model } from './modules/local/wf-human-snp'
 
 include { bam as sv } from './workflows/wf-human-sv'
 include { output_sv } from './modules/local/wf-human-sv'
@@ -12,6 +12,8 @@ include { cnv } from './workflows/wf-human-cnv'
 include { output_cnv } from './modules/local/wf-human-cnv'
 
 include { output_str } from './modules/local/wf-human-str'
+
+include { phasing } from './workflows/phasing'
 
 include {
     index_ref_gzi;
@@ -33,11 +35,18 @@ include {
     getGenome; 
     eval_downsampling;
     downsampling;
+    annotate_vcf as annotate_snp_vcf;
     } from './modules/local/common'
 
 include {
     bam_ingress;
 } from './lib/bamingress'
+
+include {
+    refine_with_sv;
+    vcfStats;
+    output_snp
+} from "./modules/local/wf-human-snp.nf"
 
 include { basecalling } from './workflows/basecalling'
 include { methyl; validate_modbam} from './workflows/methyl'
@@ -88,6 +97,9 @@ workflow {
     else {
         output_bam = false
     }
+
+    // Trigger haplotagging
+    def run_haplotagging = params.str || params.phase_methyl || params.joint_phasing || params.phase_vcf ? true : false
 
     // Check ref and decompress if needed
     ref = null
@@ -274,7 +286,6 @@ workflow {
                 it.size > 0 ? [it[2], it[3], it[4]] : it
             }
             .set{discarded_bams}
-        discarded_bams.view()
     } else {
         // If the bam_min_depth is 0, then create alignment report for everything.
         bam_channel.set{pass_bam_channel}
@@ -299,7 +310,7 @@ workflow {
             .set{ratio}
 
         // Perform downsampling
-        downsampling(pass_bam_channel, ratio.subset)
+        downsampling(pass_bam_channel, ref_channel, ratio.subset)
 
         // prepare ready files
         ratio.ready
@@ -395,26 +406,9 @@ workflow {
                 .flatten()
                 .collect() | failedQCReport
     
-    // wf-human-sv
-    if(params.sv) {
-        results = sv(
-            pass_bam_channel ,
-            ref_channel,
-            bed,
-            mosdepth_input.out.summary,
-            OPTIONAL,
-            genome_build,
-            extensions
-        )
-        artifacts = results.report.flatten()
-        sniffles_vcf = results.sniffles_vcf
-        output_sv(artifacts)
-    } else {
-        sniffles_vcf = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
-    }
-    
     // Set up BED for wf-human-snp, wf-human-str or --phase_methyl
-    if (params.snp || params.str || params.phase_methyl) {
+    // CW-2383: we first call the SNPs to generate an haplotagged bam file for downstream analyses
+    if (params.snp || run_haplotagging) {
         if(default_bed_set) {
             // wf-human-snp uses OPTIONAL_FILE for empty bed for legacy reasons
             snp_bed = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
@@ -442,17 +436,111 @@ workflow {
             snp_bed,
             ref_channel,
             clair3_model,
-            sniffles_vcf,
+            genome_build,
+            extensions,
+            run_haplotagging
+        )
+    }
+    
+    // wf-human-sv
+    // CW-2383: we then call SVs using either the pass bam or haplotagged bam, depending on the settings
+    if(params.sv) {
+        // If haplotagged bam is available and phase_snv is required, then phase.
+        // Otherwise, use pass_bam_file (passing a haplotagged bam and not requiring phase_snv would
+        // cause the workflow to wait for the tagged reads, but not enable phasing of sv since --phase 
+        // won't be set; hence skip it if not required).
+        if (run_haplotagging){
+            sv_bam = clair_vcf.hp_bams
+        } else {
+            sv_bam = pass_bam_channel
+        }
+        results = sv(
+            sv_bam,
+            ref_channel,
+            bed,
+            mosdepth_input.out.summary,
+            OPTIONAL,
             genome_build,
             extensions
         )
-        output_snp(clair_vcf.clair3_results.flatten())
+        artifacts = results.report.flatten()
+        sniffles_vcf = results.sniffles_vcf
+        sniffles_phasing_vcf = results.for_phasing
+        output_sv(artifacts)
+    } else {
+        sniffles_vcf = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
+        sniffles_phasing_vcf = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE")
+    }
+
+    // Then, we finish working on the SNPs by refining with SVs and annotating them. This is needed to
+    // maximise the interaction between Clair3 and Sniffles.
+    if (params.snp || params.joint_phasing){
+        // Channel of results.
+        // We drop the raw .vcf(.tbi) file from Clair3 in it to then add back the files in the 
+        // final_vcf channel, allowing for the latest file to be emitted.
+        // Channel structure is
+        /*  [
+        *   [CRAM, CRAI]
+        *   [vcf, tbi]
+        *   [gvcf, tbi] (optional)
+        *   haploblocks (optional)
+         ] */
+        // If first element ends with .vcf.gz, then discard it
+        clair_vcf.clair3_results
+            .filter{
+                !it[0].name.endsWith('.vcf.gz')
+            }
+            .collect()
+            .set{clair3_results}
+
+        // Define which bam to use
+        if (run_haplotagging){
+            snp_bam = clair_vcf.hp_bams
+        } else {
+            snp_bam = pass_bam_channel
+        }
+
+        // Refine the SNP phase using SVs from Sniffles
+        if (params.refine_snp_with_sv && params.sv){
+            final_snp_vcf = refine_with_sv(ref_channel, clair_vcf.vcf_files, snp_bam, sniffles_vcf)
+        } else {
+            // If refine_with_sv not requested, passthrough
+            final_snp_vcf = clair_vcf.vcf_files
+        }
+
+        // Run annotation, when requested.
+        if (!params.annotation) {
+            final_vcf = final_snp_vcf
+            // no ClinVar VCF, pass empty VCF to makeReport
+            clinvar_vcf = Channel.fromPath("${projectDir}/data/empty_clinvar.vcf")
+        }
+        else {
+            // do annotation and get a list of ClinVar variants for the report
+            annotate_snp_vcf(final_snp_vcf, genome_build, "snp")
+            final_vcf = annotate_snp_vcf.out.final_vcf
+            clinvar_vcf = annotate_snp_vcf.out.final_vcf_clinvar
+        }
+
+        // Run vcf statistics on the final VCF file
+        vcf_stats = vcfStats(final_vcf)
+
+        // Prepare the report
+        snp_report = report_snp(vcf_stats[0], clinvar_vcf)
+
+        // Emit the outputs
+        output_snp(
+            snp_report
+                .concat(clair3_results)
+                .concat(final_vcf)
+                .concat(clinvar_vcf)
+                .flatten()
+            )
     }
 
     // wf-human-methyl
     // Validate modified bam
-    if (params.methyl){
-        if (params.phase_methyl){
+    if (params.methyl || params.phase_methyl){
+        if (run_haplotagging){
             validate_modbam(clair_vcf.hp_bams, ref_channel)
         } else {
             validate_modbam(pass_bam_channel, ref_channel)
@@ -480,12 +568,12 @@ workflow {
 
     //wf-human-cnv
     if (params.cnv) {
-        results = cnv(
+        results_cnv = cnv(
             pass_bam_channel,
             bam_stats,
             genome_build
         )
-        output_cnv(results)
+        output_cnv(results_cnv)
     }
     
     // wf-human-str
@@ -493,12 +581,18 @@ workflow {
         // use haplotagged bam from snp() as input to str()
         bam_channel_str = clair_vcf.str_bams
 
-        results = str(
+        results_str = str(
           bam_channel_str,
           ref_channel,
           bam_stats
         )
-        output_str(results)
+        output_str(results_str)
+    }
+
+    if (params.joint_phasing){
+        joint_phasing = phasing(final_vcf, sniffles_phasing_vcf, ref_channel, clair_vcf.str_bams)
+    } else {
+        joint_phasing = Channel.empty()
     }
 
     jb_conf = configure_jbrowse(
@@ -521,7 +615,8 @@ workflow {
             mapula_stats.flatten(),
             jb_conf.flatten(),
             report_pass.flatten(),
-            report_fail.flatten()
+            report_fail.flatten(),
+            joint_phasing.flatten()
         )
     )
 

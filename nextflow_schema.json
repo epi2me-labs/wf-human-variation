@@ -253,8 +253,8 @@
                 "phase_vcf": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Enable to output phasing information in the output VCF.",
-                    "help_text": "By default the final VCF output by the workflow is not phased, although some intermediates are approximately phased."
+                    "description": "Output phasing information in VCF (SNP and SV workflows).",
+                    "help_text": "By default the final VCF outputs from SNP and SV workflows are not phased, although some intermediates are approximately phased."
                 },
                 "include_all_ctgs": {
                     "type": "boolean",
@@ -510,6 +510,12 @@
                     "description": "Enable to output a gVCF file in addition to the VCF outputs (experimental).",
                     "help_text": "By default the the workflow outputs a VCF file containing only records where a variant has been detected. Enabling this option will output additionally a gVCF with records spanning all reference positions regardless of whether a variant was detected in the sample."
                 },
+                "joint_phasing": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Jointly phase SNPs, small indels and, optionally, SVs.",
+                    "help_text": "By default, the phasing is performed for SNPs and SVs separately. This option allows the joint phasing of both variant classes at the end of the process, allowing consistency in the method and of the resulting phased sites. This step uses exclusively longphase."
+                },
                 "downsample_coverage": {
                     "type": "boolean",
                     "default": false,
@@ -529,6 +535,12 @@
                     "help_text": "By default, if the coverage of the input alignments is within 1.1x the target coverage, downsampling will not be performed even if it was enabled. This is to avoid triggering the downsampling of alignments when coverage is already close to the target coverage.",
                     "hidden": true
                 }
+            },
+            "dependencies": {
+                "joint_phasing": [
+                    "snp",
+                    "sv"
+                ]
             }
         },
         "advanced_basecalling_options": {

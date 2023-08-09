@@ -32,6 +32,7 @@ process sniffles2 {
         def tr_arg = tr_bed.name != 'OPTIONAL_FILE' ? "--tandem-repeats ${tr_bed}" : ''
         def sniffles_args = params.sniffles_args ?: ''
         def min_sv_len = params.min_sv_length ? "--minsvlen ${params.min_sv_length}" : ""
+        def phase = params.phase_vcf ? "--phase" : ""
     """
     sniffles \
         --threads $task.cpus \
@@ -42,6 +43,7 @@ process sniffles2 {
         --input $xam \
         $tr_arg \
         $sniffles_args \
+        $phase \
         --vcf ${params.sample_name}.sniffles.vcf
     sed '/.:0:0:0:NULL/d' ${params.sample_name}.sniffles.vcf > tmp.vcf
     mv tmp.vcf ${params.sample_name}.sniffles.vcf

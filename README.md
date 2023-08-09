@@ -184,6 +184,7 @@ output VCF).
 - Take care to retain the input reference when basecalling or alignment has been performed as CRAM files cannot be read without the corresponding reference!
 - Refer to our [blogpost](https://labs.epi2me.io/copy-number-calling/) and [CNV workflow documentation](https://github.com/epi2me-labs/wf-cnv) for more information on running the copy number calling subworkflow.
 - The STR workflow performs genotyping of specific repeats, which can be found [here](https://github.com/epi2me-labs/wf-human-variation/blob/master/data/wf_str_repeats.bed).
+- The workflow can perform physical phasing of SNP, Indels and SVs using with the `--joint_phasing` option.
 
 ### Support for basecalling on GPU
 

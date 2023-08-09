@@ -14,16 +14,14 @@ include {
     merge_pileup_and_full_vars;
     post_clair_phase_contig;
     aggregate_all_variants;
-    refine_with_sv;
     hap;
     getParams;
     getVersions;
-    vcfStats;
     makeReport;
 } from "../modules/local/wf-human-snp.nf"
 
 include { 
-    annotate_vcf as annotate_snp_vcf 
+    haploblocks as haploblocks_snp
 } from '../modules/local/common.nf'
 
 // workflow module
@@ -33,9 +31,9 @@ workflow snp {
         bed
         ref
         model
-        sniffles_vcf
         genome_build
         extensions
+        run_haplotagging
     main:
 
         // truncate bam channel to remove meta to keep compat with snp pipe
@@ -71,15 +69,14 @@ workflow snp {
             .combine(bam).combine(ref)
         // > Step 3
         // > Step 4 (haplotagging performed as part of STR sub-workflow only)
-
-        if (params.str || params.phase_methyl) {
-            phase_contig_haplotag(phase_inputs, extensions)
+        if (run_haplotagging) {
+            phase_contig_haplotag(phase_inputs)
             phase_contig_haplotag.out.phased_bam_and_vcf.set { phased_bam_and_vcf }
 
             phase_contig_haplotag.out.phased_bam_and_vcf.map{it -> tuple(it[0], it[1], it[2])}.set { bam_for_str }
             // Merge the haplotagged contigs into a single BAM
             phase_contig_haplotag.out.phased_bam_and_vcf.collect{it[1]}.set { contig_bams }
-            haplotagged_bam = merge_haplotagged_contigs(contig_bams, extensions)
+            haplotagged_bam = merge_haplotagged_contigs(contig_bams, ref, extensions)
 
         }
         else {
@@ -165,9 +162,10 @@ workflow snp {
             non_var_gvcf,
             candidate_beds.map {it->it[1] }.collect())
 
+        // phase_vcf requires haplotagged bam to perform appropriate phasing
         if (params.phase_vcf) {
             data = merge_pileup_and_full_vars.out.merged_vcf
-                .combine(bam).combine(ref)
+                .combine(haplotagged_bam).combine(ref)
             
             post_clair_phase_contig(data)
                 .map { it -> [it[1]] }
@@ -190,53 +188,42 @@ workflow snp {
             make_chunks.out.contigs_file,
             cmd_file)
 
-        // Refine the SNP phase using SVs from Sniffles
-        if (params.refine_snp_with_sv && params.sv){
-            // If we request phase_methyl or str, then we use the haplotagged
-            // bam files (because why not).
-            if (params.str || params.phase_methyl){
-                bam_for_refinement = haplotagged_bam
-            } else {
-                bam_for_refinement = bam
-            }
-            final_snp_vcf = refine_with_sv(ref, clair_final.final_vcf, bam_for_refinement, sniffles_vcf)
+        if (params.phase_vcf){
+            hp_snp_blocks = haploblocks_snp(clair_final.final_vcf, 'snp')
         } else {
-            // If refine_with_sv not requested, emit clair_final instead
-            final_snp_vcf = clair_final.final_vcf
+            hp_snp_blocks = Channel.empty()
         }
-
-        // reporting
-        software_versions = getVersions()
-        workflow_params = getParams()
-        vcf_stats = vcfStats(final_snp_vcf)
-
-        if (!params.annotation) {
-            final_vcf = final_snp_vcf
-            // no ClinVar VCF, pass empty VCF to makeReport
-            empty_vcf = projectDir.resolve("./data/empty_clinvar.vcf").toString()
-            report = makeReport(
-                vcf_stats[0], software_versions.collect(), workflow_params, empty_vcf)
-        }
-        else {
-            // do annotation and get a list of ClinVar variants for the report
-            annotations = annotate_snp_vcf(final_snp_vcf, genome_build, "snp")
-            final_vcf = annotations.final_vcf
-            report = makeReport(
-                vcf_stats[0], software_versions.collect(), workflow_params, annotations.final_vcf_clinvar)
-        }
-
-        telemetry = workflow_params
 
         // Define clair3 results, adding GVCF if needed
         if (params.GVCF){
-            clair3_results = report.concat(haplotagged_bam).concat(final_vcf).concat(clair_final.final_gvcf).flatten()
+            clair3_results = haplotagged_bam.concat(clair_final.final_vcf).concat(clair_final.final_gvcf).concat(hp_snp_blocks)
         } else {
-            clair3_results = report.concat(haplotagged_bam).concat(final_vcf).flatten()
+            clair3_results = haplotagged_bam.concat(clair_final.final_vcf).concat(hp_snp_blocks)
         }
 
     emit:
         clair3_results = clair3_results
         str_bams = bam_for_str
+        vcf_files = clair_final.final_vcf
         hp_bams = haplotagged_bam.combine(bam_channel.map{it[2]})
-        telemetry = telemetry
+}
+
+
+// Reporting workflow
+workflow report_snp {
+    take:
+        vcf_stats
+        clinvar_vcf
+    main:
+
+        // reporting
+        software_versions = getVersions()
+        workflow_params = getParams()
+
+        // Create report
+        report = makeReport(
+            vcf_stats, software_versions.collect(), workflow_params, clinvar_vcf)
+
+    emit:
+        report = report
 }

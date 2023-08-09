@@ -210,6 +210,7 @@ process downsampling {
     cpus 4
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple val(to_downsample), val(downsampling_rate)
     output:
         tuple path("downsampled.bam"), path("downsampled.bam.bai"), val(xam_meta), emit: bam optional true
@@ -390,4 +391,18 @@ process annotate_vcf {
         mv snpEff_genes.txt !{params.sample_name}.wf_!{output_label}.snpEff_genes.txt
     fi
     '''
+}
+
+process haploblocks {
+    // Extract phased blocks from a VCF file
+    input:
+        tuple path(phased_vcf), path(phased_tbi)
+        val output_label
+    output:
+        path "${params.sample_name}.wf_${output_label}.haploblocks.gtf", emit: phase_blocks
+    script:
+        """
+        # Prepare correct input file
+        whatshap stats --gtf=${params.sample_name}.wf_${output_label}.haploblocks.gtf ${phased_vcf}
+        """
 }
