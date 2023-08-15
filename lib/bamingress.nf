@@ -49,7 +49,7 @@ process cram_to_bam {
 
 
 process minimap2_alignment {
-    memory '12 GB' // needs to be around 12 for humvar, could be smaller if user isnt doing WGA
+    memory '16 GB' // needs to be around 12 for humvar, bumped for breathing room (CW-2574) could be smaller if user isnt doing WGA
     cpus {params.ubam_map_threads + params.ubam_sort_threads + params.ubam_bam2fq_threads}
     input:
         path reference
