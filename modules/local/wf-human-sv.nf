@@ -12,7 +12,7 @@ process filterBam {
         tuple path("${params.sample_name}.filtered.${xam_fmt}"), path("${params.sample_name}.filtered.${xam_fmt}.${xai_fmt}"), emit: xam
     script:
     """
-    samtools view -@ $task.cpus -F 2308 -o ${params.sample_name}.filtered.${xam_fmt} -O ${xam_fmt} --write-index ${xam} --reference ${ref}
+    samtools view -@ $task.cpus -F 2308 -o ${params.sample_name}.filtered.${xam_fmt}##idx##${params.sample_name}.filtered.${xam_fmt}.${xai_fmt} -O ${xam_fmt} --write-index --reference ${ref} ${xam}
     """
 }
 

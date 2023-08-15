@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Changed
 - Increased minimum memory required for the workflow to 16 GB of RAM to reduce alignment failures.
+### Fixed
+- sv.filterBam missing output file when creating BAM CSI
 
 ## [v1.7.0]
 ### Changed
