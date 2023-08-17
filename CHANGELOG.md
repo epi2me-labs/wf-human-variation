@@ -4,9 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [v1.7.1]
 ### Changed
-- Increased minimum memory required for the workflow to 16 GB of RAM to reduce alignment failures.
+- Increased minimum memory required for the workflow to 16 GB of RAM to reduce alignment failures
 ### Fixed
 - sv.filterBam missing output file when creating BAM CSI
 
