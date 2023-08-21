@@ -262,16 +262,21 @@ process failedQCReport  {
         path "*.html"
 
     script:
+        // CW-2585: When we provide a fai file, the workflow will add the missing intervals to reach the end of the chromosome.
+        // If we do not provide that, then the interval will be considered as 0>BP, where BP is the highest value in the bed 
+        // file for each chromosome. This will display the intervals not in the context of the chromosome (so showing a peak in
+        // a small region, and flat everywhere else) but only for the regions selected.
+        def genome_wide_depth = params.bed ? "" : "--reference_fai ref.fasta.fai"
         """
         workflow-glue report_al \\
             --name wf-human-variation \\
             --stats_dir readstats/ \\
-            --reference_fai ref.fasta.fai \\
             --flagstat_dir flagstats/ \\
             --depths_dir depths/ \\
             --versions versions.txt \\
             --window_size ${params.depth_window_size} \\
             --params params.json \\
+            ${genome_wide_depth} \\
             --low_cov ${params.bam_min_coverage}
         """
 }

@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 """Report using ezcharts."""
 from dominate.tags import p
+from ezcharts.components.common import fasta_idx
+from ezcharts.components.fastcat import load_bamstats_flagstat, load_stats
 from ezcharts.components.fastcat import SeqSummary
+from ezcharts.components.mosdepth import load_mosdepth_regions
 from ezcharts.components.reports import labs
 import pandas as pd
 
-from .report_utils import read_data, sections  # noqa: ABS101
+from .report_utils import sections  # noqa: ABS101
 
 from .util import get_named_logger, wf_parser  # noqa: ABS101
 
@@ -14,16 +17,19 @@ def main(args):
     """Run entry point."""
     logger = get_named_logger("report")
 
-    # Import fai file
-    faidx = read_data.fasta_idx(args.reference_fai)
-    if faidx.empty:
-        raise pd.errors.EmptyDataError(f'{args.reference_fai}')
+    # Import fai file if specified.
+    # CW-2585: if no fai is specified, the depth coverage magnify the region(s)
+    # coverage only.
+    if args.reference_fai:
+        faidx = fasta_idx(args.reference_fai)
+        if faidx.empty:
+            raise pd.errors.EmptyDataError(f'{args.reference_fai}')
 
     # read input stats data
-    stats_df = read_data.bamstats(args.stats_dir)
+    stats_df = load_stats(args.stats_dir, format='bamstats')
 
     # read input flagstats data
-    flagstat_df = read_data.flagstat(args.flagstat_dir)
+    flagstat_df = load_bamstats_flagstat(args.flagstat_dir)
 
     # Define categories
     sample_names = stats_df["sample_name"].cat.categories
@@ -31,7 +37,11 @@ def main(args):
         raise ValueError('Sample names in the two stats file do not match')
 
     # Import depth files when provided, otherwise make an empty df
-    depth_df = read_data.depths(args.depths_dir, faidx, args.window_size)
+    if args.reference_fai:
+        depth_df = load_mosdepth_regions(
+            args.depths_dir, faidx=faidx, winsize=args.window_size)
+    else:
+        depth_df = load_mosdepth_regions(args.depths_dir)
 
     # create the report
     if args.low_cov:
@@ -66,6 +76,7 @@ def main(args):
 
     # Add depth plots
     if not depth_df.empty:
+        depth_df['sample_name'] = depth_df.filename.str.split('.').str[0]
         sections.depths(report, depth_df)
 
     # write the report to the output file
