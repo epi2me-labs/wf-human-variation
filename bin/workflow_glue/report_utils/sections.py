@@ -7,7 +7,7 @@ import ezcharts as ezc  # noqa: I202
 from ezcharts.components.ezchart import EZChart
 from ezcharts.layout.snippets import Grid, Progress, Tabs
 
-from .common import CHROMOSOMES, THEME  # noqa: ABS101
+from .common import THEME  # noqa: ABS101
 
 
 def histogram_with_mean_and_median(
@@ -257,36 +257,10 @@ def depths(report, depth_df):
         else:
             tabs = Tabs()
             for sample_name, df_samp_file in depth_df.groupby("sample_name"):
-                # Sort column by chromosome number
-                df_samp_file.sort_values(
-                    by=["chrom", "start"],
-                    key=lambda chrom: chrom.map(CHROMOSOMES)
-                    )
-                # Reordering
-                df_samp_file['chrom'] = \
-                    df_samp_file.chrom.cat.remove_unused_categories()
-                df_samp_file['chrom'] = \
-                    df_samp_file.chrom.cat.reorder_categories(
-                    [i for i in df_samp_file.chrom.unique()])
-                # Reset index
-                df_samp_file = df_samp_file.reset_index(drop=True)
-                # prepare data for depth vs coordinate plot
-                df_depth_vs_coords = (
-                    df_samp_file.eval("mean_pos = (start + end) / 2")
-                    .eval("step = end - start")
-                    .reset_index()
-                )
-                # Extract ref lengths
-                ref_lengths = df_depth_vs_coords.groupby(
-                    "chrom", observed=True, sort=False)["end"].last()
-                total_ref_starts = ref_lengths.cumsum().shift(1, fill_value=0)
-                # Add cumulative depth
-                df_depth_vs_coords["total_mean_pos"] = df_depth_vs_coords.apply(
-                    lambda x: x.mean_pos + total_ref_starts[x.chrom], axis=1)
                 # prepare data for cumulative depth plot
                 with tabs.add_tab(sample_name):
                     plt = ezc.lineplot(
-                        data=df_depth_vs_coords.round(2),
+                        data=depth_df.round(2),
                         x="total_mean_pos",
                         y="depth",
                         hue="chrom",
