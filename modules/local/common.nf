@@ -242,6 +242,42 @@ process get_coverage {
 }
 
 
+// Process to get the genome coverage from the mosdepth summary.
+process get_region_coverage {
+    cpus 1
+    input:
+        path bed
+        tuple path(regions),
+            path(dists),
+            path(thresholds)
+
+    output:
+        tuple env(passes), env(value), emit: pass
+        path "${bed.baseName}.filt.bed", emit: filt_bed
+        tuple \
+            path("${params.sample_name}.regions.filt.bed.gz"),
+            path("${params.sample_name}.mosdepth.global.dist.txt"),
+            path("${params.sample_name}.thresholds.bed.gz"), emit: mosdepth_tuple
+    shell:
+    '''
+    # Get intervals with average coverage above minimum
+    zcat !{regions} | awk '$NF>=!{params.bam_min_coverage}' | bgzip -c > !{params.sample_name}.regions.filt.bed.gz
+    
+    # Extract original regions with reasonable coverage. We first intersect, sort the kept intervals,
+    # merge the adjacent and then sort again.
+    bedtools intersect -a !{bed} -b !{params.sample_name}.regions.filt.bed.gz | \
+        sort -k1,1 -k2,2n | \
+        bedtools merge -i - | \
+        sort -k1,1 -k2,2n > !{bed.baseName}.filt.bed
+
+    # Return true if there are filtered intervals, otherwise false
+    passes=$( zcat !{params.sample_name}.regions.filt.bed.gz | wc -l | awk 'BEGIN{v="false"}; $1>0 {v="true"}; END {print v}' )
+    # If there are intervals, return average coverage, otherwise return 0
+    value=$( zcat !{params.sample_name}.regions.filt.bed.gz | awk 'BEGIN{v=0; n=0}; {v+=$4; n+=1}; END {print v, n}' | awk '$2>0 {print $1/$2}; $2==0 {print 0}' )
+    '''
+}
+
+
 // Make bam QC reporting.
 process failedQCReport  {
     input: 
