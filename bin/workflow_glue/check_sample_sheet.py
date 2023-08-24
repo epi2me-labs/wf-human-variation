@@ -57,9 +57,10 @@ def main(args):
                 else:
                     # check we got the same number of fields
                     if len(row) != n_cols:
-                        raise ValueError(
-                            f"Unexpected number of cells in row number {n_row}."
+                        sys.stdout.write(
+                            f"Unexpected number of cells in row number {n_row}"
                         )
+                        sys.exit()
                 try:
                     barcodes.append(row["barcode"])
                 except KeyError:
