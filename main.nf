@@ -28,6 +28,7 @@ include {
     publish_artifact;
     configure_jbrowse;
     get_coverage; 
+    get_region_coverage;
     failedQCReport; 
     makeAlignmentReport; 
     getParams; 
@@ -259,10 +260,17 @@ workflow {
     software_versions = getVersions()
     workflow_params = getParams()
     if (params.bam_min_coverage > 0){
-        // Define if a dataset passes or not the filtering
-        get_coverage(mosdepth_input.out.summary)
+        if (params.bed){
+            // Filter out the data based on the individual region's coverage
+            coverage_check = get_region_coverage(bed, mosdepth_stats)
+            bed = coverage_check.filt_bed
+            mosdepth_stats = coverage_check.mosdepth_tuple
+        } else {
+            // Define if a dataset passes or not the filtering
+            coverage_check = get_coverage(mosdepth_input.out.summary)
+        }
         // Combine with the bam and branch by passing the depth filter
-        get_coverage.out.pass
+        coverage_check.pass
             .combine(bam_channel)
             .branch{ 
                 pass: it[0] == "true" 
