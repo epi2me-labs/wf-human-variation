@@ -4,9 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [v1.7.2]
 ### Changed
 - When `--bed` and `--bam_min_coverage` are specified, the workflow will process the regions passing the coverage filters
+- `whatshap` v2.0 in base workflow
+### Fixed
+- Patch `whatshap stats` crashing when no heterozygote sites are found in a contig
+- Patch `makeReport` crashing when loading empty ClinVar VCFs
 
 ## [v1.7.1]
 ### Changed
