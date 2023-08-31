@@ -220,3 +220,8 @@ aws-run:
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
               NF_WORKFLOW_OPTS: "--snp false --sv false --methyl false --cnv --str false --bam demo_data/test.ubam --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz --bin_size 500 --bam_min_coverage 0.00001"
 
+macos-run:
+  # Let's avoid those ARM64 runners for now
+  tags:
+    - macos
+    - x86
