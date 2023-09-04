@@ -379,16 +379,24 @@
             "type": "object",
             "description": "Options related to the methylation aggregation subworkflow.",
             "properties": {
-                "modbam2bed_args": {
+                "modkit_args": {
+                    "title": "Modkit additional arguments",
                     "type": "string",
-                    "description": "Additional command line arguments to pass to the modbam2bed process",
-                    "hidden": true
+                    "description": "The additional options for modkit.",
+                    "help_text": "This is an advanced option to allow running modkit with custom settings. The arguments specified in this option will fully override all options set by the workflow."
                 },
                 "phase_methyl": {
                     "type": "boolean",
                     "default": false,
                     "description": "Generate phased methylation data.",
                     "help_text": "Enabling this will output two [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) files of methylated sites for each haplotype (named SAMPLE.hapN, where N can be 1 or 2) by leveraging phased reads generated using the small variant calling subworkflow. This option will automatically enable the small variant and methylation subworkflows."
+                },
+                "force_strand": {
+                    "title": "Force strand",
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Require modkit to call strand-aware modifications.",
+                    "help_test": "By default strand calls are collapsed (strand reported as '.'). Enabling this will force stranding to be considered when calling modifications, creating one output per modification per strand and the report will be tabulated by both modification and strand."
                 }
             }
         },
@@ -621,6 +629,11 @@
                     "default": 4,
                     "description": "Set max number of threads to use for merging alignment files (limited by config executor cpus)"
                 },
+                "modkit_threads": {
+                    "type": "integer",
+                    "default": 4,
+                    "description": "Total number of threads to use in modkit modified base calling (limited by config executor cpus)"
+                },
                 "annotation_threads": {
                     "type": "integer",
                     "default": 8,
@@ -716,7 +729,7 @@
         }
     },
     "docs": {
-        "intro": "## Introduction\n\nThis workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small\nvariants from long reads. Clair3 makes the best of two methods: pileup (for fast\ncalling of variant candidates in high confidence regions), and full-alignment\n(to improve precision of calls of more complex candidates).\n\nThis workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for\ncalling structural variants.\n\nThis workflow uses [modbam2bed](https://github.com/epi2me-labs/modbam2bed) to\naggregate modified base counts into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.\n\nThis workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)\nfor basecalling `pod5` or `fast5` signal data.\n\nThis workflow uses [QDNAseq](https://bioconductor.org/packages/release/bioc/html/QDNAseq.html) for calling copy number variants.\n\nThis workflow uses a fork of [Straglr](https://github.com/philres/straglr) for genotyping short tandem repeat expansions.\n",
+        "intro": "## Introduction\n\nThis workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small\nvariants from long reads. Clair3 makes the best of two methods: pileup (for fast\ncalling of variant candidates in high confidence regions), and full-alignment\n(to improve precision of calls of more complex candidates).\n\nThis workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for\ncalling structural variants.\n\nThis workflow uses [modkit](https://github.com/nanoporetech/modkit) to\naggregate modified base calls into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.\n\nThis workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)\nfor basecalling `pod5` or `fast5` signal data.\n\nThis workflow uses [QDNAseq](https://bioconductor.org/packages/release/bioc/html/QDNAseq.html) for calling copy number variants.\n\nThis workflow uses a fork of [Straglr](https://github.com/philres/straglr) for genotyping short tandem repeat expansions.\n",
         "links": "## Useful links\n\n* [Nextflow](https://www.nextflow.io/)\n* [Docker](https://www.docker.com/products/docker-desktop)\n* [Singularity](https://sylabs.io/singularity/)\n\n"
     }
 }

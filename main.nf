@@ -569,7 +569,7 @@ workflow {
         validation_results.modbam.ifEmpty{it -> log.warn "Alignment files do not contain modified base tags. Skipping methyl aggregation and reporting."}
 
         results = methyl(validated_bam, ref_channel)
-        methyl_stats = results.modbam2bed.flatten()
+        methyl_stats = results.modkit.flatten()
     } else {
         methyl_stats = Channel.empty()
     }

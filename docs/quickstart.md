@@ -58,7 +58,7 @@ Each subworkflow is enabled with a command line option:
 * Basecalling: `--fast5_dir <input_dir>`
 * SNP calling: `--snp`
 * SV calling: `--sv`
-* Methylation aggregation: `--methyl`
+* Analysis of modified bases: `--methyl`
 * CNV calling: `--cnv`
 * STR genotyping: `--str`
 
@@ -72,9 +72,9 @@ documentation for more information.
 
 * The STR workflow takes a required `--sex` option which is `male` or `female`. If `--sex` is not specified, the workflow will default to `female`. Please be aware that incorrect sex assignment will result in the wrong number of calls for all repeats on chrX. 
 
-To enable the 5mC aggregation step use the `--methyl` option. For this
+To enable the modified base calling use the `--methyl` option. For this
 step to produce meaningful output the input BAM file must have been produced
-by a basecaller capable of emitting the 5mC calls.
+by a basecaller capable of emitting the modified calls.
 
 This brings us to activating the basecalling workflow. To run all the above
 including basecalling:
@@ -134,7 +134,7 @@ The secondary outputs of the workflow include:
 - Annotations for `--snp` and `--sv` are generated using [SnpEff](https://pcingola.github.io/SnpEff/), with additional [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) annotations displayed in the report where available (please note, the report will not display any variants classified as 'Benign' or 'Likely benign', however these variants will be present in the
 output VCF).
 - Specifying a suitable [tandem repeat BED for your reference](https://raw.githubusercontent.com/fritzsedlazeck/Sniffles/master/annotations/) with `--tr_bed` can improve the accuracy of SV calling.
-- Aggregation of methylation calls with `--methyl` requires data to be basecalled with a model that includes base modifications, providing the `MM` and `ML` BAM tags
+- Aggregation of modified calls with `--methyl` requires data to be basecalled with a model that includes base modifications, providing the `MM` and `ML` BAM tags
 - Refer to the [Dorado documentation](https://github.com/nanoporetech/dorado#available-basecalling-models) for a list of available basecalling models
 - Take care to retain the input reference when basecalling or alignment has been performed as CRAM files cannot be read without the corresponding reference!
 - Refer to our [blogpost](https://labs.epi2me.io/copy-number-calling/) and [CNV workflow documentation](https://github.com/epi2me-labs/wf-cnv) for more information on running the copy number calling subworkflow.

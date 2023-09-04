@@ -7,7 +7,7 @@ perform the following:
 * basecalling of FAST5 (or POD5) sequencing data
 * diploid variant calling
 * structural variant calling
-* aggregation of modified base counts
+* analysis of modified base calls
 * copy number variant calling
 * short tandem repeat (STR) expansion genotyping
 
