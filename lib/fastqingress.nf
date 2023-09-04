@@ -311,7 +311,13 @@ def get_valid_inputs(Map margs){
                 [create_metamap([alias: margs["sample"] ?: input.baseName]), input])
         } else {
             // deal with the second case (sub-directories with fastq data) --> first
-            // check whether we actually found sub-directories
+            // check whether we actually found sub-directories (and remove
+            // sub-directories called 'unclassified' unless otherwise specified)
+            if (!margs.analyse_unclassified) {
+                sub_dirs_with_fastq_files = sub_dirs_with_fastq_files.findAll {
+                    it.baseName != "unclassified"
+                }
+            }
             if (!sub_dirs_with_fastq_files) {
                 error "Input directory '$input' must contain either FASTQ files " +
                     "or sub-directories containing FASTQ files."
@@ -324,12 +330,6 @@ def get_valid_inputs(Map margs){
             }) {
                 error "Input directory '$input' cannot contain more " +
                     "than one level of sub-directories with FASTQ files."
-            }
-            // remove directories called 'unclassified' unless otherwise specified
-            if (!margs.analyse_unclassified) {
-                sub_dirs_with_fastq_files = sub_dirs_with_fastq_files.findAll {
-                    it.baseName != "unclassified"
-                }
             }
             // filter based on sample sheet in case one was provided
             if (margs.sample_sheet) {
