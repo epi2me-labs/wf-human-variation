@@ -1,31 +1,54 @@
-process modbam2bed {
+process modkit {
     label "wf_human_methyl"
-    cpus params.threads
+    cpus params.modkit_threads
     input:
-        tuple path(alignment), path(alignment_index), val(alignment_meta), val(hap)
+        tuple path(alignment), path(alignment_index), val(alignment_meta)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
+        val options
     output:
-        path "${params.sample_name}*.methyl.*", emit: methyl_outputs
+        path "${params.sample_name}*.bed.gz", emit: modkit_outputs
 
     script:
-    def modbam2bed_args = params.modbam2bed_args ?: ''
-    // Define the haplotype, if required
-    def is_phased = hap != 0 ? "--haplotype ${hap}" : ""
-    def haptag = hap != 0 ? ".hap${hap}" : ""
     """
-    modbam2bed \
-        -e -m 5mC --cpg -t ${task.cpus} \
-        ${ref} \
-        ${alignment} \
-        --aggregate \
-        --prefix ${params.sample_name}${haptag}.methyl \
-        ${modbam2bed_args} ${is_phased} \
-        | bgzip -c > ${params.sample_name}${haptag}.methyl.cpg.bed.gz
-    # also compress the aggregate
-    bgzip ${params.sample_name}${haptag}.methyl.cpg.acc.bed
+    modkit pileup \\
+        ${alignment} \\
+        ${params.sample_name}.bed \\
+        --ref ${ref} \\
+        --threads ${task.cpus} ${options}
+    
+    # Compress all
+    bgzip ${params.sample_name}.bed
     """
 }
 
+process modkit_phase {
+    label "wf_human_methyl"
+    cpus params.modkit_threads
+    input:
+        tuple path(alignment), path(alignment_index), val(alignment_meta)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
+        val options
+    output:
+        path "${params.sample_name}/${params.sample_name}*.bed.gz", emit: modkit_outputs
+
+    script:
+    // CW-2370: modkit saves in a directory when using --partition-tag rather than a single file
+    // Post processing fixes this by compressing the different files and moving them to the correct directory.
+    """
+    modkit pileup \\
+        ${alignment} \\
+        ${params.sample_name} \\
+        --ref ${ref} \\
+        --partition-tag HP \\
+        --prefix ${params.sample_name} \\
+        --threads ${task.cpus} ${options}
+    
+    # Compress all
+    for i in `ls ${params.sample_name}/`; do
+        bgzip ${params.sample_name}/*.bed
+    done
+    """
+}
 
 // Check that the bam has modifications
 process validate_modbam {
@@ -54,20 +77,6 @@ process validate_modbam {
     fi
     """
 }
-// NOTE uses base image
-//process bigwig {
-//    input:
-//        path(methylbed)
-//        tuple path(reference), path(reference_index), path(reference_cache)
-//    output:
-//        path "${params.sample_name}.cpg.bw", emit: methyl_bigwig
-//    """
-//    gzip -fd ${methylbed}
-//    cut -f1,2 ${reference_index} > chrom.sizes
-//    cut -f1,2,3,11 ${methylbed.baseName} | grep -v nan | sort -k1,1 -k2,2n > in.bedgraph
-//    bedGraphToBigWig in.bedgraph chrom.sizes ${params.sample_name}.cpg.bw
-//    """
-//}
 
 
 workflow methyl {
@@ -75,13 +84,20 @@ workflow methyl {
         alignment
         reference
     main:
-        // CW-2457: modbam2bed with --haplotype ignores untagged reads, causing 
-        // to not call regions that are not phased. Adding 0 as haplotype allows to
-        // call sites on all regions. 
-        haps = params.phase_methyl ? Channel.of(0, 1, 2) : Channel.of(0)
-        out = modbam2bed(alignment.combine(haps), reference.collect())
-        //bw = bigwig(out.methyl_bed, reference)
+        def modkit_options = params.force_strand ? '' : '--combine-strands --cpg'
+        // Custom options overwrite every custom setting
+        if (params.modkit_args){
+            modkit_options = "${params.modkit_args}"
+        }
+
+        // CW-2370: modkit doesn't require to treat each haplotype separately, as
+        // you simply provide --partition-tag HP and it will automatically generate
+        // three distinct output files, one for each haplotype and one for the untagged regions.
+        if (params.phase_methyl){
+            out = modkit_phase(alignment, reference.collect(), modkit_options)
+        } else {
+            out = modkit(alignment, reference.collect(), modkit_options)
+        }
     emit:
-        modbam2bed = out
-        //bw = bw.methyl_bigwig
+        modkit = out
 }
