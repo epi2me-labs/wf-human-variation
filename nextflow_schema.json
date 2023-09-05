@@ -2,7 +2,7 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/epi2me-labs/wf-human-variation/master/nextflow_schema.json",
     "title": "epi2me-labs/wf-human-variation",
-    "description": "Basecalling, SNV calling, SV calling, methylation calling of human samples.",
+    "description": "Basecalling, SNV calling, SV calling, modified base calling of human samples.",
     "demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo.tar.gz",
     "aws_demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo/aws.nextflow.config",
     "url": "https://github.com/epi2me-labs/wf-human-variation",
@@ -42,11 +42,11 @@
                     "help_text": "If this option is selected, genotyping of STR expansions will be carried out using Straglr. This sub-workflow is only compatible with genome build 38.",
                     "default": false
                 },
-                "methyl": {
-                    "title": "METHYL: Methylation aggregation",
+                "mod": {
+                    "title": "MOD: Modified bases aggregation",
                     "type": "boolean",
-                    "description": "Enable output of methylation calls to a bedMethyl file [requires input BAM with Ml and Mm tags]",
-                    "help_text": "This option is automatically selected and aggregation of methylation calls with be carried out using modbam2bed if Ml and Mm tags are found. Disable this option to prevent output of a bedMethyl file.",
+                    "description": "Enable output of modified calls to a bedMethyl file [requires input BAM with Ml and Mm tags]",
+                    "help_text": "This option is automatically selected and aggregation of modified calls with be carried out using modkit if Ml and Mm tags are found. Disable this option to prevent output of a bedMethyl file.",
                     "default": false
                 },
                 "mapula": {
@@ -80,7 +80,7 @@
                 },
                 {
                     "required": [
-                        "methyl"
+                        "mod"
                     ]
                 }
             ]
@@ -374,10 +374,10 @@
                 }
             }
         },
-        "methyl_options": {
+        "mod_options": {
             "title": "Modified base calling options",
             "type": "object",
-            "description": "Options related to the methylation aggregation subworkflow.",
+            "description": "Options related to the modified bases aggregation subworkflow.",
             "properties": {
                 "modkit_args": {
                     "title": "Modkit additional arguments",
@@ -385,11 +385,11 @@
                     "description": "The additional options for modkit.",
                     "help_text": "This is an advanced option to allow running modkit with custom settings. The arguments specified in this option will fully override all options set by the workflow."
                 },
-                "phase_methyl": {
+                "phase_mod": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Generate phased methylation data.",
-                    "help_text": "Enabling this will output two [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) files of methylated sites for each haplotype (named SAMPLE.hapN, where N can be 1 or 2) by leveraging phased reads generated using the small variant calling subworkflow. This option will automatically enable the small variant and methylation subworkflows."
+                    "description": "Generate phased modification data.",
+                    "help_text": "Enabling this will output three [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) files of modified sites for each haplotype (named SAMPLE.N, where N can be 1, 2 or untagged) by leveraging phased reads generated using the small variant calling subworkflow. This option will automatically enable the small variant and modified subworkflows."
                 },
                 "force_strand": {
                     "title": "Force strand",
@@ -690,7 +690,7 @@
             "$ref": "#/definitions/advanced_options"
         },
         {
-            "$ref": "#/definitions/methyl_options"
+            "$ref": "#/definitions/mod_options"
         },
         {
             "$ref": "#/definitions/cnv_options"

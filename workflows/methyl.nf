@@ -1,5 +1,5 @@
 process modkit {
-    label "wf_human_methyl"
+    label "wf_human_mod"
     cpus params.modkit_threads
     input:
         tuple path(alignment), path(alignment_index), val(alignment_meta)
@@ -22,7 +22,7 @@ process modkit {
 }
 
 process modkit_phase {
-    label "wf_human_methyl"
+    label "wf_human_mod"
     cpus params.modkit_threads
     input:
         tuple path(alignment), path(alignment_index), val(alignment_meta)
@@ -79,7 +79,7 @@ process validate_modbam {
 }
 
 
-workflow methyl {
+workflow mod {
     take:
         alignment
         reference
@@ -93,7 +93,7 @@ workflow methyl {
         // CW-2370: modkit doesn't require to treat each haplotype separately, as
         // you simply provide --partition-tag HP and it will automatically generate
         // three distinct output files, one for each haplotype and one for the untagged regions.
-        if (params.phase_methyl){
+        if (params.phase_mod){
             out = modkit_phase(alignment, reference.collect(), modkit_options)
         } else {
             out = modkit(alignment, reference.collect(), modkit_options)

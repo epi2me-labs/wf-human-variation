@@ -6,8 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 ### Changed
+- replaced `--methyl` with `--mod`, and `--phase_methyl` with `--phase_mod`
 - replaced `modbam2bed` with `modkit` (v0.1.12)
-- `--phase_methyl` will generate three bed files, one for each haplotype and one for the reads that are not tagged.
+- `--phase_mod` will generate three bed files, one for each haplotype and one for the reads that are not tagged.
 
 ## [v1.7.2]
 ### Changed
