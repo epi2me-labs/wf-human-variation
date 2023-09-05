@@ -103,7 +103,7 @@ Each subworkflow is enabled with a command line option:
 * Basecalling: `--fast5_dir <input_dir>`
 * SNP calling: `--snp`
 * SV calling: `--sv`
-* Analysis of modified bases: `--methyl`
+* Analysis of modified bases: `--mod`
 * CNV calling: `--cnv`
 * STR genotyping: `--str`
 
@@ -117,7 +117,7 @@ documentation for more information.
 
 * The STR workflow takes a required `--sex` option which is `male` or `female`. If `--sex` is not specified, the workflow will default to `female`. Please be aware that incorrect sex assignment will result in the wrong number of calls for all repeats on chrX. 
 
-To enable the modified base calling use the `--methyl` option. For this
+To enable the modified base calling use the `--mod` option. For this
 step to produce meaningful output the input BAM file must have been produced
 by a basecaller capable of emitting the modified calls.
 
@@ -129,7 +129,7 @@ OUTPUT=output
 nextflow run epi2me-labs/wf-human-variation \
     -w ${OUTPUT}/workspace \
     -profile standard \
-    --snp --sv --methyl \
+    --snp --sv --mod \
     --fast5_dir path/to/fast5/dir \
     --basecaller_cfg 'dna_r10.4.1_e8.2_400bps_hac@v4.1.0'  \
     --remora_cfg 'dna_r10.4.1_e8.2_400bps_hac@v4.1.0_5mCG_5hmCG@v2' \
@@ -143,7 +143,7 @@ nextflow run epi2me-labs/wf-human-variation \
 The workflow carries out a check to determine the version of the human genome build used during alignment, as certain subworkflows
 are only compatible with specific genome versions:
 
-* By default, `--snp`, `--sv`, and `--phase_methyl` require either hg19/GRCh37 or hg38/GRCh38 to enable generation of annotations using SnpEff.
+* By default, `--snp`, `--sv`, and `--phase_mod` require either hg19/GRCh37 or hg38/GRCh38 to enable generation of annotations using SnpEff.
 However, by disabling annotations with `--skip_annotation`, these subworkflows can be run with other human genome builds (and non-human genomes).
 * `--str`: requires genome build hg38/GRCh38.
 * `--cnv`: requires genome builds hg19/GRCh37 or hg38/GRCh38.
@@ -155,7 +155,7 @@ The primary outputs of the workflow include:
 
 * a gzipped VCF file containing annotated SNPs found in the dataset (`--snp`)
 * a gzipped VCF file containing annotated SVs called from the dataset (`--sv`)
-* a gzipped [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file aggregating modified CpG base counts (`--methyl`)
+* a gzipped [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file aggregating modified CpG base counts (`--mod`)
 * a VCF of CNV calls, QDNAseq-generated plots, and BED files of both raw read counts per bin and corrected, normalised, and smoothed read counts per bin (`--cnv`)
 * a gzipped VCF file containing STRs found in the dataset, TSV Straglr output containing reads spanning STRs, and a haplotagged BAM (`--str`)
 * an HTML report detailing the primary findings of the workflow, for SNP, SV, CNV calling, and STR genotyping
@@ -179,7 +179,7 @@ The secondary outputs of the workflow include:
 - Annotations for `--snp` and `--sv` are generated using [SnpEff](https://pcingola.github.io/SnpEff/), with additional [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) annotations displayed in the report where available (please note, the report will not display any variants classified as 'Benign' or 'Likely benign', however these variants will be present in the
 output VCF).
 - Specifying a suitable [tandem repeat BED for your reference](https://raw.githubusercontent.com/fritzsedlazeck/Sniffles/master/annotations/) with `--tr_bed` can improve the accuracy of SV calling.
-- Aggregation of modified calls with `--methyl` requires data to be basecalled with a model that includes base modifications, providing the `MM` and `ML` BAM tags
+- Aggregation of modified calls with `--mod` requires data to be basecalled with a model that includes base modifications, providing the `MM` and `ML` BAM tags
 - Refer to the [Dorado documentation](https://github.com/nanoporetech/dorado#available-basecalling-models) for a list of available basecalling models
 - Take care to retain the input reference when basecalling or alignment has been performed as CRAM files cannot be read without the corresponding reference!
 - Refer to our [blogpost](https://labs.epi2me.io/copy-number-calling/) and [CNV workflow documentation](https://github.com/epi2me-labs/wf-cnv) for more information on running the copy number calling subworkflow.

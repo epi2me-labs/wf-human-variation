@@ -50,7 +50,7 @@ include {
 } from "./modules/local/wf-human-snp.nf"
 
 include { basecalling } from './workflows/basecalling'
-include { methyl; validate_modbam} from './workflows/methyl'
+include { mod; validate_modbam} from './workflows/methyl'
 
 include { str } from './workflows/wf-human-str'
 
@@ -61,8 +61,18 @@ workflow {
     Map colors = NfcoreTemplate.logColours(params.monochrome_logs)
 
     can_start = true
-    if (!params.snp && !params.sv && !params.methyl && !params.cnv && !params.str && !params.phase_methyl) {
-        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --cnv, --str, --methyl, --phase_methyl]" + colors.reset)
+    // Check for deprecated options
+    if (params.containsKey('methyl')) {
+        log.error (colors.red + "The workflow now uses modkit instead of the deprecated modbam2bed. Please use --mod instead of --methyl to enable modkit." + colors.reset)
+        can_start = false
+    }
+    if (params.containsKey('phase_methyl')) {
+        log.error (colors.red + "The workflow now uses modkit instead of the deprecated modbam2bed. Please use --phase_mod instead of --phase_methyl to enable phasing of modkit results." + colors.reset)
+        can_start = false
+    }
+
+    if (!params.snp && !params.sv && !params.mod && !params.cnv && !params.str && !params.phase_mod) {
+        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --cnv, --str, --mod, --phase_mod]" + colors.reset)
         can_start = false
     }
 
@@ -77,7 +87,7 @@ workflow {
     }
 
     // check snp has basecaller config for clair3 model lookup
-    if(params.snp || params.phase_methyl) {
+    if(params.snp || params.phase_mod) {
         if(!params.basecaller_cfg && !params.clair3_model_path) {
             throw new Exception(colors.red + "You must provide a basecaller profile with --basecaller_cfg <profile> to ensure the right Clair3 model is chosen!" + colors.reset)
         }
@@ -100,7 +110,7 @@ workflow {
     }
 
     // Trigger haplotagging
-    def run_haplotagging = params.str || params.phase_methyl || params.joint_phasing || params.phase_vcf ? true : false
+    def run_haplotagging = params.str || params.phase_mod || params.joint_phasing || params.phase_vcf ? true : false
 
     // Check ref and decompress if needed
     ref = null
@@ -198,15 +208,15 @@ workflow {
 
     // Check if the genome build in the BAM is suitable for any workflows that have restrictions
     // NOTE getGenome will exit non-zero if the build is neither hg19 or hg38, so it shouldn't be called
-    // if annotation is skipped for snp, sv and phase_methyl, to allow other genomes (including non-human)
+    // if annotation is skipped for snp, sv and phase_mod, to allow other genomes (including non-human)
     // to be processed
 
     // always getGenome for CNV and STR
     if (params.cnv || params.str) {
         genome_build = getGenome(bam_channel)
     }
-    // getGenome for STP, SV and phase_methyl as long as annotation not disabled
-    else if ((params.snp || params.sv || params.phase_methyl) && params.annotation) {
+    // getGenome for STP, SV and phase_mod as long as annotation not disabled
+    else if ((params.snp || params.sv || params.phase_mod) && params.annotation) {
         genome_build = getGenome(bam_channel)
     }
     else {
@@ -414,7 +424,7 @@ workflow {
                 .flatten()
                 .collect() | failedQCReport
     
-    // Set up BED for wf-human-snp, wf-human-str or --phase_methyl
+    // Set up BED for wf-human-snp, wf-human-str or --phase_mod
     // CW-2383: we first call the SNPs to generate an haplotagged bam file for downstream analyses
     if (params.snp || run_haplotagging) {
         if(default_bed_set) {
@@ -545,9 +555,9 @@ workflow {
             )
     }
 
-    // wf-human-methyl
+    // wf-human-mod
     // Validate modified bam
-    if (params.methyl || params.phase_methyl){
+    if (params.mod || params.phase_mod){
         if (run_haplotagging){
             validate_modbam(clair_vcf.hp_bams, ref_channel)
         } else {
@@ -566,12 +576,12 @@ workflow {
 
         // Save the other as input, keeping only the necessary elements
         validated_bam = validation_results.modbam.map{cram, crai, meta, code -> [cram, crai, meta]}
-        validation_results.modbam.ifEmpty{it -> log.warn "Alignment files do not contain modified base tags. Skipping methyl aggregation and reporting."}
+        validation_results.modbam.ifEmpty{it -> log.warn "Alignment files do not contain modified base tags. Skipping mod aggregation and reporting."}
 
-        results = methyl(validated_bam, ref_channel)
-        methyl_stats = results.modkit.flatten()
+        results = mod(validated_bam, ref_channel)
+        mod_stats = results.modkit.flatten()
     } else {
-        methyl_stats = Channel.empty()
+        mod_stats = Channel.empty()
     }
 
     //wf-human-cnv
@@ -619,7 +629,7 @@ workflow {
             mosdepth_stats.flatten(),
             mosdepth_summary.flatten(),
             mosdepth_perbase.flatten(),
-            methyl_stats.flatten(),
+            mod_stats.flatten(),
             mapula_stats.flatten(),
             jb_conf.flatten(),
             report_pass.flatten(),
