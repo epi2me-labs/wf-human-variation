@@ -834,15 +834,15 @@
         "LocusId": "LRP12",
         "HGNCId": 31708,
         "InheritanceMode": "AD",
-        "DisplayRU": "CGN",
+        "DisplayRU": "CGG",
         "SourceDisplay": "GeneReviews Internet 2019-11-07",
         "Source": "GeneReviews",
         "SourceId": "NBK535148",
         "LocusStructure": "(NCG)*",
-        "ReferenceRegion": "chr8:104588960-104588999",
-        "Disease": "OPDM1",
+        "ReferenceRegion": "chr8:104588967-104588999",
+        "Disease": "ALS/OPDM1",
         "NormalMax": 45,
-        "PathologicMin": 90
+        "PathologicMin": 60
     },
     {
         "VariantType": "Repeat",

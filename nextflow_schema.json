@@ -611,17 +611,17 @@
                 },
                 "ubam_map_threads": {
                     "type": "integer",
-                    "default": 12,
+                    "default": 8,
                     "description": "Set max number of threads to use for aligning reads from uBAM (limited by config executor cpus)"
                 },
                 "ubam_sort_threads": {
                     "type": "integer",
-                    "default": 8,
+                    "default": 3,
                     "description": "Set max number of threads to use for sorting and indexing aligned reads from uBAM (limited by config executor cpus)"
                 },
                 "ubam_bam2fq_threads": {
                     "type": "integer",
-                    "default": 4,
+                    "default": 1,
                     "description": "Set max number of threads to use for uncompressing uBAM and generating FASTQ for alignment (limited by config executor cpus)"
                 },
                 "merge_threads": {
@@ -654,12 +654,14 @@
                 },
                 "help": {
                     "type": "boolean",
+                    "default": "false",
                     "description": "Display help text.",
                     "fa_icon": "fas fa-question-circle",
                     "hidden": true
                 },
                 "version": {
                     "type": "boolean",
+                    "default": "false",
                     "description": "Display version and exit.",
                     "fa_icon": "fas fa-question-circle",
                     "hidden": true
