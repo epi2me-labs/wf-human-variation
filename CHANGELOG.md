@@ -4,11 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [v1.8.0]
 ### Changed
 - replaced `--methyl` with `--mod`, and `--phase_methyl` with `--phase_mod`
 - replaced `modbam2bed` with `modkit` (v0.1.12)
 - `--phase_mod` will generate three bed files, one for each haplotype and one for the reads that are not tagged.
+
+### Added
+- Add locus for *LRP12* to BED file of STR repeats (GRCh38)
 
 ## [v1.7.2]
 ### Changed
