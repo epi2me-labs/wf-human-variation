@@ -8,13 +8,14 @@ from ezcharts.components.clinvar import load_clinvar_vcf
 from ezcharts.components.ezchart import EZChart
 from ezcharts.components.reports.labs import LabsReport
 from ezcharts.components.theme import LAB_head_resources
-from ezcharts.layout.snippets import DataTable, Grid, Stats, Tabs
+from ezcharts.layout.snippets import DataTable, Stats, Tabs
 from ezcharts.layout.snippets import Progress
 from ezcharts.plots import util
-from ezcharts.plots.categorical import barplot
+from ezcharts.plots.distribution import histplot
 from ezcharts.plots.ideogram import ideogram
 import numpy as np
 import pandas as pd
+
 
 from .report_utils.common import CHROMOSOMES  # noqa: ABS101
 from .util import wf_parser  # noqa: ABS101
@@ -111,7 +112,36 @@ def sv_stats(vcf_data):
                 p('Other SV types are: inversions, duplications and translocations.')
 
 
-def sv_size_plots(vcf_data):
+def centered_bins(dataset, values, binning_mode='sqrt'):
+    """Create bins distributed around the zero value."""
+    # Compute bins
+    edges = np.histogram_bin_edges(
+        dataset[values].dropna(), bins=binning_mode, range=None, weights=None)
+    bin_sizes = [edges[n+1]-edges[n] for n in range(0, len(edges)-1)]
+    bin_size = int(np.ceil(max(bin_sizes)))
+
+    # Define min and max values from the dataset
+    min_val = int(dataset[values].values.min())
+    max_val = int(dataset[values].values.max())
+
+    # If min_val >= 0, no deletions to consider
+    if min_val >= 0:
+        del_itvs = []
+    else:
+        del_itvs = [
+            -i for i in range(bin_size, abs(min_val) + bin_size, bin_size)][::-1]
+
+    # If max_val <= 0, no insertions to consider
+    if max_val <= 0:
+        ins_itvs = []
+    else:
+        ins_itvs = list(range(bin_size, max_val + bin_size, bin_size))
+
+    # Return all bins
+    return del_itvs + [0] + ins_itvs
+
+
+def sv_size_plots(vcf_data, max_size=5000):
     """Plot size distributions of SV calls per type."""
     tabs = Tabs()
     for (index, sample_name, vcf_df) in vcf_data:
@@ -121,61 +151,36 @@ def sv_size_plots(vcf_data):
             else:
                 p("This section shows the size distributions of SV calls per type. "
                     "Deletions have negative values.")
-                with Grid():
-                    # Extract insertions
-                    # CW-2492: ensure SVLEN is int
-                    inserts = vcf_df\
-                        .loc[vcf_df['SVTYPE'] == 'INS']\
-                        .astype({'SVLEN': int, 'END': int})
-                    if not inserts.empty:
-                        inserts = inserts[['SVTYPE', 'SVLEN']] \
-                            .groupby('SVLEN') \
-                            .count() \
-                            .reset_index()
-                        inserts.columns = ['Length', 'Count']
-                        # Define max value
-                        maxins = int(inserts.Length.max()) \
-                            if inserts.Length.max() else 0
-                        # Create min/max range of values
-                        inserts = pd.merge(pd.DataFrame({
-                            'Length': range(0, maxins + 10)
-                        }), inserts, on="Length", how="left").fillna(0)
-                        # Add insertion plot
-                        plt = barplot(data=inserts, x="Length", y="Count")
-                        # override excharts axisLabel interval
-                        plt.xAxis = dict(
-                            axisLabel=dict(interval="auto", rotate=30))
-                        plt.title = {"text": "Insertion size distribution"}
-                        EZChart(plt, 'epi2melabs')
-                    else:
-                        h4("No insertions to plot")
-                    # Extract deletions
-                    # CW-2492: ensure SVLEN is int
-                    delets = vcf_df\
-                        .loc[vcf_df['SVTYPE'] == 'DEL']\
-                        .astype({'SVLEN': int, 'END': int})
-                    if not delets.empty:
-                        delets = delets[['SVTYPE', 'SVLEN']] \
-                            .groupby('SVLEN') \
-                            .count() \
-                            .reset_index()
-                        delets.columns = ['Length', 'Count']
-                        # Define max value
-                        mindel = int(delets.Length.min()) \
-                            if delets.Length.min() else 0
-                        # Create min/max range of values
-                        delets = pd.merge(pd.DataFrame({
-                            'Length': range(mindel - 10, 1)
-                        }), delets, on="Length", how="left").fillna(0)
-                        # Add deletion plot
-                        plt = barplot(data=delets, x="Length", y="Count")
-                        # override excharts axisLabel interval
-                        plt.xAxis = dict(
-                            axisLabel=dict(interval="auto", rotate=30))
-                        plt.title = {"text": "Deletion size distribution"}
-                        EZChart(plt, 'epi2melabs')
-                    else:
-                        h4("No deletions to plot")
+                # Extract deletions
+                # CW-2492: ensure SVLEN is int
+                indels = vcf_df\
+                    .loc[(vcf_df['SVTYPE'] == 'DEL') | (vcf_df['SVTYPE'] == 'INS')]\
+                    .astype({'SVLEN': int, 'END': int})
+                # Keep SVs within range of interest
+                indels = indels.loc[np.abs(indels['SVLEN'].values) < max_size]
+                # Define bin intervals
+                bins = centered_bins(indels, 'SVLEN')
+                # Create plot
+                if not indels.empty:
+                    indels = indels['SVLEN']
+                    indels.columns = ['Length']
+                    # Add deletion plot
+                    plt = histplot(data=indels, bins=bins, stat='count')
+                    # override excharts axisLabel interval
+                    plt.xAxis = dict(
+                        name='Length',
+                        axisLabel=dict(
+                            interval="auto",
+                            rotate=30
+                        ),
+                        max=max_size,
+                        min=-max_size
+                        )
+                    plt.title = {"text": "Indels size distribution"}
+                    EZChart(plt, 'epi2melabs')
+                    p("The plot shows Indels with |length| < 5Kb.")
+                else:
+                    h4("No Indels to plot")
 
 
 def karyoplot(vcf_data, args):
@@ -290,7 +295,7 @@ def main(args):
         karyoplot(vcf_data, args)
 
     with report.add_section('Size distribution', 'Size'):
-        sv_size_plots(vcf_data)
+        sv_size_plots(vcf_data, args.hist_sv_max_length)
 
     # Import jsons and create the progress bars before plotting
     values = []
@@ -384,6 +389,11 @@ def argparser():
     parser.add_argument(
         "--genome",
         default='hg38',
+        required=False)
+    parser.add_argument(
+        "--hist_sv_max_length",
+        default=5000,
+        help="Max length of an SV to display in the histogram",
         required=False)
     parser.add_argument(
         "--eval_results",
