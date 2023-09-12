@@ -654,14 +654,14 @@
                 },
                 "help": {
                     "type": "boolean",
-                    "default": "false",
+                    "default": false,
                     "description": "Display help text.",
                     "fa_icon": "fas fa-question-circle",
                     "hidden": true
                 },
                 "version": {
                     "type": "boolean",
-                    "default": "false",
+                    "default": false,
                     "description": "Display version and exit.",
                     "fa_icon": "fas fa-question-circle",
                     "hidden": true
