@@ -232,12 +232,12 @@ workflow {
 
     // Set BED (and create the default all chrom BED if necessary)
     bed = null
-    default_bed_set = false
+    using_user_bed = false
     if(params.bed){
+        using_user_bed = true
         bed = Channel.fromPath(params.bed, checkIfExists: true)
     }
     else {
-        default_bed_set = true
         bed = getAllChromosomesBed(ref_channel).all_chromosomes_bed
     }
 
@@ -427,12 +427,12 @@ workflow {
     // Set up BED for wf-human-snp, wf-human-str or --phase_mod
     // CW-2383: we first call the SNPs to generate an haplotagged bam file for downstream analyses
     if (params.snp || run_haplotagging) {
-        if(default_bed_set) {
-            // wf-human-snp uses OPTIONAL_FILE for empty bed for legacy reasons
-            snp_bed = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
+        if(using_user_bed) {
+            snp_bed = bed
         }
         else {
-            snp_bed = bed
+            // wf-human-snp uses OPTIONAL_FILE for empty bed for legacy reasons
+            snp_bed = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
         }
 
         if(params.clair3_model_path) {
@@ -456,7 +456,8 @@ workflow {
             clair3_model,
             genome_build,
             extensions,
-            run_haplotagging
+            run_haplotagging,
+            using_user_bed,
         )
     }
     

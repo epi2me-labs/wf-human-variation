@@ -16,6 +16,7 @@ process make_chunks {
         path "clair_output/tmp/CONTIGS", emit: contigs_file
         path "clair_output/tmp/CHUNK_LIST", emit: chunks_file
         path "clair_output/tmp/CMD", emit: cmd_file
+        path "clair_output/tmp/split_beds", emit: split_beds, optional: true
     script:
         def bedargs = bed.name != 'OPTIONAL_FILE' ? "--bed_fn ${bed}" : ''
         def bedprnt = bed.name != 'OPTIONAL_FILE' ? "--bed_fn=${bed}" : ''
@@ -57,37 +58,40 @@ process pileup_variants {
         tuple path(xam), path(xam_idx)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path model
+        path bed
         path command
+        path "split_bed/*"
     output:
         // TODO: make this explicit, why is pileup VCF optional?
         path "pileup_*.vcf", optional: true, emit: pileup_vcf_chunks
         path "gvcf_tmp_path/*", optional: true, emit: pileup_gvcf_chunks
-    shell:
+    script:
         // note: the VCF output here is required to use the contig
         //       name since that's parsed in the SortVcf step
         // note: snp_min_af and indel_min_af have an impact on performance
-        // TODO Fix REF_PATH
-        '''
-        python $(which clair3.py) CallVariantsFromCffi \
-            --chkpnt_fn !{model}/pileup \
-            --bam_fn !{xam} \
-            --call_fn pileup_!{region.contig}_!{region.chunk_id}.vcf \
-            --ref_fn !{ref} \
-            --ctgName !{region.contig} \
-            --chunk_id !{region.chunk_id} \
-            --chunk_num !{region.total_chunks} \
+        def bedargs = bed.name != 'OPTIONAL_FILE' ? "--bed_fn ${bed} --extend_bed split_bed/${region.contig}" : ''
+        """
+        python \$(which clair3.py) CallVariantsFromCffi \
+            --chkpnt_fn ${model}/pileup \
+            --bam_fn ${xam} \
+            --call_fn pileup_${region.contig}_${region.chunk_id}.vcf \
+            --ref_fn ${ref} \
+            --ctgName ${region.contig} \
+            --chunk_id ${region.chunk_id} \
+            --chunk_num ${region.total_chunks} \
             --platform ont \
             --fast_mode False \
-            --snp_min_af !{params.snp_min_af} \
-            --indel_min_af !{params.indel_min_af} \
-            --minMQ !{params.min_mq} \
-            --minCoverage !{params.min_cov} \
+            --snp_min_af ${params.snp_min_af} \
+            --indel_min_af ${params.indel_min_af} \
+            --minMQ ${params.min_mq} \
+            --minCoverage ${params.min_cov} \
             --call_snp_only False \
-            --gvcf !{params.GVCF} \
+            --gvcf ${params.GVCF} \
             --temp_file_dir gvcf_tmp_path \
-            --cmd_fn !{command} \
-            --pileup
-        ''' 
+            --cmd_fn ${command} \
+            --pileup \
+            ${bedargs}
+        """
 }
 
 
