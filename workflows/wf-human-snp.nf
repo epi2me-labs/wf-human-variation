@@ -34,6 +34,7 @@ workflow snp {
         genome_build
         extensions
         run_haplotagging
+        using_user_bed
     main:
 
         // truncate bam channel to remove meta to keep compat with snp pipe
@@ -49,9 +50,16 @@ workflow snp {
                 ["contig": cols[1], "chunk_id":cols[2], "total_chunks":cols[3]]}
         contigs = make_chunks.out.contigs_file.splitText() { it.trim() }
         cmd_file = make_chunks.out.cmd_file
+        // use clair3 split beds if BED was provided
+        if (using_user_bed) {
+            split_beds = make_chunks.out.split_beds
+        }
+        else {
+            split_beds = Channel.from("$projectDir/data/OPTIONAL_FILE").collect()
+        }
         // Run the "pileup" caller on all chunks and collate results
         // > Step 1 
-        pileup_variants(chunks, bam, ref, model, cmd_file)
+        pileup_variants(chunks, bam, ref, model, bed, cmd_file, split_beds)
         aggregate_pileup_variants(
             ref, pileup_variants.out.pileup_vcf_chunks.collect(),
             make_chunks.out.contigs_file, cmd_file)
