@@ -564,7 +564,6 @@ process refine_with_sv {
         '''
 }
 
-
 process hap {
     label "happy"
     input:

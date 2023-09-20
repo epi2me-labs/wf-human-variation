@@ -99,7 +99,7 @@ docker-run:
               NF_IGNORE_PROCESSES: "hap,lookup_clair3_model,phase_contig_haplotag,merge_haplotagged_contigs,\
                                     getGenome,aggregate_all_variants,aggregate_full_align_variants,aggregate_pileup_variants,create_candidates,\
                                     evaluate_candidates,get_qual_filter,makeReport,make_chunks,merge_pileup_and_full_vars,output_snp,phase_contig,\
-                                    pileup_variants,post_clair_phase_contig,select_het_snps,vcfStats,refine_with_sv,annotate_vcf"
+                                    pileup_variants,post_clair_phase_contig,select_het_snps,vcfStats,refine_with_sv,annotate_vcf,bed_filter"
               NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam snp_demo/chr6_chr20.bam --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --clair3_model_path snp_demo/ont_r104_e81_sup_g5015 --phase_vcf --bam_min_coverage 100"
 
         - if: $MATRIX_NAME == "wf-human-snp_svrefine"
@@ -175,7 +175,7 @@ docker-run:
           variables:
               NF_BEFORE_SCRIPT: "wget -qO demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-str/demo_data.tar.gz && tar -xzvf demo_data.tar.gz"
               NF_PROCESS_FILES: "modules/local/wf-human-sv.nf modules/local/wf-human-snp.nf workflows/phasing.nf"
-              NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,hap,phase_contig,post_clair_phase_contig"
+              NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,hap,phase_contig,post_clair_phase_contig,bed_filter"
               NF_WORKFLOW_OPTS: "--mod false --cnv false --str false --sv --snp --joint_phasing --bam demo_data/demo.bam --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name demo --sex female --bam_min_coverage 0.00001 --annotation false"
 
 

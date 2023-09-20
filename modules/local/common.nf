@@ -447,3 +447,19 @@ process haploblocks {
         whatshap stats --gtf=${params.sample_name}.wf_${output_label}.haploblocks.gtf ${phased_vcf}
         """
 }
+
+process bed_filter {
+    // filter a BED/VCF/GFF using a BED file
+    input:
+        tuple path(input, stageAs: 'input.gz'), path(input_tbi, stageAs: 'input.gz.tbi')
+        path(bed)
+        val(subworkflow)
+        val(file_type)
+    output:
+        tuple path("${params.sample_name}.wf_${subworkflow}.${file_type}.gz"), path("${params.sample_name}.wf_${subworkflow}.${file_type}.gz.tbi"), emit: filtered
+    script:
+        """
+        bedtools intersect -u -header -a input.gz -b ${bed} | bgzip -c > ${params.sample_name}.wf_${subworkflow}.${file_type}.gz
+        tabix ${params.sample_name}.wf_${subworkflow}.${file_type}.gz
+        """
+}
