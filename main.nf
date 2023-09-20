@@ -37,6 +37,7 @@ include {
     eval_downsampling;
     downsampling;
     annotate_vcf as annotate_snp_vcf;
+    bed_filter
     } from './modules/local/common'
 
 include {
@@ -231,11 +232,14 @@ workflow {
     ref_channel = ref.concat(ref_index).concat(ref_cache).concat(ref_path).buffer(size: 4)
 
     // Set BED (and create the default all chrom BED if necessary)
+    // Make a second bed channel that won't be filtered based on coverage,
+    // to be used as a final ROI filter
     bed = null
     using_user_bed = false
     if(params.bed){
         using_user_bed = true
         bed = Channel.fromPath(params.bed, checkIfExists: true)
+        roi_filter_bed = Channel.fromPath(params.bed, checkIfExists: true)
     }
     else {
         bed = getAllChromosomesBed(ref_channel).all_chromosomes_bed
@@ -527,15 +531,23 @@ workflow {
             final_snp_vcf = clair_vcf.vcf_files
         }
 
+        // Filter by BED, if provided
+        if (params.bed) {
+            final_snp_vcf_filtered = bed_filter(final_snp_vcf, roi_filter_bed, "snp", "vcf")
+        }
+        else {
+            final_snp_vcf_filtered = final_snp_vcf
+        }
+
         // Run annotation, when requested.
         if (!params.annotation) {
-            final_vcf = final_snp_vcf
+            final_vcf = final_snp_vcf_filtered
             // no ClinVar VCF, pass empty VCF to makeReport
             clinvar_vcf = Channel.fromPath("${projectDir}/data/empty_clinvar.vcf")
         }
         else {
             // do annotation and get a list of ClinVar variants for the report
-            annotate_snp_vcf(final_snp_vcf, genome_build, "snp")
+            annotate_snp_vcf(final_snp_vcf_filtered, genome_build, "snp")
             final_vcf = annotate_snp_vcf.out.final_vcf
             clinvar_vcf = annotate_snp_vcf.out.final_vcf_clinvar
         }
