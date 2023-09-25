@@ -158,10 +158,10 @@ def sv_size_plots(vcf_data, max_size=5000):
                     .astype({'SVLEN': int, 'END': int})
                 # Keep SVs within range of interest
                 indels = indels.loc[np.abs(indels['SVLEN'].values) < max_size]
-                # Define bin intervals
-                bins = centered_bins(indels, 'SVLEN')
                 # Create plot
                 if not indels.empty:
+                    # Define bin intervals
+                    bins = centered_bins(indels, 'SVLEN')
                     indels = indels['SVLEN']
                     indels.columns = ['Length']
                     # Add deletion plot

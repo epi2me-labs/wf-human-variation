@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Avoid clair3 calling variants in regions that flank those specified in the BED
 ### Fixed
 - SNP subworkflow was ignoring BED file and analysing all regions
+- Report SV crashing when generating the size plots with only large indels
 
 ## [v1.8.1]
 ### Fixed
