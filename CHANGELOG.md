@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - SNP subworkflow was ignoring BED file and analysing all regions
 - Report SV crashing when generating the size plots with only large indels
+- Downsampling not working when targeting regions with `--bed`
 
 ## [v1.8.1]
 ### Fixed

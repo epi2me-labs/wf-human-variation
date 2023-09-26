@@ -322,7 +322,10 @@ workflow {
     // Check and perform downsampling if needed.
     if (params.downsample_coverage){
         // Define reduction rate
-        eval_downsampling(mosdepth_input.out.summary)
+        eval_downsampling(
+            mosdepth_input.out.summary,
+            params.bed ? mosdepth_stats.map{it[0]} : OPTIONAL
+        )
         eval_downsampling.out.downsampling_ratio
             .splitCsv()
             .branch{

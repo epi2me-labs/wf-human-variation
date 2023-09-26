@@ -194,15 +194,18 @@ process eval_downsampling {
     cpus 1
     input:
         path mosdepth_summary
+        path bed
     output:
         path "ratio.txt", emit: downsampling_ratio
-    shell:
-        '''
+    script:
+        def with_bed = bed.name != 'OPTIONAL_FILE' ? "--bed ${bed}" : ""
+        """
         workflow-glue downsampling_ratio \
-            --downsample_depth !{params.downsample_coverage_target} \
-            --margin !{params.downsample_coverage_margin} \
-            --summary !{mosdepth_summary} > ratio.txt
-        '''
+            --downsample_depth ${params.downsample_coverage_target} \
+            --margin ${params.downsample_coverage_margin} \
+            --summary ${mosdepth_summary} \
+            ${with_bed} > ratio.txt
+        """
 }
 
 
