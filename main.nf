@@ -500,7 +500,7 @@ workflow {
 
     // Then, we finish working on the SNPs by refining with SVs and annotating them. This is needed to
     // maximise the interaction between Clair3 and Sniffles.
-    if (params.snp || params.joint_phasing){
+    if (params.snp || run_haplotagging){
         // Channel of results.
         // We drop the raw .vcf(.tbi) file from Clair3 in it to then add back the files in the 
         // final_vcf channel, allowing for the latest file to be emitted.

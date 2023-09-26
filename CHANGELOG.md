@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SNP subworkflow was ignoring BED file and analysing all regions
 - Report SV crashing when generating the size plots with only large indels
 - Downsampling not working when targeting regions with `--bed`
+- `--phase_mod` not emitting the haplotagged bam files
 
 ## [v1.8.1]
 ### Fixed
