@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Report SV crashing when generating the size plots with only large indels
 - Downsampling not working when targeting regions with `--bed`
 - `--phase_mod` not emitting the haplotagged bam files
+- Report crashing when loading a clinvar-annotated VCF file with multiple `GENEINFO`/`CLNVC` entries
 
 ## [v1.8.1]
 ### Fixed
