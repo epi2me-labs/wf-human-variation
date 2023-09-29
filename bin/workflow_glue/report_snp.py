@@ -195,7 +195,7 @@ def main(args):
                 p('The bcftools stats file is empty.')
             else:
                 sizes = indel_sizes(bcfstats['IDD'])
-                plt = barplot(data=sizes, x="nlength", y="count")
+                plt = barplot(data=sizes, x="nlength", y="count", color=Colors.cerulean)
                 EZChart(plt, 'epi2melabs')
 
     # write report
