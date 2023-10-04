@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [v1.8.2]
 ### Added
 - The SNP workflow will filter the final VCF to only return calls in the regions specified with `--bed`
     - Avoid clair3 calling variants in regions that flank those specified in the BED
@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downsampling not working when targeting regions with `--bed`
 - `--phase_mod` not emitting the haplotagged bam files
 - Report crashing when loading a clinvar-annotated VCF file with multiple `GENEINFO`/`CLNVC` entries
+### Removed
+- Default local executor CPU and RAM limits
 
 ## [v1.8.1]
 ### Fixed
