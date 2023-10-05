@@ -162,12 +162,12 @@ process configure_jbrowse {
         path("jbrowse.json")
     script:
     boolean output_bam = xam_meta.output
-    def snp_variant = params.snp ? "--variant snp ${params.out_dir}/${params.sample_name}.wf_snp.vcf.gz ${params.out_dir}/${params.sample_name}.wf_snp.vcf.gz.tbi" : ''
-    def sv_variant = params.sv ? "--variant sv ${params.out_dir}/${params.sample_name}.wf_sv.vcf.gz ${params.out_dir}/${params.sample_name}.wf_sv.vcf.gz.tbi" : ''
-    def alignment = output_bam ? "--alignment ${params.out_dir}/${xam.name} ${params.out_dir}/${xam_idx.name}" : ''
+    def snp_variant = params.snp ? "--variant snp '${params.out_dir}/${params.sample_name}.wf_snp.vcf.gz' '${params.out_dir}/${params.sample_name}.wf_snp.vcf.gz.tbi'" : ''
+    def sv_variant = params.sv ? "--variant sv '${params.out_dir}/${params.sample_name}.wf_sv.vcf.gz' '${params.out_dir}/${params.sample_name}.wf_sv.vcf.gz.tbi'" : ''
+    def alignment = output_bam ? "--alignment '${params.out_dir}/${xam.name}' '${params.out_dir}/${xam_idx.name}'" : ''
     """
     workflow-glue configure_jbrowse \
-        --reference ${ref} "${params.out_dir}/${ref.name}" "${params.out_dir}/${ref_idx.name}" \
+        --reference ${ref} '${params.out_dir}/${ref.name}' '${params.out_dir}/${ref_idx.name}' \
         ${alignment} \
         ${snp_variant} \
         ${sv_variant} > jbrowse.json

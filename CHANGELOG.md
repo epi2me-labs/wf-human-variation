@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.8.3]
+### Fixed
+- configure-jbrowse breaking on unescaped spaces
+
 ## [v1.8.2]
 ### Added
 - The SNP workflow will filter the final VCF to only return calls in the regions specified with `--bed`
