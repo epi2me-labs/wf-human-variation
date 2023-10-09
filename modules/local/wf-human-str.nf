@@ -9,8 +9,7 @@ process call_str {
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path(repeat_bed)
     output:
-        path "*.vcf.gz", emit: straglr_vcf, optional: true
-        path "*.tsv", emit: straglr_tsv, optional: true
+        tuple path("*.vcf.gz"), path ("*.tsv"), val(chr), optional: true, emit: straglr_output
     shell:
         '''
         { grep !{chr} -Fw !{repeat_bed} || true; } > repeats_subset.bed
@@ -35,8 +34,7 @@ process annotate_repeat_expansions {
     // annotate using Stranger
     label "wf_human_str"
     input:
-        val (chr)
-        path(vcf)
+        tuple path(vcf), path (tsv), val (chr)
         path(variant_catalogue_hg38)
     output:
         tuple path("*.vcf.gz"), path("*.vcf.gz.tbi"), emit: annotated_vcf

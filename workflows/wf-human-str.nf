@@ -22,11 +22,10 @@ workflow str {
     str_list = projectDir.resolve("./data/wf_str_repeats.bed").toString()
     variant_catalogue_hg38 = projectDir.resolve("./data/variant_catalog_hg38.json").toString()
 
-    contig = bam_channel.map{it -> it[0]}
-
     // call straglr and get annotations per contig
     str_vcf_and_tsv = call_str(bam_channel, ref_as_value, str_list)
-    annotations = annotate_repeat_expansions(contig, str_vcf_and_tsv.straglr_vcf, variant_catalogue_hg38)
+
+    annotations = annotate_repeat_expansions(str_vcf_and_tsv.straglr_output, variant_catalogue_hg38)
 
     software_versions = getVersions()
     workflow_params = getParams()
@@ -39,7 +38,7 @@ workflow str {
   
     // merge the contig TSVs
     plot_tsv_all = annotations.plot_tsv.collect()
-    straglr_tsv_all = str_vcf_and_tsv.straglr_tsv.collect()
+    straglr_tsv_all = str_vcf_and_tsv.map{it -> it[1]}.collect()
     stranger_annotation_all = annotations.stranger_annotation.collect()
 
     // get the merged TSVs ready for the report
