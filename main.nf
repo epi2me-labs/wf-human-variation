@@ -193,9 +193,7 @@ workflow {
         ref_index = Channel.of(ref_index_fp)
     }
 
-    if (!params.disable_ping) {
-        Pinguscript.ping_post(workflow, "start", "none", params.out_dir, params)
-    }
+    Pinguscript.ping_start(nextflow, workflow, params)
 
     // Determine if (re)alignment is required for input BAM
     if(!params.fast5_dir){
@@ -656,12 +654,9 @@ workflow {
 
 }
 
-if (!params.disable_ping) {
-    workflow.onComplete {
-        Pinguscript.ping_post(workflow, "end", "none", params.out_dir, params)
-    }
-
-    workflow.onError {
-        Pinguscript.ping_post(workflow, "error", "$workflow.errorMessage", params.out_dir, params)
-    }
+workflow.onComplete {
+    Pinguscript.ping_complete(nextflow, workflow, params)
+}
+workflow.onError {
+    Pinguscript.ping_error(nextflow, workflow, params)
 }
