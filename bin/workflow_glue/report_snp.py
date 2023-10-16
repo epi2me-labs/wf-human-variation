@@ -107,7 +107,7 @@ def main(args):
         tabs = Tabs()
         with tabs.add_tab(args.sample_name):
             if bcfstats['SN'].empty:
-                p('The bcftools stats file is empty.')
+                p('No Summary Numbers (SN) lines to plot from the bcftools stats file.')
             else:
                 bcfstats['SN'].columns = [
                     i.replace('SNP', 'SNV').replace('MNP', 'MNV')
@@ -129,7 +129,7 @@ def main(args):
         tabs = Tabs()
         with tabs.add_tab(args.sample_name):
             if bcfstats['SN'].empty:
-                p('The bcftools stats file is empty.')
+                p('No Summary Numbers (SN) lines to plot from the bcftools stats file.')
             else:
                 DataTable.from_pandas(
                     bcfstats['SN'].drop(columns=['id']),
@@ -180,7 +180,10 @@ def main(args):
         tabs = Tabs()
         with tabs.add_tab(args.sample_name):
             if bcfstats['ST'].empty:
-                p('The bcftools stats file is empty.')
+                p(
+                    'No Substitution Types (ST) lines to plot from the bcftools '
+                    'stats file.'
+                )
             else:
                 subtype = parse_changes(bcfstats['ST'])
                 plt = heatmap(subtype)
@@ -191,8 +194,11 @@ def main(args):
         p('Insertion and deletion lengths aggregated across all samples.')
         tabs = Tabs()
         with tabs.add_tab(args.sample_name):
-            if bcfstats['ST'].empty:
-                p('The bcftools stats file is empty.')
+            if bcfstats['IDD'].empty:
+                p(
+                    'No Indels Distribution (IDD) lines to plot from the bcftools '
+                    'stats file.'
+                )
             else:
                 sizes = indel_sizes(bcfstats['IDD'])
                 plt = barplot(data=sizes, x="nlength", y="count", color=Colors.cerulean)
