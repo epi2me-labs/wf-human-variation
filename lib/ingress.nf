@@ -237,7 +237,7 @@ def xam_ingress(Map arguments)
 
 
 process checkBamHeaders {
-    label "fastq_ingress"
+    label "ingress"
     label "wf_common"
     cpus 1
     input: tuple val(meta), path("input_dir/reads*.bam")
@@ -254,7 +254,7 @@ process checkBamHeaders {
 
 
 process mergeBams {
-    label "fastq_ingress"
+    label "ingress"
     label "wf_common"
     cpus 3
     input: tuple val(meta), path("input_bams/reads*.bam")
@@ -268,7 +268,7 @@ process mergeBams {
 
 
 process catSortBams {
-    label "fastq_ingress"
+    label "ingress"
     label "wf_common"
     cpus 4
     input: tuple val(meta), path("input_bams/reads*.bam")
@@ -282,7 +282,7 @@ process catSortBams {
 
 
 process sortBam {
-    label "fastq_ingress"
+    label "ingress"
     label "wf_common"
     cpus 3
     input: tuple val(meta), path("reads.bam")
@@ -295,7 +295,8 @@ process sortBam {
 
 
 process bamstats {
-    label "fastq_ingress"
+    label "ingress"
+    label "wf_common"
     cpus 3
     input:
         tuple val(meta), path("reads.bam")
@@ -410,7 +411,7 @@ def watch_path(Path input, Map margs, ArrayList extensions) {
 
 
 process move_or_compress_fq_file {
-    label "fastq_ingress"
+    label "ingress"
     label "wf_common"
     cpus 1
     input:
@@ -435,7 +436,7 @@ process move_or_compress_fq_file {
 
 
 process fastcat {
-    label "fastq_ingress"
+    label "ingress"
     label "wf_common"
     cpus 3
     input:
@@ -734,7 +735,7 @@ def get_sample_sheet(Path sample_sheet, ArrayList required_sample_types) {
  */
 process validate_sample_sheet {
     cpus 1
-    label "fastq_ingress"
+    label "ingress"
     label "wf_common"
     input:
         path "sample_sheet.csv"
