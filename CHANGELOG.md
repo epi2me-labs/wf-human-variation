@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
+### Changed
+- Legend symbols in STR genotpying plot
 ### Fixed
 - Report step failing if bcftools stats file has only some sub-sections
 
