@@ -219,8 +219,6 @@ def create_str_histogram(
     plt.xAxis = xaxis
     plt.yAxis = yaxis
 
-    plt.legend = {}
-
     add_rectangle(
         plt, 0, normal_max, max_rectangle_height, 1, 'normal'
         )
@@ -228,6 +226,13 @@ def create_str_histogram(
         plt, pathologic_min, pathologic_max, max_rectangle_height, 2,
         'pathogenic'
         )
+
+    # Override plot legend to remove dummy `0` histogram legend entry
+    plt.legend = {
+        "data": [
+            {"name": "normal range"},
+            {"name": "pathogenic range"},
+        ]}
 
     add_triangle(plt, cn1, 3)
     add_triangle(plt, cn2, 4)
