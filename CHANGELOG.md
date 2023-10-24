@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Legend symbols in STR genotpying plot
 ### Fixed
 - Report step failing if bcftools stats file has only some sub-sections
+- Clair3 ignoring the bed file
 
 ## [v1.8.3]
 ### Fixed
