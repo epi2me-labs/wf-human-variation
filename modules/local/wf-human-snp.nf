@@ -60,7 +60,7 @@ process pileup_variants {
         path model
         path bed
         path command
-        path "split_bed/*"
+        path "split_bed"
     output:
         // TODO: make this explicit, why is pileup VCF optional?
         path "pileup_*.vcf", optional: true, emit: pileup_vcf_chunks
