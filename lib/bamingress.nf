@@ -171,7 +171,7 @@ workflow bam_ingress {
             // setting the meta.output to false because the bam has not been realigned
             it -> tuple(it[0], it[1], create_metamap([
                 output: false,
-                is_cram: !margs.output_bam,
+                is_cram: it[0].name.toLowerCase().endsWith("cram"),
             ]))
         }
 
