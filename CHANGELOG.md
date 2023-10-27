@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Report step failing if bcftools stats file has only some sub-sections
 - Clair3 ignoring the bed file
+- merge_haplotagged_contigs incorrectly generating intermediate CRAM when input is BAM
 
 ## [v1.8.3]
 ### Fixed
