@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Added
 - STR workflow report now includes additional plots which display repeat units and interruptions in each supporting read
+- CNV workflow now outputs an indexed VCF file to the output directory
 ### Changed
 - Legend symbols in STR genotpying plot
 ### Fixed
