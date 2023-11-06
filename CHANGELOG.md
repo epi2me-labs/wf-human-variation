@@ -4,13 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [unreleased]
+### Added
+- STR workflow report now includes additional plots which display repeat units and interruptions in each supporting read
 ### Changed
 - Legend symbols in STR genotpying plot
 ### Fixed
 - Report step failing if bcftools stats file has only some sub-sections
 - Clair3 ignoring the bed file
 - merge_haplotagged_contigs incorrectly generating intermediate CRAM when input is BAM
+- STR content generation failing due to forward slash in disease name in `variant_catalog_hg38.json`
 
 ## [v1.8.3]
 ### Fixed
