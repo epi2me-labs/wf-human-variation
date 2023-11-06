@@ -4,13 +4,18 @@ import groovy.json.JsonBuilder
 process callCNV {
     label "wf_cnv"
     cpus 1
-    publishDir "${params.out_dir}/qdna_seq", mode: 'copy', pattern: "*"
+    // publish everything except the cnv_vcf to qdna_seq directory
+    publishDir = [
+        path: { "${params.out_dir}/qdna_seq" },
+        mode: 'copy',
+        saveAs: { filename -> filename.toString() ==~ /.*vcf\.gz.*/ ? null : filename }
+    ]
     input:
         tuple path(bam), path(bai)
         val(genome_build)
     output:
-        tuple path("${params.sample_name}_combined.bed"), path("${params.sample_name}*"), path("${params.sample_name}_noise_plot.png"), path("${params.sample_name}_isobar_plot.png")
-
+        tuple path("${params.sample_name}_combined.bed"), path("${params.sample_name}*"), path("${params.sample_name}_noise_plot.png"), path("${params.sample_name}_isobar_plot.png"), emit: cnv_output
+        tuple path("${params.sample_name}.wf_cnv.vcf.gz"), path("${params.sample_name}.wf_cnv.vcf.gz.tbi"), emit: cnv_vcf
     script:
         """
         run_qdnaseq.r --bam ${bam} --out_prefix ${params.sample_name} --binsize ${params.bin_size} --reference ${genome_build}
@@ -19,8 +24,12 @@ process callCNV {
         # VCF will be malformed if it contains one CNV (CW-1491), check and fix if necessary
         mv ${params.sample_name}_calls.vcf raw.vcf
         mv ${params.sample_name}_segs.vcf raw_segs.vcf
-        fix_1491_vcf.py -i raw.vcf -o ${params.sample_name}_calls.vcf --sample_id ${params.sample_name}
+        fix_1491_vcf.py -i raw.vcf -o ${params.sample_name}.wf_cnv.vcf --sample_id ${params.sample_name}
         fix_1491_vcf.py -i raw_segs.vcf -o ${params.sample_name}_segs.vcf --sample_id ${params.sample_name}
+
+        # bgzip and index calls VCF
+        bgzip ${params.sample_name}.wf_cnv.vcf
+        tabix -f -p vcf ${params.sample_name}.wf_cnv.vcf.gz
         """
 }
 
