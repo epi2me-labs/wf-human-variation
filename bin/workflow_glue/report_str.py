@@ -1,14 +1,18 @@
 #!/usr/bin/env python
 """Plot STRs."""
 
+from bokeh.models import BoxZoomTool, ColumnDataSource, HoverTool
+from bokeh.models import PanTool, Range1d, ResetTool, WheelZoomTool
 from dominate.tags import h3, p, span, table, tbody, td, th, thead, tr
 from ezcharts.components import fastcat
 from ezcharts.components.ezchart import EZChart
 from ezcharts.components.reports.labs import LabsReport
 from ezcharts.components.theme import LAB_head_resources
 from ezcharts.layout.snippets import Grid, Tabs
+from ezcharts.plots import BokehPlot
 from ezcharts.plots.distribution import histplot
 from ezcharts.plots.distribution import MakeRectangles
+from natsort import natsorted
 import pandas as pd
 from .util import wf_parser  # noqa: ABS101
 
@@ -57,6 +61,11 @@ def argparser():
         required=True
     )
     parser.add_argument(
+        "--str_content",
+        required=True,
+        help="str content csv"
+    )
+    parser.add_argument(
         "--read_stats",
         required=True,
         help="read statistics output from bamstats"
@@ -95,7 +104,7 @@ def add_rectangle(plt, x_start, x_end, height, idx, rectangle):
     plt.add_dataset(dict(
         source=[[x_start, x_end, height]],
         dimensions=['x_starts', 'ends', 'heights']
-        ))
+    ))
     plt.add_series(dict(
         type='custom',
         name=rectangle+" range",
@@ -108,7 +117,7 @@ def add_rectangle(plt, x_start, x_end, height, idx, rectangle):
         itemStyle={
             'color': colour},
         clip=True
-        ))
+    ))
 
 
 def parse_vcf(fname, info_cols=None, nrows=None):
@@ -221,11 +230,11 @@ def create_str_histogram(
 
     add_rectangle(
         plt, 0, normal_max, max_rectangle_height, 1, 'normal'
-        )
+    )
     add_rectangle(
         plt, pathologic_min, pathologic_max, max_rectangle_height, 2,
         'pathogenic'
-        )
+    )
 
     # Override plot legend to remove dummy `0` histogram legend entry
     plt.legend = {
@@ -240,9 +249,184 @@ def create_str_histogram(
     EZChart(plt, theme='epi2melabs')
 
 
+def create_repeat_content_plot(all_data, haplotype_data, repeat_unit):
+    """Show repeats and interruptions as rectangular bars."""
+    # Creating additional variables for the plot
+    unique_reads = haplotype_data['read_id'].unique()
+    unique_sequences = all_data['sequence'].unique()
+    max_str_sequence = all_data['str_seq_length'].max()
+    range_max = max_str_sequence + 1
+
+    # normal_max and pathologic_min are repeat numbers, so get the repeat unit
+    # size and use this to convert to length for plotting
+    # make a copy of the dataframe to avoid SettingWithCopyWarning
+    ru_size = len(repeat_unit)
+    new_haplotype_data = haplotype_data.copy()
+    new_haplotype_data['str_normal_max'] = new_haplotype_data[
+        'str_normal_max'] * ru_size
+    new_haplotype_data['str_pathologic_min'] = new_haplotype_data[
+        'str_pathologic_min'] * ru_size
+
+    colours = [
+        "#1f78b4", "#fdbf6f", "#b2df8a", "#33a02c", "#bbbb88",
+        "#baa2a6", "#e08e79", "#B098A4", "#2D4739", "#523249",
+        "#AAC0AA", "#120D31", "#F6C0D0", "#F39237", "#CB48B7",
+        "#6D9F71", "#337357", "#F49FBC", "#FFD3BA", "#87255B",
+        "#B5F44A", "#CCE2A3", "#A5243D", "#F7B538", "#5E747F",
+        "#DD1C1A", "#1282A2", "#150578", "#73FBD3", "#D4ADCF",
+        "#856084", "#FDE12D", "#FFC0BE", "#B1740F", "#931F1D",
+        "#E8C7DE", "#D9BDC5", "#b069a6", "#86467d", "#542c4e",
+        "#a2a25d", "#251b65", "#9f2d8e", "#501647", "#ef8fac",
+        "#e2366a", "#b31947", "#590d24", "#39f9bf", "#06c68c",
+        "#047c58", "#b3ffb3", "#66ff66", "#00e600", "#009900",
+        "#004d00", "#ffccff", "#ff4dff", "#e600e6", "#660066"
+    ]
+    colourmap = {}
+    # Mapping colours to unique repeats/interruptions in the seq
+    i = 0
+    for seq in unique_sequences:
+        if seq == all_data['repeat_unit'].any():
+            # Consistent colour for the RU's
+            colourmap[seq] = "#0173B2"
+        else:
+            colourmap[seq] = colours[i]
+            i += 1
+            if i == 60:
+                i = 0
+
+    # Setting up data source for plot
+    source = ColumnDataSource(
+        data=dict(
+            read=haplotype_data['read_id'],
+            normal_max=haplotype_data['str_normal_max'],
+            pathologic_min=haplotype_data['str_pathologic_min'],
+            seq=haplotype_data['sequence'],
+            truncated_seq=haplotype_data['truncated_seq'],
+            seq_length=haplotype_data['length'],
+            seq_start=haplotype_data['start'],
+            seq_mid=((haplotype_data['end']) - (haplotype_data['length'])/2),
+            seq_end=haplotype_data['end'],
+            seq_colour=[colourmap[x] for x in haplotype_data['sequence']],
+        )
+    )
+    plt = BokehPlot(
+        y_range=list(unique_reads),
+        width=1200,
+        x_range=Range1d(0, range_max),
+        height=40*unique_reads.size,
+        outline_line_color=None,  # Stops plot having an outline
+    )
+
+    p = plt._fig
+
+    # Add haplotype title
+    p.title.text = f"Haplotype: {haplotype_data['haplotype'].values[0]}"
+
+    # Defining which tools to have on the toolbar
+    p.toolbar.tools = [
+        WheelZoomTool(),
+        BoxZoomTool(),
+        ResetTool(),
+        PanTool()]
+
+    # Adding rectangles to the plot for each repeat/interruption
+    p.rect(
+        x="seq_mid",  # x-coord of the centre of the rectangle
+        y="read",  # y-coord of the centre of the rectangle
+        width="seq_length",
+        height=0.7,
+        source=source,
+        fill_alpha=0.6,
+        color="seq_colour",
+        line_color=None
+    )
+
+    # Add normal max line
+    p.line(
+        x="normal_max",
+        y="read",
+        line_color="black",
+        line_width=1,
+        legend_label="Normal Max.",
+        source=source
+    )
+
+    # Add pathogenic min line
+    p.line(
+        x="pathologic_min",
+        y="read",
+        line_color="red",
+        line_width=1,
+        legend_label="Pathogenic Min.",
+        source=source
+    )
+
+    p.add_layout(p.legend[0], 'left')
+
+    hover = HoverTool(tooltips=[
+        ("Read ID", "@read"),
+        ("Index", "@seq_start:@seq_end"),
+        ("Sequence", "@truncated_seq")
+    ])
+    p.add_tools(hover)
+    p.yaxis.visible = False
+
+    p.grid.grid_line_color = None
+
+    return plt
+
+
+def str_content_plot(df, mutation_results):
+    """Generate Bokeh plot of read content."""
+    for repeat in df['str_identifier'].unique().tolist():
+        filtered_df = df[df['str_identifier'] == repeat]
+        if (
+            filtered_df['varid'].values[0]
+            in mutation_results
+        ):
+            # Adding title and subtext
+            h3(repeat)
+            repeat_unit_desc = filtered_df['repeat_unit'].values[0]
+            p(f"Repeat Unit: {repeat_unit_desc}")
+
+            # Create Bokeh Plot for each haplotype
+            haplotypes = filtered_df['haplotype'].unique().tolist()
+            haplotypes.sort()
+
+            for haplotype in haplotypes:
+                filtered_haplotype_df = filtered_df[
+                    filtered_df['haplotype'] == haplotype
+                ]
+                if not filtered_haplotype_df.empty:
+                    # Generate read_count to use for height scaling
+                    read_count = len(filtered_haplotype_df['read_id'].unique())
+
+                    # for fewer than 20 reads, pad the plot height to ensure
+                    # the plot area is large enough to display them correctly
+                    plot_hpx = read_count * 40
+                    if read_count < 20:
+                        plot_hpx += 50
+                    plot_height = f"{plot_hpx}px"
+
+                    # create_report_content_plot() args:
+                    # df filtered on STR
+                    # df filtered on STR & haplotype
+                    EZChart(
+                        create_repeat_content_plot(
+                            filtered_df,
+                            filtered_haplotype_df,
+                            repeat_unit_desc
+                        ),
+                        theme='epi2melabs',
+                        height=plot_height)
+                p(""" """)  # Adds blank line between plots
+        else:
+            continue
+
+
 def make_report(
         read_lengths, params, versions, vcf, stranger, straglr,
-        stranger_annotation, args):
+        stranger_annotation, str_content_csv, args):
     """Put the STR plots into a report."""
     report = LabsReport(
         f"{args.sample_name} | {REPORT_TITLE}", WORKFLOW_NAME, params,
@@ -377,6 +561,9 @@ def make_report(
             ]
             summary_data.append(summary_vars)
 
+        sorted_data = natsorted(
+            summary_data, key=lambda x: (str(x[2][0]), str(x[3][0])))
+
         # Set up the tabs
         tabs = Tabs()
         with tabs.add_tab("Mutation", True):
@@ -415,7 +602,7 @@ def make_report(
                 for header in headers:
                     th(f"{header}")
             with tbody():
-                for record in summary_data:
+                for record in sorted_data:
                     with tr():
                         for item, badge_colour in record:
                             cell = td()
@@ -425,6 +612,47 @@ def make_report(
         span("Normal", cls="badge bg-primary")
         span("Pre-mutation", cls="badge bg-warning")
         span("Mutation", cls="badge bg-danger")
+
+    with report.add_section('STR content', 'STR content'):
+        p(
+            """
+            The tabs below contain short tandem repeat (STR) expansion plots for each
+            repeat genotyped in the sample. These plots display repeat units and
+            interruptions for each supporting read. Hover over the coloured bars to view
+            more detailed information for each read: the read identifier, position of
+            each repeat unit within the read, and the sequence content. Please note,
+            repeat content plots are displayed only for those repeats which fall in the
+            'Mutation' or 'Pre-mutation' ranges.
+            """
+        )
+        # Load and sort Pandas df
+        df_pre_sorting = pd.read_csv(str_content_csv)
+        df = df_pre_sorting.sort_values(by=[
+            'haplotype',
+            'str_seq_length'
+        ], ascending=False)
+        # Setup results for tabs
+        str_mutation_results = []
+        str_pre_mutation_results = []
+        # Append VARID only to results lists
+        for repeat in mutation_results:
+            str_mutation_results.append(repeat[0])
+        for repeat in pre_mutation_results:
+            str_pre_mutation_results.append(repeat[0])
+
+        # Set up the tabs
+        tabs = Tabs()
+        with tabs.add_tab("Mutation", True):
+            if not mutation_results:
+                p("There are no pathogenic results detected.")
+            else:
+                str_content_plot(df, str_mutation_results)
+
+        with tabs.add_tab("Pre-mutation", True):
+            if not pre_mutation_results:
+                p("There are no pre-mutation results detected.")
+            else:
+                str_content_plot(df, str_pre_mutation_results)
 
     with report.add_section('Quality Control Data', 'QC'):
         with Grid():
@@ -461,6 +689,7 @@ def main(args):
         args.stranger,
         args.straglr,
         args.stranger_annotation,
+        args.str_content,
         args
     )
 

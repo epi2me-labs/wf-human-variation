@@ -9,7 +9,7 @@ process call_str {
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path(repeat_bed)
     output:
-        tuple path("*.vcf.gz"), path ("*.tsv"), val(chr), optional: true, emit: straglr_output
+        tuple val(chr), path("*.vcf.gz"), path ("*.tsv"), optional: true, emit: straglr_output
     shell:
         '''
         { grep !{chr} -Fw !{repeat_bed} || true; } > repeats_subset.bed
@@ -34,13 +34,10 @@ process annotate_repeat_expansions {
     // annotate using Stranger
     label "wf_human_str"
     input:
-        tuple path(vcf), path (tsv), val (chr)
+        tuple val (chr), path(vcf), path(tsv)
         path(variant_catalogue_hg38)
     output:
-        tuple path("*.vcf.gz"), path("*.vcf.gz.tbi"), emit: annotated_vcf
-        path "*.tsv", emit: annotated_tsv
-        path "*_plot.tsv", emit: plot_tsv
-        path "*_annotated.tsv", emit: stranger_annotation
+        tuple val(chr), path("*.vcf.gz"), path("*.vcf.gz.tbi"), path("*_plot.tsv"), path("*_annotated.tsv"), emit: stranger_annotation
     script:
         """
         stranger -f ${variant_catalogue_hg38} ${vcf} \
@@ -54,14 +51,67 @@ process annotate_repeat_expansions {
 }
 
 
+process bam_region_filter {
+    // subset contig BAM to include only STR regions
+    input:
+        tuple val(chr), path(xam), path(xam_idx)
+        path (repeat_bed)
+    output:
+        tuple val(chr), path ("*str_regions.bam"), path("*str_regions.bam.bai"), emit: region_bam, optional: true
+    shell:
+        '''    
+        { grep !{chr} -Fw !{repeat_bed} || true; } > repeats_subset.bed
+
+        if [[ -s repeats_subset.bed ]]; then
+            samtools view -b -h -o !{chr}.wf_str_regions.bam -L repeats_subset.bed !{xam}
+            samtools index !{chr}.wf_str_regions.bam
+        else
+            echo "blank subset BED"
+        fi
+        '''
+}
+
+process bam_read_filter {
+    // subset contig STR regions BAM to include only supporting reads from straglr
+    input:
+        tuple val(chr), path(xam), path(xam_idx), path(vcf), path(straglr_tsv)
+    output:
+        tuple val(chr), path ("*str_reads.bam"), path("*str_reads.bam.bai"), emit: reads_bam
+    shell:
+        """
+        tail -n +3 !{straglr_tsv} | cut -f6 > reads_to_filter.txt
+        samtools view --write-index -N reads_to_filter.txt -o !{chr}.wf_str_reads.bam##idx##!{chr}.wf_str_reads.bam.bai !{xam}
+        """
+}
+
+process generate_str_content {
+    // extract content info from BAM and generate TSV files for plot data
+    input:
+        tuple val(chr), path(straglr_vcf), path(straglr_tsv), path(annotated_vcf), path(annotated_vcf_tbi), path(stranger_tsv), path(stranger_annotation), path (xam), path(xam_idx)
+        path (repeat_bed)
+    output:
+        path ("*str-content.csv"), emit: str_content, optional: true
+    script:
+        """
+        workflow-glue generate_str_content \
+            --straglr ${straglr_tsv} \
+            --stranger ${stranger_tsv} \
+            --chr ${chr} \
+            --repeat_bed ${repeat_bed} \
+            --str_reads_bam ${xam} 
+        """
+}
+
+
 process merge_tsv {
-    // merge the contig TSVs
+    // merge the contig TSVs/CSVs
     input:
         path (plot_tsv)
         path (straglr_tsv)
         path (stranger_tsv)
+        path (str_content_csv)
     output:
-        tuple path ("*plot.tsv"), path ("*straglr.tsv"), path ("*stranger.tsv")
+        tuple path ("*plot.tsv"), path ("*straglr.tsv"), path ("*stranger.tsv"), path ("*str-content-all.csv")
     script:
         """
         awk 'NR == 1 || FNR > 1' ${plot_tsv} >${params.sample_name}_plot.tsv
@@ -69,6 +119,7 @@ process merge_tsv {
         # remove the first line from straglr_tsv as it has a two-line header
         sed -i '1d' ${straglr_tsv}
         awk 'NR == 1 || FNR > 1' ${straglr_tsv} > ${params.sample_name}.wf_str.straglr.tsv
+        awk 'NR == 1 || FNR > 1' ${str_content_csv} > ${params.sample_name}_str-content-all.csv
         """
 }
 
@@ -95,6 +146,7 @@ process make_report {
         path(straglr_tsv) 
         path(plot_tsv)
         path(stranger_annotation)
+        path(str_content)
         path "versions.txt"
         path "params.json"
         path(bam_stats)
@@ -112,6 +164,7 @@ process make_report {
             --straglr ${straglr_tsv} \
             --stranger ${plot_tsv} \
             --stranger_annotation ${stranger_annotation} \
+            --str_content ${str_content} \
             --read_stats ${bam_stats}
         """
 }

@@ -840,7 +840,7 @@
         "SourceId": "NBK535148",
         "LocusStructure": "(NCG)*",
         "ReferenceRegion": "chr8:104588967-104588999",
-        "Disease": "ALS/OPDM1",
+        "Disease": "ALS_OPDM1",
         "NormalMax": 45,
         "PathologicMin": 60
     },
