@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CNV workflow now outputs an indexed VCF file to the output directory
 ### Changed
 - Legend symbols in STR genotpying plot
+- Unambiguous naming of bedMethyl files generated with `--mod`
+    - Unphased outputs will have the pattern `[sample_name].wf_mods.bedmethyl.gz`
+    - Phased outputs will have the pattern `[sample_name]_[1|2|ungrouped].wf_mods.bedmethyl.gz`
 ### Fixed
 - Report step failing if bcftools stats file has only some sub-sections
 - Clair3 ignoring the bed file
