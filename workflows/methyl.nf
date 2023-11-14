@@ -6,18 +6,18 @@ process modkit {
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         val options
     output:
-        path "${params.sample_name}*.bed.gz", emit: modkit_outputs
+        path "${params.sample_name}*.bedmethyl.gz", emit: modkit_outputs
 
     script:
     """
     modkit pileup \\
         ${alignment} \\
-        ${params.sample_name}.bed \\
+        ${params.sample_name}.wf_mods.bedmethyl \\
         --ref ${ref} \\
         --threads ${task.cpus} ${options}
     
     # Compress all
-    bgzip ${params.sample_name}.bed
+    bgzip ${params.sample_name}.wf_mods.bedmethyl
     """
 }
 
@@ -29,7 +29,7 @@ process modkit_phase {
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         val options
     output:
-        path "${params.sample_name}/${params.sample_name}*.bed.gz", emit: modkit_outputs
+        path "${params.sample_name}/${params.sample_name}*.bedmethyl.gz", emit: modkit_outputs
 
     script:
     // CW-2370: modkit saves in a directory when using --partition-tag rather than a single file
@@ -45,7 +45,9 @@ process modkit_phase {
     
     # Compress all
     for i in `ls ${params.sample_name}/`; do
-        bgzip ${params.sample_name}/*.bed
+        root_name=\$( basename \$i '.bed' )
+        mv ${params.sample_name}/\${root_name}.bed ${params.sample_name}/\${root_name}.wf_mods.bedmethyl
+        bgzip ${params.sample_name}/\${root_name}.wf_mods.bedmethyl
     done
     """
 }

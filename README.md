@@ -163,6 +163,9 @@ The primary outputs of the workflow include:
     * `<sample_name>.pass.cram` contains reads with `qscore >= threshold` (only pass reads are used to make downstream variant cals)
     * `<sample_name>.fail.cram` contains reads with `qscore < threshold`
 * if unaligned reads were provided, the workflow will output a CRAM file containing the alignments used to make the downstream variant calls
+* bedMethyl files per sample (`--mod`) either:
+    - Unphased with the pattern `[sample_name].wf_mods.bedmethyl.gz`
+    - Phased, with the pattern `[sample_name]_[1|2|ungrouped].wf_mods.bedmethyl.gz`
 
 The secondary outputs of the workflow include:
 * `{sample_name}.mapula.csv` and `{sample_name}.mapula.json` provide basic alignment metrics (primary and secondary counts, read N50, median accuracy)
