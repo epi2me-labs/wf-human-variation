@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - The SNP workflow will filter the final VCF to only return calls in the regions specified with `--bed`
     - Avoid clair3 calling variants in regions that flank those specified in the BED
+- Add a process to sanitise BED files
 ### Fixed
 - SNP subworkflow was ignoring BED file and analysing all regions
 - Report SV crashing when generating the size plots with only large indels
