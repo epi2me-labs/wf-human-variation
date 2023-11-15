@@ -37,7 +37,8 @@ include {
     eval_downsampling;
     downsampling;
     annotate_vcf as annotate_snp_vcf;
-    bed_filter
+    bed_filter;
+    sanitise_bed
     } from './modules/local/common'
 
 include {
@@ -236,8 +237,11 @@ workflow {
     using_user_bed = false
     if(params.bed){
         using_user_bed = true
-        bed = Channel.fromPath(params.bed, checkIfExists: true)
-        roi_filter_bed = Channel.fromPath(params.bed, checkIfExists: true)
+        // Sanitise the input BED file
+        input_bed = Channel.fromPath(params.bed, checkIfExists: true)
+
+        bed = sanitise_bed(input_bed, ref_channel)
+        roi_filter_bed = bed
     }
     else {
         bed = getAllChromosomesBed(ref_channel).all_chromosomes_bed

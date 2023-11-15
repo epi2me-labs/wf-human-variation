@@ -466,3 +466,19 @@ process bed_filter {
         tabix ${params.sample_name}.wf_${subworkflow}.${file_type}.gz
         """
 }
+
+process sanitise_bed {
+    // Sanitise a BED file:
+    // 1) check that chromosome labelling matches reference, exit if it doesn't
+    // 1) check and fix whitespace
+    // 2) sort by chromosome/position
+    input:
+        path(bed)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
+    output:
+        path "${bed.baseName}.sanitised.bed"
+    script:
+        """
+        sanitise_bed.py --ref ${ref} --bed ${bed} --bed_out ${bed.baseName}.sanitised.bed
+        """
+}
