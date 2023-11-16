@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clair3 ignoring the bed file
 - merge_haplotagged_contigs incorrectly generating intermediate CRAM when input is BAM
 - STR content generation failing due to forward slash in disease name in `variant_catalog_hg38.json`
+- Report name for the read alignment statistics now follows the pattern `[sample_name].wf-human-alignment-report.html`
 
 ## [v1.8.3]
 ### Fixed

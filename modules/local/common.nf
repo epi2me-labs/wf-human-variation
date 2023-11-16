@@ -306,9 +306,10 @@ process failedQCReport  {
         // file for each chromosome. This will display the intervals not in the context of the chromosome (so showing a peak in
         // a small region, and flat everywhere else) but only for the regions selected.
         def genome_wide_depth = params.bed ? "" : "--reference_fai ref.fasta.fai"
+        def report_name = "${params.sample_name}.wf-human-alignment-report.html"
         """
         workflow-glue report_al \\
-            --name wf-human-variation \\
+            --name ${report_name} \\
             --stats_dir readstats/ \\
             --flagstat_dir flagstats/ \\
             --depths_dir depths/ \\
@@ -340,9 +341,10 @@ process makeAlignmentReport {
         path "*.html"
 
     script:
+        def report_name = "${params.sample_name}.wf-human-alignment-report.html"
         """
         workflow-glue report_al \\
-            --name wf-human-variation \\
+            --name ${report_name} \\
             --stats_dir readstats/ \\
             --reference_fai ref.fasta.fai \\
             --flagstat_dir flagstats/ \\
