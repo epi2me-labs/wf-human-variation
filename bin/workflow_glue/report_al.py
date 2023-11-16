@@ -80,9 +80,9 @@ def main(args):
         sections.depths(report, depth_df)
 
     # write the report to the output file
-    report.write(f"{args.name}-alignment-report.html")
+    report.write(f"{args.name}")
 
-    logger.info(f"Written report to '{args.name}-alignment-report.html'.")
+    logger.info(f"Written report to '{args.name}'.")
 
 
 def argparser():
