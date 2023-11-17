@@ -3,8 +3,7 @@
 
 import json
 
-from dominate.tags import a, h4, h6, p
-from ezcharts.components.clinvar import load_clinvar_vcf
+from dominate.tags import a, h4, p
 from ezcharts.components.ezchart import EZChart
 from ezcharts.components.reports.labs import LabsReport
 from ezcharts.components.theme import LAB_head_resources
@@ -226,12 +225,6 @@ def main(args):
         vcf_df = read_vcf(sample_vcf)
         vcf_data.append((index, sample_vcf.split('.')[0], vcf_df))
 
-    # Input all ClinVar VCFs
-    clinvar_vcf_data = []
-    for index, sample_vcf in enumerate(args.clinvar_vcf):
-        clinvar_for_report = load_clinvar_vcf(sample_vcf)
-        clinvar_vcf_data.append((index, sample_vcf.split('.')[0], clinvar_for_report))
-
     # Create report file
     report = LabsReport(
         "Structural variants analysis", "wf-human-variation",
@@ -257,39 +250,6 @@ def main(args):
                     p("The workflow found no structural variants to report.")
                 else:
                     DataTable.from_pandas(get_sv_summary_table(vcf_df))
-
-    if not args.skip_annotation:
-        with report.add_section('ClinVar variant annotations', 'ClinVar'):
-            clinvar_docs_url = "https://www.ncbi.nlm.nih.gov/clinvar/docs/clinsig/"
-            p(
-                "The ",
-                a("SnpEff", href="https://pcingola.github.io/SnpEff/"),
-                " annotation tool has been used to annotate with",
-                a("ClinVar", href="https://www.ncbi.nlm.nih.gov/clinvar/"), '.'
-                " Variants with ClinVar annotations will appear in the ",
-                "table below, ranked according to their significance. 'Pathogenic', ",
-                "'Likely pathogenic', and 'Unknown significance' will be displayed ",
-                "first, in that order. Please note that variants classified as ",
-                "'Benign' or 'Likely benign' are not reported in this table, but ",
-                "will appear in the VCF output by the workflow. For further details ",
-                "on the terms in the 'Significance' column, please visit ",
-                a("this page", href=clinvar_docs_url),
-                '.')
-            tabs = Tabs()
-            for (index, sample_name, clinvar_data) in clinvar_vcf_data:
-                with tabs.add_tab(sample_name):
-                    # check if there are any ClinVar sites to report
-                    if clinvar_data.empty:
-                        h6('No ClinVar sites to report.')
-                    else:
-                        DataTable.from_pandas(
-                            clinvar_for_report,  export=True, use_index=False)
-    else:
-        # Annotations were skipped
-        with report.add_section('ClinVar variant annotations', 'ClinVar'):
-            p(
-                "This report was generated without annotations. To see"
-                " them, re-run the workflow without --skip_annotation.")
 
     with report.add_section('Karyogram', 'Karyogram'):
         karyoplot(vcf_data, args)
@@ -383,10 +343,6 @@ def argparser():
         nargs='+',
         required=True)
     parser.add_argument(
-        "--clinvar_vcf",
-        nargs='+',
-        required=False)
-    parser.add_argument(
         "--genome",
         default='hg38',
         required=False)
@@ -414,8 +370,5 @@ def argparser():
     parser.add_argument(
         "--versions", required=True,
         help="directory contained CSVs containing name,version.")
-    parser.add_argument(
-        "--skip_annotation", action="store_true",
-        help="Do not show ClinVar variants in report.")
 
     return parser

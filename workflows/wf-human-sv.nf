@@ -44,24 +44,20 @@ workflow bam {
 
         if (!params.annotation) {
             final_vcf = called.vcf.combine(called.vcf_index)
-            // no ClinVar VCF, pass empty VCF to makeReport
-            clinvar_vcf = Channel.empty()
-            empty_file = Channel.fromPath("${projectDir}/data/empty_clinvar.vcf")
+
             report = runReport(
                 called.vcf.collect(),
-                empty_file,
                 benchmark_result
             )
         }
         else {
             vcf_for_annotation = called.vcf.combine(called.vcf_index)
-            // do annotation and get a list of ClinVar variants for the report
+            // annotate with SnpEff
             annotations = annotate_sv_vcf(vcf_for_annotation, genome_build, "sv")
             final_vcf = annotations.final_vcf
-            clinvar_vcf = annotations.final_vcf_clinvar
+
             report = runReport(
                 final_vcf.map{it[0]},
-                annotations.final_vcf_clinvar,
                 benchmark_result
             )
         }
@@ -70,7 +66,6 @@ workflow bam {
         report = report.html.concat(
             final_vcf,
             benchmark_result,
-            clinvar_vcf
         )
         sniffles_vcf = called.vcf
         for_phasing = final_vcf
@@ -161,14 +156,12 @@ workflow variantCall {
 workflow runReport {
     take:
         vcf
-        clinvar_vcf
         eval_json
     main:
         software_versions = getVersions()
         workflow_params = getParams()
         report(
             vcf.collect(),
-            clinvar_vcf,
             eval_json,
             software_versions,
             workflow_params,
