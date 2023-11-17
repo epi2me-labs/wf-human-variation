@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [unreleased]
+### Changed
+- ClinVar annotation of SVs has been temporarily removed due to not being correctly incorporated. SnpEff annotations are still produced as part of the final SV VCF.
+
 ## [v1.9.0]
 ### Added
 - STR workflow report now includes additional plots which display repeat units and interruptions in each supporting read
