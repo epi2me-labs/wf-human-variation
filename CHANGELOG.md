@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Changed
 - ClinVar annotation of SVs has been temporarily removed due to not being correctly incorporated. SnpEff annotations are still produced as part of the final SV VCF.
+- New documentation
+### Removed
+- `--annotation_threads` parameter, as the SnpEff process does not support multithreading.
 
 ## [v1.9.0]
 ### Added

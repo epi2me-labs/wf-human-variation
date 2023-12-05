@@ -1,0 +1,124 @@
+{
+  "files": {
+    "workflow-alignment-stats-report": {
+      "filepath": "{{ alias }}.wf-human-alignment-report.html",
+      "title": "Report of the alignment statistics",
+      "description": "Report summarising the results of the alignment statistics for the sample.",
+      "mime-type": "text/html",
+      "optional": false,
+      "type": "per-sample"
+    },
+    "workflow-snv-report": {
+      "filepath": "{{ alias }}.wf-human-snp-report.html",
+      "title": "Report of the SNP workflow",
+      "description": "Report summarising the results of the SNP subworkflow for the sample.",
+      "mime-type": "text/html",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "workflow-sv-report": {
+      "filepath": "{{ alias }}.wf-human-sv-report.html",
+      "title": "Report of the SV workflow",
+      "description": "Report summarising the results of the SV subworkflow for the sample.",
+      "mime-type": "text/html",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "workflow-cnv-report": {
+      "filepath": "{{ alias }}.wf-human-cnv-report.html",
+      "title": "Report of the CNV workflow",
+      "description": "Report summarising the results of the CNV subworkflow for the sample.",
+      "mime-type": "text/html",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "workflow-str-report": {
+      "filepath": "{{ alias }}.wf-human-str-report.html",
+      "title": "Report of the STR workflow",
+      "description": "Report summarising the results of the short tandem repeat subworkflow for the sample.",
+      "mime-type": "text/html",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "snp-vcf": {
+      "filepath": "{{ alias }}.wf_snp.vcf.gz",
+      "title": "Short variant VCF",
+      "description": "VCF file with the SNPs for the sample.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "sv-vcf": {
+      "filepath": "{{ alias }}.wf_sv.vcf.gz",
+      "title": "Structural variant VCF",
+      "description": "VCF file with the SVs for the sample.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "phased-vcf": {
+      "filepath": "{{ alias }}.wf_human_variation.phased.vcf.gz",
+      "title": "SNP and SV phased VCF",
+      "description": "VCF file with the jointly phased SNPs and SVs for the sample.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "cnv-vcf": {
+      "filepath": "{{ alias }}.wf_cnv.vcf.gz",
+      "title": "Copy number variants VCF",
+      "description": "VCF file with the CNV for the sample.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "mod-bedmethyl": {
+      "filepath": "{{ alias }}.wf_mods.bedmethyl.gz",
+      "title": "Modified bases BEDMethyl",
+      "description": "BED file with the aggregated modification counts for the sample.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "str-vcf": {
+      "filepath": "{{ alias }}.wf_str.vcf.gz",
+      "title": "Short tandem repeat VCF",
+      "description": "VCF file with the STR sites for the sample.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "alignment": {
+      "filepath": "{{ alias }}.{{ format }}",
+      "title": "Alignment file",
+      "description": "BAM or CRAM file with the aligned reads for the sample, generated when the input file is unaligned.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },    
+    "alignment-index": {
+      "filepath": "{{ alias }}.{{ format }}.{{ index_format }}",
+      "title": "Alignment file index",
+      "description": "The index of the resulting BAM or CRAM file with the reads for the sample, generated when the input file is unaligned.",
+      "mime-type": "application/octet-stream",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "haplotagged-alignment": {
+      "filepath": "{{ alias }}.haplotagged.{{ format }}",
+      "title": "Haplotagged alignment file",
+      "description": "BAM or CRAM file with the haplotagged reads for the sample.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },    
+    "haplotagged-alignment-index": {
+      "filepath": "{{ alias }}.haplotagged.{{ format }}.{{ index_format }}",
+      "title": "Haplotagged alignment file index",
+      "description": "The index of the resulting BAM or CRAM file with the haplotagged reads for the sample.",
+      "mime-type": "application/octet-stream",
+      "optional": true,
+      "type": "per-sample"
+    }
+  }
+}

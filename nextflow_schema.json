@@ -2,7 +2,8 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/epi2me-labs/wf-human-variation/master/nextflow_schema.json",
     "title": "epi2me-labs/wf-human-variation",
-    "description": "Basecalling, SNV calling, SV calling, modified base calling of human samples.",
+    "workflow_title": "Human variation workflow",
+    "description": "Basecalling; SNV, SV and CNV calling, modified base calling, and STR genotyping of human samples.",
     "demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo.tar.gz",
     "aws_demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo/aws.nextflow.config",
     "url": "https://github.com/epi2me-labs/wf-human-variation",
@@ -241,8 +242,41 @@
                 "sniffles_args": {
                     "type": "string",
                     "description": "Additional command line arguments to pass to the Sniffles2 process",
+                    "hidden": true,
+                    "help_text": "The additional command line arguments will be passed directly to Sniffles2; ensure to use the right commands for the version and from command line provide them as follow: `--sniffles_args=\"--non-germline\"`."
+                }
+            }
+        },
+        "sv_benchmark_options": {
+            "title": "Structural variant benchmarking options",
+            "type": "object",
+            "description": "Options specific to automated benchmarking of the SV calling subworkflow.",
+            "properties": {
+                "sv_benchmark": {
+                    "type": "boolean",
+                    "description": "Benchmark called structural variants.",
+                    "help_text": "If this option is selected, automated benchmarking of structural variant calls will be carried out using Truvari.",
+                    "default": false
+                },
+                "sv_benchmark_vcf": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Override truthset VCF for benchmarking structural variants.",
+                    "help_text": "This option will use a custom VCF in place of the one bundled with the default 'NIST_SVs_Integration_v0.6' truth set. A Tabix index is required and will be expected to have the same path as the VCF with a '.tbi' extension.",
+                    "hidden": true
+                },
+                "sv_benchmark_bed": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Override truthset BED for benchmarking structural variants.",
+                    "help_text": "This option will use a custom BED in place of the one bundled with the default 'NIST_SVs_Integration_v0.6' truth set.",
                     "hidden": true
                 }
+            },
+            "dependencies": {
+                "sv_benchmark": [
+                    "sv"
+                ]
             }
         },
         "snp_options": {
@@ -266,13 +300,15 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Use longphase for final phasing of output variants (experimental).",
-                    "hidden": true
+                    "hidden": true,
+                    "help_text": "The default behaviour of the workflow is to use longphase for the final variant phasing. Setting this to false will have the workflow to run [whatshap](https://whatshap.readthedocs.io/) instead."
                 },
                 "use_longphase_intermediate": {
                     "type": "boolean",
                     "default": true,
                     "description": "Use longphase for intermediate phasing.",
-                    "hidden": true
+                    "hidden": true,
+                    "help_text": "The default behaviour of the workflow is to use longphase for the intermediate variant phasing. Setting this to false will have the workflow to run [whatshap](https://whatshap.readthedocs.io/) instead."
                 },
                 "clair3_model_path": {
                     "type": "string",
@@ -379,12 +415,6 @@
             "type": "object",
             "description": "Options related to the modified bases aggregation subworkflow.",
             "properties": {
-                "modkit_args": {
-                    "title": "Modkit additional arguments",
-                    "type": "string",
-                    "description": "The additional options for modkit.",
-                    "help_text": "This is an advanced option to allow running modkit with custom settings. The arguments specified in this option will fully override all options set by the workflow."
-                },
                 "phase_mod": {
                     "type": "boolean",
                     "default": false,
@@ -397,6 +427,13 @@
                     "default": false,
                     "description": "Require modkit to call strand-aware modifications.",
                     "help_test": "By default strand calls are collapsed (strand reported as '.'). Enabling this will force stranding to be considered when calling modifications, creating one output per modification per strand and the report will be tabulated by both modification and strand."
+                },
+                "modkit_args": {
+                    "title": "Modkit additional arguments",
+                    "type": "string",
+                    "description": "The additional options for modkit.",
+                    "hidden": true,
+                    "help_text": "This is an advanced option to allow running modkit with custom settings. The arguments specified in this option will fully override all options set by the workflow. To provide custom arguments to `modkit` from command line proceed as follow: `--modkit_args=\"--preset traditional\"`"
                 }
             }
         },
@@ -466,38 +503,6 @@
                 }
             },
             "required": []
-        },
-        "sv_benchmark_options": {
-            "title": "Structural variant benchmarking options",
-            "type": "object",
-            "description": "Options specific to automated benchmarking of the SV calling subworkflow.",
-            "properties": {
-                "sv_benchmark": {
-                    "type": "boolean",
-                    "description": "Benchmark called structural variants.",
-                    "help_text": "If this option is selected, automated benchmarking of structural variant calls will be carried out using Truvari.",
-                    "default": false
-                },
-                "sv_benchmark_vcf": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "Override truthset VCF for benchmarking structural variants.",
-                    "help_text": "This option will use a custom VCF in place of the one bundled with the default 'NIST_SVs_Integration_v0.6' truth set. A Tabix index is required and will be expected to have the same path as the VCF with a '.tbi' extension.",
-                    "hidden": true
-                },
-                "sv_benchmark_bed": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "Override truthset BED for benchmarking structural variants.",
-                    "help_text": "This option will use a custom BED in place of the one bundled with the default 'NIST_SVs_Integration_v0.6' truth set.",
-                    "hidden": true
-                }
-            },
-            "dependencies": {
-                "sv_benchmark": [
-                    "sv"
-                ]
-            }
         },
         "advanced_options": {
             "title": "Advanced Options",
@@ -592,7 +597,7 @@
                 },
                 "basecaller_args": {
                     "type": "string",
-                    "description": "Additional command line arguments to pass to the basecaller process."
+                    "description": "Additional command line arguments to pass to the basecaller process. To provide custom arguments to `dorado` from command line proceed as follow: `--basecaller_args=\"--no-trim\"`"
                 }
             },
             "required": []
@@ -633,11 +638,6 @@
                     "type": "integer",
                     "default": 4,
                     "description": "Total number of threads to use in modkit modified base calling (limited by config executor cpus)"
-                },
-                "annotation_threads": {
-                    "type": "integer",
-                    "default": 8,
-                    "description": "Set max number of threads to use for annotating VCFs using SnpEff (limited by config executor cpus)"
                 }
             }
         },
@@ -730,8 +730,16 @@
             "type": "boolean"
         }
     },
-    "docs": {
-        "intro": "## Introduction\n\nThis workflow uses [Clair3](https://www.github.com/HKU-BAL/Clair3) for calling small\nvariants from long reads. Clair3 makes the best of two methods: pileup (for fast\ncalling of variant candidates in high confidence regions), and full-alignment\n(to improve precision of calls of more complex candidates).\n\nThis workflow uses [sniffles2](https://github.com/fritzsedlazeck/Sniffles) for\ncalling structural variants.\n\nThis workflow uses [modkit](https://github.com/nanoporetech/modkit) to\naggregate modified base calls into a [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) file.\n\nThis workflow uses [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado)\nfor basecalling `pod5` or `fast5` signal data.\n\nThis workflow uses [QDNAseq](https://bioconductor.org/packages/release/bioc/html/QDNAseq.html) for calling copy number variants.\n\nThis workflow uses a fork of [Straglr](https://github.com/philres/straglr) for genotyping short tandem repeat expansions.\n",
-        "links": "## Useful links\n\n* [Nextflow](https://www.nextflow.io/)\n* [Docker](https://www.docker.com/products/docker-desktop)\n* [Singularity](https://sylabs.io/singularity/)\n\n"
+    "resources": {
+        "recommended": {
+            "cpus": 32,
+            "memory": "128GB"
+        },
+        "minimum": {
+            "cpus": 12,
+            "memory": "32GB"
+        },
+        "run_time": "Variable depending on whether it is targeted sequencing or whole genome sequencing, as well as coverage and the individual analyses requested. For instance, a 90X human sample run (options: `--snp --sv --mod --str --cnv --phased_vcf --joint_phasing --phase_mod --sex male`) takes less than 8h with recommended resources.",
+        "arm_support": false
     }
 }

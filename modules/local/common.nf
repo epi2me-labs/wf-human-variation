@@ -390,7 +390,7 @@ process annotate_vcf {
     // variants - if any variants are present in this file, it is used to populate a table in 
     // the report.
     label "snpeff_annotation"
-    cpus {params.annotation_threads}
+    cpus 1
     input:
         tuple path("input.vcf.gz"), path("input.vcf.gz.tbi")
         val(genome)
