@@ -644,6 +644,7 @@ workflow {
             // bam_fail can only exist if basecalling was performed
             bam_fail.flatten(),
             bam_stats.flatten(),
+            bam_flag.flatten(),
             mosdepth_stats.flatten(),
             mosdepth_summary.flatten(),
             mosdepth_perbase.flatten(),

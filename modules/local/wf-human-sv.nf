@@ -81,24 +81,12 @@ process sortVCF {
     input:
         file vcf
     output:
-        path "*.wf_sv.vcf", emit: vcf
+        path "${params.sample_name}.wf_sv.vcf.gz", emit: vcf_gz
+        path "${params.sample_name}.wf_sv.vcf.gz.tbi", emit: vcf_tbi
     script:
     """
-    vcfsort $vcf > ${params.sample_name}.wf_sv.vcf
-    """
-}
-
-
-process indexVCF {
-    label "wf_human_sv"
-    cpus 1
-    input:
-        file vcf
-    output:
-        path "${vcf}.gz", emit: vcf_gz
-        path "${vcf}.gz.tbi", emit: vcf_tbi
-    """
-    cat $vcf | bgziptabix ${vcf}.gz
+    bcftools sort -m 2G -T ./ -O z $vcf > ${params.sample_name}.wf_sv.vcf.gz
+    tabix -p vcf ${params.sample_name}.wf_sv.vcf.gz
     """
 }
 

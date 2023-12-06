@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New documentation
 ### Removed
 - `--annotation_threads` parameter, as the SnpEff process does not support multithreading.
+### Fixed
+- Truncated SV VCF header generated from `vcfsort`.
+- `sed` crashing with I/O error in some instances.
+- Missing flagstats file in output directory.
+
 
 ## [v1.9.0]
 ### Added

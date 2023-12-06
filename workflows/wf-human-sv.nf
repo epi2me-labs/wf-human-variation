@@ -5,7 +5,6 @@ include {
     sniffles2;
     filterCalls;
     sortVCF;
-    indexVCF;
     getVersions;
     getParams;
     report;
@@ -145,11 +144,10 @@ workflow variantCall {
         sniffles2(filterBam.out.xam, tr_bed, reference)
         filterCalls(sniffles2.out.vcf, mosdepth_stats, target_bed)
         sortVCF(filterCalls.out.vcf)
-        indexVCF(sortVCF.out.vcf)
 
     emit:
-        vcf = indexVCF.out.vcf_gz
-        vcf_index = indexVCF.out.vcf_tbi
+        vcf = sortVCF.out.vcf_gz
+        vcf_index = sortVCF.out.vcf_tbi
 }
 
 
