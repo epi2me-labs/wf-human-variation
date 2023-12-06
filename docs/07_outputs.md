@@ -13,7 +13,7 @@ Outputs files may be aggregated including information for all samples or provide
 | Copy number variants VCF | {{ alias }}.wf_cnv.vcf.gz | VCF file with the CNV for the sample. | per-sample |
 | Modified bases BEDMethyl | {{ alias }}.wf_mods.bedmethyl.gz | BED file with the aggregated modification counts for the sample. | per-sample |
 | Short tandem repeat VCF | {{ alias }}.wf_str.vcf.gz | VCF file with the STR sites for the sample. | per-sample |
-| Alignment file | {{ alias }}.{{ format }} | BAM or CRAM file with the aligned reads for the sample, generated when the input file is unaligned. | per-sample |
-| Alignment file index | {{ alias }}.{{ format }}.{{ index_format }} | The index of the resulting BAM or CRAM file with the reads for the sample, generated when the input file is unaligned. | per-sample |
-| Haplotagged alignment file | {{ alias }}.haplotagged.{{ format }} | BAM or CRAM file with the haplotagged reads for the sample. | per-sample |
-| Haplotagged alignment file index | {{ alias }}.haplotagged.{{ format }}.{{ index_format }} | The index of the resulting BAM or CRAM file with the haplotagged reads for the sample. | per-sample |
+| Alignment file | {{ alias }}.cram | CRAM or BAM file with the aligned reads for the sample, generated when the input file is unaligned. | per-sample |
+| Alignment file index | {{ alias }}.cram.crai | The index of the resulting CRAM or BAM file with the reads for the sample, generated when the input file is unaligned. | per-sample |
+| Haplotagged alignment file | {{ alias }}.haplotagged.cram | CRAM or BAM file with the haplotagged reads for the sample. | per-sample |
+| Haplotagged alignment file index | {{ alias }}.haplotagged.cram.crai | The index of the resulting CRAM or BAM file with the haplotagged reads for the sample. | per-sample |
