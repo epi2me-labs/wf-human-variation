@@ -116,9 +116,8 @@ process merge_tsv {
         """
         awk 'NR == 1 || FNR > 1' ${plot_tsv} >${params.sample_name}_plot.tsv
         awk 'NR == 1 || FNR > 1' ${stranger_tsv} >${params.sample_name}_stranger.tsv
-        # remove the first line from straglr_tsv as it has a two-line header
-        sed -i '1d' ${straglr_tsv}
-        awk 'NR == 1 || FNR > 1' ${straglr_tsv} > ${params.sample_name}.wf_str.straglr.tsv
+        # Ignore the first line from straglr_tsv as it has a two-line header. Avoid sed altogether
+        awk 'NR == 2 || FNR > 2' ${straglr_tsv} > ${params.sample_name}.wf_str.straglr.tsv
         awk 'NR == 1 || FNR > 1' ${str_content_csv} > ${params.sample_name}_str-content-all.csv
         """
 }
