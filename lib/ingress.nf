@@ -240,6 +240,7 @@ process checkBamHeaders {
     label "ingress"
     label "wf_common"
     cpus 1
+    memory "2 GB"
     input: tuple val(meta), path("input_dir/reads*.bam")
     output:
         // set the two env variables by `eval`-ing the output of the python script
@@ -257,6 +258,7 @@ process mergeBams {
     label "ingress"
     label "wf_common"
     cpus 3
+    memory "4 GB"
     input: tuple val(meta), path("input_bams/reads*.bam")
     output: tuple val(meta), path("reads.bam")
     shell:
@@ -271,6 +273,7 @@ process catSortBams {
     label "ingress"
     label "wf_common"
     cpus 4
+    memory "4 GB"
     input: tuple val(meta), path("input_bams/reads*.bam")
     output: tuple val(meta), path("reads.bam")
     script:
@@ -285,6 +288,7 @@ process sortBam {
     label "ingress"
     label "wf_common"
     cpus 3
+    memory "4 GB"
     input: tuple val(meta), path("reads.bam")
     output: tuple val(meta), path("reads.sorted.bam")
     script:
@@ -298,6 +302,7 @@ process bamstats {
     label "ingress"
     label "wf_common"
     cpus 3
+    memory "4 GB"
     input:
         tuple val(meta), path("reads.bam")
     output:
@@ -414,6 +419,7 @@ process move_or_compress_fq_file {
     label "ingress"
     label "wf_common"
     cpus 1
+    memory "2 GB"
     input:
         // don't stage `input` with a literal because we check the file extension
         tuple val(meta), path(input)
@@ -439,6 +445,7 @@ process fastcat {
     label "ingress"
     label "wf_common"
     cpus 3
+    memory "2 GB"
     input:
         tuple val(meta), path("input")
         val extra_args
@@ -737,6 +744,7 @@ process validate_sample_sheet {
     cpus 1
     label "ingress"
     label "wf_common"
+    memory "2 GB"
     input:
         path "sample_sheet.csv"
         val required_sample_types
