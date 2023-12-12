@@ -8,10 +8,18 @@ process phase_all {
     // Phase VCF for a contig
     cpus 4
     input:
-        tuple path(snp_vcf, stageAs: "SNP/snp.vcf.gz"), path(snp_vcf_tbi, stageAs: "SNP/snp.vcf.gz.tbi")
-        tuple path(sv_vcf, stageAs: "SV/sv.vcf.gz"), path(sv_vcf_tbi, stageAs: "SV/sv.vcf.gz.tbi"), val(is_sv_vcf)
-        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
-        tuple val(contig), path(xam), path(xam_idx)
+        tuple val(contig),
+            path(xam),
+            path(xam_idx),
+            path(snp_vcf, stageAs: "SNP/snp.vcf.gz"),
+            path(snp_vcf_tbi, stageAs: "SNP/snp.vcf.gz.tbi"),
+            path(sv_vcf, stageAs: "SV/sv.vcf.gz"),
+            path(sv_vcf_tbi, stageAs: "SV/sv.vcf.gz.tbi"),
+            val(is_sv_vcf),
+            path(ref),
+            path(ref_idx),
+            path(ref_cache),
+            env(REF_PATH)
     output:
         path("phased_${contig}.vcf.gz"), emit: vcf
         path("phased_${contig}.vcf.gz.tbi"), emit: tbi
@@ -95,7 +103,10 @@ workflow phasing {
         }
 
         // Phase everything
-        phase_all(clair_vcf, struct_vcf, reference_ch, haplotagged_bams)
+        haplotagged_bams
+            .combine(clair_vcf)
+            .combine(struct_vcf)
+            .combine(reference_ch) | phase_all
 
         // Collect phased files
         vcfs = phase_all.out.vcf.collect()
