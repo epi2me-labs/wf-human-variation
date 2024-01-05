@@ -170,8 +170,10 @@ workflow snp {
             non_var_gvcf,
             candidate_beds.map {it->it[1] }.collect())
 
-        // phase_vcf requires haplotagged bam to perform appropriate phasing
-        if (params.phase_vcf) {
+        // phased requires haplotagged bam to perform appropriate phasing
+        // perform internal phasing only if snp+phase is requested, but not sv.
+        // Otherwise use final joint phasing only.
+        if (params.phased) {
             data = merge_pileup_and_full_vars.out.merged_vcf
                 .combine(haplotagged_bam).combine(ref)
             
@@ -192,11 +194,12 @@ workflow snp {
             ref,
             final_vcfs.collect(),
             gvcfs.collect(),
-            params.phase_vcf,
+            params.phased,
             make_chunks.out.contigs_file,
             cmd_file)
 
-        if (params.phase_vcf){
+        // Compute haploblocks if phasing required and SV not required.
+        if (params.phased && (!params.sv || params.output_separate_phased)){
             hp_snp_blocks = haploblocks_snp(clair_final.final_vcf, 'snp')
         } else {
             hp_snp_blocks = Channel.empty()

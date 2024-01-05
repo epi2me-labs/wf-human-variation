@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [unreleased]
+### Changed
+- `--phase_vcf`, `--joint_phasing` and `--phase_mod` are now deprecated for `--phased`; see the [README](README.md#9-phasing-variants) for more details.
+- `--use_longphase_intermediate` is now deprecated, and `--use_longphase false` will use `whatshap` throughout consistently
+- Running `--phase --snp --use_longphase false` will now phase indels too
+
 ## [v1.9.2]
 ### Fixed
 - `--joint_phasing` generating single-chromosome VCF files.

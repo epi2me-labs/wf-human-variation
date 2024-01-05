@@ -21,6 +21,7 @@
 | basecaller_cfg | string | Name of the model to use for converting signal and selecting a small variant calling model. | Required for basecalling and/or small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. Only a subset of these models can be used for basecalling with the workflow, these are shown at the top of the list. Models that begin with 'clair3:' cannot be used for basecalling and are included to allow SNP calling on existing datasets. You should select 'custom' to override the basecaller_cfg with basecaller_model_path. | dna_r10.4.1_e8.2_400bps_sup@v4.1.0 |
 | bed | string | An optional BED file enumerating regions to process for variant calling. |  |  |
 | annotation | boolean | SnpEff annotation. | If this option is unselected, VCFs will not be annotated with SnpEff. | True |
+| phased | boolean | Perform phasing. | This option enables phasing of SV, SNP and modifications, depending on which sub-workflow has been chosen; see [README](README.md#9-phasing-variants) for more details. | False |
 | out_dir | string | Directory for output of all workflow results. |  | output |
 
 
@@ -42,7 +43,6 @@
 
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
-| phase_vcf | boolean | Output phasing information in VCF (SNP and SV workflows). | By default the final VCF outputs from SNP and SV workflows are not phased, although some intermediates are approximately phased. | False |
 | include_all_ctgs | boolean | Call for variants on all sequences in the reference, otherwise small variants will only be called on chr{1..22,X,Y}. | Enabling this option will call for variants on all contigs of the input reference sequence. Typically this option is not required as standard human reference sequences contain decoy and unplaced contigs that are usually omitted for the purpose of variant calling. This option might be useful for non-standard reference sequence databases. | False |
 
 
@@ -50,7 +50,6 @@
 
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
-| phase_mod | boolean | Generate phased modification data. | Enabling this will output three [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) files of modified sites for each haplotype (named SAMPLE.N, where N can be 1, 2 or untagged) by leveraging phased reads generated using the small variant calling subworkflow. This option will automatically enable the small variant and modified subworkflows. | False |
 | force_strand | boolean | Require modkit to call strand-aware modifications. |  | False |
 
 
@@ -69,7 +68,6 @@
 |--------------------------|------|-------------|------|---------|
 | depth_intervals | boolean | Output a bedGraph file with entries for each genomic interval featuring homogeneous depth. | The output [bedGraph](https://genome.ucsc.edu/goldenPath/help/bedgraph.html) file will have an entry for each genomic interval in which all positions have the same alignment depth. By default this workflow outputs summary depth information from your aligned reads. Per-base depth outputs are slower to generate but may be required for some downstream applications. | False |
 | GVCF | boolean | Enable to output a gVCF file in addition to the VCF outputs (experimental). | By default the the workflow outputs a VCF file containing only records where a variant has been detected. Enabling this option will output additionally a gVCF with records spanning all reference positions regardless of whether a variant was detected in the sample. | False |
-| joint_phasing | boolean | Jointly phase SNPs, small indels and, optionally, SVs. | By default, the phasing is performed for SNPs and SVs separately. This option allows the joint phasing of both variant classes at the end of the process, allowing consistency in the method and of the resulting phased sites. This step uses exclusively longphase. | False |
 | downsample_coverage | boolean | Downsample the coverage to along the genome. | This options will trigger a downsampling of the read alignments to the target coverage specified by --downsample_coverage_target. Downsampling will make the workflow run faster but could lead to non-deterministic variant calls. | False |
 | downsample_coverage_target | number | Average coverage or reads to use for the analyses. | This options will set the target coverage for the downsampling stage, if downsampling has been enabled. | 60 |
 

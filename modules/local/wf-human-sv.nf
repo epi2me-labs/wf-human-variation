@@ -32,7 +32,8 @@ process sniffles2 {
         def tr_arg = tr_bed.name != 'OPTIONAL_FILE' ? "--tandem-repeats ${tr_bed}" : ''
         def sniffles_args = params.sniffles_args ?: ''
         def min_sv_len = params.min_sv_length ? "--minsvlen ${params.min_sv_length}" : ""
-        def phase = params.phase_vcf ? "--phase" : ""
+        // Perform internal phasing only if snp not requested; otherwise, use joint phasing.
+        def phase = params.phased && (!params.snp || params.output_separate_phased) ? "--phase" : ""
     """
     sniffles \
         --threads $task.cpus \

@@ -116,7 +116,7 @@ workflow phasing {
         vcf_concat_all(vcfs, tbis)
 
         // Define joint haploblocks
-        haploblocks_joint(vcf_concat_all.out, 'joint')
+        haploblocks_joint(vcf_concat_all.out, 'human_variation')
 
     emit:
         vcf_concat_all.out.combined.concat(haploblocks_joint.out.phase_blocks)
