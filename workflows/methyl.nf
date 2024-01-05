@@ -95,7 +95,7 @@ workflow mod {
         // CW-2370: modkit doesn't require to treat each haplotype separately, as
         // you simply provide --partition-tag HP and it will automatically generate
         // three distinct output files, one for each haplotype and one for the untagged regions.
-        if (params.phase_mod){
+        if (params.phased){
             out = modkit_phase(alignment, reference.collect(), modkit_options)
         } else {
             out = modkit(alignment, reference.collect(), modkit_options)

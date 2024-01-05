@@ -60,12 +60,21 @@ workflow bam {
                 benchmark_result
             )
         }
+        // If both params.sv and params.snp are requested, emit only final joint phased
+        if (params.phased && params.snp && !params.output_separate_phased){
+            report = report.html.concat(
+                benchmark_result
+            )
+        // Otherwise, emit internally phased VCF
+        } else {
+            report = report.html.concat(
+                final_vcf,
+                benchmark_result
+            )
+        }
 
     emit:
-        report = report.html.concat(
-            final_vcf,
-            benchmark_result,
-        )
+        report = report
         sniffles_vcf = called.vcf
         for_phasing = final_vcf
 }

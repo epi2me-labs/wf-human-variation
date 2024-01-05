@@ -116,6 +116,7 @@ Find related protocols in the [Nanopore community](https://community.nanoporetec
 | basecaller_cfg | string | Name of the model to use for converting signal and selecting a small variant calling model. | Required for basecalling and/or small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. Only a subset of these models can be used for basecalling with the workflow, these are shown at the top of the list. Models that begin with 'clair3:' cannot be used for basecalling and are included to allow SNP calling on existing datasets. You should select 'custom' to override the basecaller_cfg with basecaller_model_path. | dna_r10.4.1_e8.2_400bps_sup@v4.1.0 |
 | bed | string | An optional BED file enumerating regions to process for variant calling. |  |  |
 | annotation | boolean | SnpEff annotation. | If this option is unselected, VCFs will not be annotated with SnpEff. | True |
+| phased | boolean | Perform phasing. | This option enables phasing of SV, SNP and modifications, depending on which sub-workflow has been chosen; see [README](README.md#9-phasing-variants) for more details. | False |
 | out_dir | string | Directory for output of all workflow results. |  | output |
 
 
@@ -137,7 +138,6 @@ Find related protocols in the [Nanopore community](https://community.nanoporetec
 
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
-| phase_vcf | boolean | Output phasing information in VCF (SNP and SV workflows). | By default the final VCF outputs from SNP and SV workflows are not phased, although some intermediates are approximately phased. | False |
 | include_all_ctgs | boolean | Call for variants on all sequences in the reference, otherwise small variants will only be called on chr{1..22,X,Y}. | Enabling this option will call for variants on all contigs of the input reference sequence. Typically this option is not required as standard human reference sequences contain decoy and unplaced contigs that are usually omitted for the purpose of variant calling. This option might be useful for non-standard reference sequence databases. | False |
 
 
@@ -145,7 +145,6 @@ Find related protocols in the [Nanopore community](https://community.nanoporetec
 
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
-| phase_mod | boolean | Generate phased modification data. | Enabling this will output three [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) files of modified sites for each haplotype (named SAMPLE.N, where N can be 1, 2 or untagged) by leveraging phased reads generated using the small variant calling subworkflow. This option will automatically enable the small variant and modified subworkflows. | False |
 | force_strand | boolean | Require modkit to call strand-aware modifications. |  | False |
 
 
@@ -164,7 +163,6 @@ Find related protocols in the [Nanopore community](https://community.nanoporetec
 |--------------------------|------|-------------|------|---------|
 | depth_intervals | boolean | Output a bedGraph file with entries for each genomic interval featuring homogeneous depth. | The output [bedGraph](https://genome.ucsc.edu/goldenPath/help/bedgraph.html) file will have an entry for each genomic interval in which all positions have the same alignment depth. By default this workflow outputs summary depth information from your aligned reads. Per-base depth outputs are slower to generate but may be required for some downstream applications. | False |
 | GVCF | boolean | Enable to output a gVCF file in addition to the VCF outputs (experimental). | By default the the workflow outputs a VCF file containing only records where a variant has been detected. Enabling this option will output additionally a gVCF with records spanning all reference positions regardless of whether a variant was detected in the sample. | False |
-| joint_phasing | boolean | Jointly phase SNPs, small indels and, optionally, SVs. | By default, the phasing is performed for SNPs and SVs separately. This option allows the joint phasing of both variant classes at the end of the process, allowing consistency in the method and of the resulting phased sites. This step uses exclusively longphase. | False |
 | downsample_coverage | boolean | Downsample the coverage to along the genome. | This options will trigger a downsampling of the read alignments to the target coverage specified by --downsample_coverage_target. Downsampling will make the workflow run faster but could lead to non-deterministic variant calls. | False |
 | downsample_coverage_target | number | Average coverage or reads to use for the analyses. | This options will set the target coverage for the downsampling stage, if downsampling has been enabled. | 60 |
 
@@ -304,7 +302,7 @@ Some components work better withing certain ranges of coverage, and the user mig
 The workflow implements a deconstructed version of [Clair3](https://github.com/HKU-BAL/Clair3) (v1.0.4) to call germline variants.
 This workflow takes advantage of the parallel nature of Nextflow, providing optimal efficiency in high-performance, distributed systems. The workflow will automatically call small variants (SNPs and indels), collect statistics, annotate them with [SnpEff](https://pcingola.github.io/SnpEff/) (and additionally for SNPs, ClinVar details), and create a report summarising the findings.
 
-If desired, the workflow can perform phasing of structural variants by using the `--phase_vcf` option. This will lead the workflow to use [longphase](https://github.com/twolinin/longphase) to perform phasing of the variants, with the option to use [whatshap](https://whatshap.readthedocs.io/) instead by setting `--use_longphase false --use_longphase_intermediate false`. The phasing will also generate a GFF file with the annotation of the phase blocks, facilitating the detection of these within genome visualizers.
+If desired, the workflow can perform phasing of structural variants by using the `--phased` option. This will lead the workflow to use [longphase](https://github.com/twolinin/longphase) to perform phasing of the variants, with the option to use [whatshap](https://whatshap.readthedocs.io/) instead by setting `--use_longphase false`. The phasing will also generate a GFF file with the annotation of the phase blocks, facilitating the detection of these within genome visualizers.
 
 ### 5. Structural variant (SV) calling with Sniffles2
 
@@ -312,7 +310,7 @@ The workflow allows for calling of SVs using long-read sequencing data with [Sni
 The workflow will perform SV calling, filtering and generation of a report.
 Optionally, the workflow can also evaluate calls on HG002 against a truth set (provided the input data was aligned to HG19).
 The SV workflow takes an optional `--tr_bed` option to specify tandem repeats in the reference sequence --- see the [sniffles](https://github.com/fritzsedlazeck/Sniffles) documentation for more information.
-SVs can be phased using `--phase_vcf`. However, this will cause the workflow to run SNP analysis, as SV phasing relies on the haplotagged reads generated in this stage.
+SVs can be phased using `--phased`. However, this will cause the workflow to run SNP analysis, as SV phasing relies on the haplotagged reads generated in this stage.
 
 ### 6. Modified base calling with modkit
 
@@ -320,7 +318,7 @@ Modified base calling can be performed by specifying `--mod`. The workflow will 
 The workflow will automatically check whether the files contain the appropriate `MM`/`ML` tags, required for running [modkit pileup](https://nanoporetech.github.io/modkit/intro_bedmethyl.html). If the tags are not found, the workflow will not run the individual analysis, but will still run the other subworkflows requested by the user.
 The default behaviour of the workflow is to run modkit with the `--cpg --combine-strands` options set. It is possible to report strand-aware modifications by providing `--force_strand`, which will trigger modkit to run in default mode. The resulting bedMethyl will include modifications for each site on each strand separately.
 The modkit run can be fully customized by providing `--modkit_args`. This will override any preset, and allow full control over the run of modkit.
-Haplotype-resolved aggregated counts of modified bases can be obtained with the `--phase_mod` option. This will generate three distinct BEDMethyl files with the naming pattern `{{ alias }}_{{ haplotype }}.wf_mods.bedmethyl.gz`, where `haplotype` can be `1`, `2` or `ungrouped`.
+Haplotype-resolved aggregated counts of modified bases can be obtained with the `--phased` option. This will generate three distinct BEDMethyl files with the naming pattern `{{ alias }}_{{ haplotype }}.wf_mods.bedmethyl.gz`, where `haplotype` can be `1`, `2` or `ungrouped`.
 
 ### 7. Copy number variants (CNV) calling with QDNASeq
 
@@ -333,10 +331,19 @@ STR genotyping is performed using a fork of [straglr](https://github.com/philres
 The STR workflow takes a required `--sex` option which is `male` or `female`. If `--sex` is not specified, the workflow will default to `female`. Please be aware that incorrect sex assignment will result in the wrong number of calls for all repeats on chrX.
 In addition to a gzipped VCF file containing STRs found in the dataset, the workflow emits a TSV straglr output containing reads spanning STRs, and a haplotagged BAM. 
 
-### 9. Joint phasing of SNP, small Indels and SV
-The workflow can perform joint physical phasing with `longphase` of SNP, Indels and SVs by setting the `--joint_phasing` option.
-This will trigger the generation of a single phased VCF file, that will include all the variants from both the `--snp` and `--sv`
-workflows.
+### 9. Phasing variants
+The workflow can perform joint physical phasing with `longphase` of SNP, Indels and SVs by setting the `--phased --snp --sv` options.
+The behaviour of the phasing is summarised in the below table:
+
+|  |  |  |  | phased SNP VCF | phased SV VCF | Joint SV+SNP phased VCF | Phased bedMethyl |
+|---------|--------|---------|------------|--------|--------|--------|--------|
+| `--snp` | `--sv` | `--mod` | `--phased` |  |  | &check; | &check; |
+| `--snp` | `--sv` |  | `--phased` |  |  | &check; |  |
+| `--snp` |  |  | `--phased` | &check; |  |  |
+|  | `--sv` |  | `--phased` |  | &check; |  |  |  |
+|  |  | `--mod` | `--phased` |  |  |  | &check; |
+
+In some circumstances, users may wish to keep the separate VCF files before joint phasing. This can be done with `--output_separate_phased`.
 
 ### 9. Variant annotation
 Annotation will be performed automatically by the SNP and SV subworkflows, and can be disabled by the user with `--annotation false`. The workflow will annotate the variants using [SnpEff](https://pcingola.github.io/SnpEff/), and currently only support the human hg19 and hg38 genomes. Additionally, the workflow will add the [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) annotations for the SNP variants.

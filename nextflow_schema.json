@@ -184,6 +184,12 @@
                     "help_text": "If this option is unselected, VCFs will not be annotated with SnpEff.",
                     "default": true
                 },
+                "phased": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Perform phasing.",
+                    "help_text": "This option enables phasing of SV, SNP and modifications, depending on which sub-workflow has been chosen; see [README](README.md#9-phasing-variants) for more details."
+                },
                 "out_dir": {
                     "title": "Output directory",
                     "type": "string",
@@ -284,12 +290,6 @@
             "type": "object",
             "description": "Options specific to the small variant calling subworkflow.",
             "properties": {
-                "phase_vcf": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Output phasing information in VCF (SNP and SV workflows).",
-                    "help_text": "By default the final VCF outputs from SNP and SV workflows are not phased, although some intermediates are approximately phased."
-                },
                 "include_all_ctgs": {
                     "type": "boolean",
                     "default": false,
@@ -302,13 +302,6 @@
                     "description": "Use longphase for final phasing of output variants (experimental).",
                     "hidden": true,
                     "help_text": "The default behaviour of the workflow is to use longphase for the final variant phasing. Setting this to false will have the workflow to run [whatshap](https://whatshap.readthedocs.io/) instead."
-                },
-                "use_longphase_intermediate": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Use longphase for intermediate phasing.",
-                    "hidden": true,
-                    "help_text": "The default behaviour of the workflow is to use longphase for the intermediate variant phasing. Setting this to false will have the workflow to run [whatshap](https://whatshap.readthedocs.io/) instead."
                 },
                 "clair3_model_path": {
                     "type": "string",
@@ -415,12 +408,6 @@
             "type": "object",
             "description": "Options related to the modified bases aggregation subworkflow.",
             "properties": {
-                "phase_mod": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Generate phased modification data.",
-                    "help_text": "Enabling this will output three [bedMethyl](https://www.encodeproject.org/data-standards/wgbs/) files of modified sites for each haplotype (named SAMPLE.N, where N can be 1, 2 or untagged) by leveraging phased reads generated using the small variant calling subworkflow. This option will automatically enable the small variant and modified subworkflows."
-                },
                 "force_strand": {
                     "title": "Force strand",
                     "type": "boolean",
@@ -523,12 +510,6 @@
                     "description": "Enable to output a gVCF file in addition to the VCF outputs (experimental).",
                     "help_text": "By default the the workflow outputs a VCF file containing only records where a variant has been detected. Enabling this option will output additionally a gVCF with records spanning all reference positions regardless of whether a variant was detected in the sample."
                 },
-                "joint_phasing": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Jointly phase SNPs, small indels and, optionally, SVs.",
-                    "help_text": "By default, the phasing is performed for SNPs and SVs separately. This option allows the joint phasing of both variant classes at the end of the process, allowing consistency in the method and of the resulting phased sites. This step uses exclusively longphase."
-                },
                 "downsample_coverage": {
                     "type": "boolean",
                     "default": false,
@@ -547,13 +528,14 @@
                     "description": "Downsample if the bam effective coverage / target coverage if greater than this value.",
                     "help_text": "By default, if the coverage of the input alignments is within 1.1x the target coverage, downsampling will not be performed even if it was enabled. This is to avoid triggering the downsampling of alignments when coverage is already close to the target coverage.",
                     "hidden": true
+                },
+                "output_separate_phased": {
+                    "type": "boolean",
+                    "default": false,
+                    "hidden": true,
+                    "description": "Keep separate phasing files.",
+                    "help_text": "This option enables to save individually phased SV and SNP VCF files even when `--phased --sv --snv` are provided."
                 }
-            },
-            "dependencies": {
-                "joint_phasing": [
-                    "snp",
-                    "sv"
-                ]
             }
         },
         "advanced_basecalling_options": {

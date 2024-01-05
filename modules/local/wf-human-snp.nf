@@ -169,7 +169,7 @@ process phase_contig_haplotag {
     output:
         tuple val(contig), path("${contig}_hp.bam"), path("${contig}_hp.bam.bai"), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
     script:
-    if (params.use_longphase_intermediate)
+    if (params.use_longphase)
         """
         # REF_PATH points to the reference cache and allows faster parsing of CRAM files
         longphase phase --ont -o phased_${contig} \
@@ -227,7 +227,7 @@ process phase_contig {
     output:
         tuple val(contig), path(xam), path(xam_idx), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
     script:
-        if (params.use_longphase_intermediate)
+        if (params.use_longphase)
         """
         echo "Using longphase for phasing"
         longphase phase --ont -o phased_${contig} \
@@ -497,49 +497,45 @@ process aggregate_all_variants{
     output:
         tuple path("${params.sample_name}.wf_snp.vcf.gz"), path("${params.sample_name}.wf_snp.vcf.gz.tbi"), emit: final_vcf
         tuple path("${params.sample_name}.wf_snp.gvcf.gz"), path("${params.sample_name}.wf_snp.gvcf.gz.tbi"), emit: final_gvcf, optional: true
-    shell:
-        '''
-        prefix="merge"
-        phase_vcf=!{params.phase_vcf}
-        if [[ $phase_vcf == "true" ]]; then
-            prefix="phased"
-        fi
+    script:
+        def prefix = params.phased ? "phased" : "merge" 
+        """
         ls merge_output/*.vcf.gz | parallel --jobs 4 "bgzip -d {}"
 
-        pypy $(which clair3.py) SortVcf \
+        pypy \$(which clair3.py) SortVcf \
             --input_dir merge_output \
             --vcf_fn_prefix $prefix \
-            --output_fn !{params.sample_name}.wf_snp.vcf \
-            --sampleName !{params.sample_name} \
-            --ref_fn !{ref} \
-            --cmd_fn !{command} \
-            --contigs_fn !{contigs}
+            --output_fn ${params.sample_name}.wf_snp.vcf \
+            --sampleName ${params.sample_name} \
+            --ref_fn ${ref} \
+            --cmd_fn ${command} \
+            --contigs_fn ${contigs}
 
-        if [ "$( bgzip -fdc !{params.sample_name}.wf_snp.vcf.gz | grep -v '#' | wc -l )" -eq 0 ]; then
+        if [ "\$( bgzip -fdc ${params.sample_name}.wf_snp.vcf.gz | grep -v '#' | wc -l )" -eq 0 ]; then
             echo "[INFO] Exit in all contigs variant merging"
             exit 0
         fi
 
         # TODO: this could be a separate process
-        if [ "!{params.GVCF}" == "true" ]; then
-            pypy $(which clair3.py) SortVcf \
+        if [ "${params.GVCF}" == "true" ]; then
+            pypy \$(which clair3.py) SortVcf \
                 --input_dir merge_outputs_gvcf \
                 --vcf_fn_prefix merge \
                 --vcf_fn_suffix .gvcf \
                 --output_fn tmp.gvcf \
-                --sampleName !{params.sample_name} \
-                --ref_fn !{ref} \
-                --cmd_fn !{command} \
-                --contigs_fn !{contigs}
+                --sampleName ${params.sample_name} \
+                --ref_fn ${ref} \
+                --cmd_fn ${command} \
+                --contigs_fn ${contigs}
 
                 # Reheading samples named "SAMPLE" to params.sample_name. If no 
-                echo "SAMPLE" "!{params.sample_name}" > rename.txt
-                bcftools reheader -s rename.txt tmp.gvcf.gz > !{params.sample_name}.wf_snp.gvcf.gz
-                bcftools index -t !{params.sample_name}.wf_snp.gvcf.gz && rm tmp.gvcf.gz rename.txt
+                echo "SAMPLE" "${params.sample_name}" > rename.txt
+                bcftools reheader -s rename.txt tmp.gvcf.gz > ${params.sample_name}.wf_snp.gvcf.gz
+                bcftools index -t ${params.sample_name}.wf_snp.gvcf.gz && rm tmp.gvcf.gz rename.txt
         fi
 
         echo "[INFO] Finish calling, output file: merge_output.vcf.gz"
-        '''
+        """
 }
 
 

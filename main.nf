@@ -68,13 +68,13 @@ workflow {
         log.error (colors.red + "The workflow now uses modkit instead of the deprecated modbam2bed. Please use --mod instead of --methyl to enable modkit." + colors.reset)
         can_start = false
     }
-    if (params.containsKey('phase_methyl')) {
-        log.error (colors.red + "The workflow now uses modkit instead of the deprecated modbam2bed. Please use --phase_mod instead of --phase_methyl to enable phasing of modkit results." + colors.reset)
+    if (params.containsKey('phase_methyl') || params.containsKey('phase_mod') || params.containsKey('phase_vcf')) {
+        log.error (colors.red + "phase_methyl, phase_mod and phase_vcf are deprecated. Please use --phased instead to enable phasing of modkit results." + colors.reset)
         can_start = false
     }
 
-    if (!params.snp && !params.sv && !params.mod && !params.cnv && !params.str && !params.phase_mod) {
-        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --cnv, --str, --mod, --phase_mod]" + colors.reset)
+    if (!params.snp && !params.sv && !params.mod && !params.cnv && !params.str) {
+        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --cnv, --str, --mod]" + colors.reset)
         can_start = false
     }
 
@@ -89,7 +89,7 @@ workflow {
     }
 
     // check snp has basecaller config for clair3 model lookup
-    if(params.snp || params.phase_mod) {
+    if(params.snp || params.phased) {
         if(!params.basecaller_cfg && !params.clair3_model_path) {
             throw new Exception(colors.red + "You must provide a basecaller profile with --basecaller_cfg <profile> to ensure the right Clair3 model is chosen!" + colors.reset)
         }
@@ -112,7 +112,7 @@ workflow {
     }
 
     // Trigger haplotagging
-    def run_haplotagging = params.str || params.phase_mod || params.joint_phasing || params.phase_vcf ? true : false
+    def run_haplotagging = params.str || params.phased ? true : false
 
     // Check ref and decompress if needed
     ref = null
@@ -208,15 +208,15 @@ workflow {
 
     // Check if the genome build in the BAM is suitable for any workflows that have restrictions
     // NOTE getGenome will exit non-zero if the build is neither hg19 or hg38, so it shouldn't be called
-    // if annotation is skipped for snp, sv and phase_mod, to allow other genomes (including non-human)
+    // if annotation is skipped for snp, sv and phased, to allow other genomes (including non-human)
     // to be processed
 
     // always getGenome for CNV and STR
     if (params.cnv || params.str) {
         genome_build = getGenome(bam_channel)
     }
-    // getGenome for STP, SV and phase_mod as long as annotation not disabled
-    else if ((params.snp || params.sv || params.phase_mod) && params.annotation) {
+    // getGenome for SNP, SV and phased as long as annotation is not disabled
+    else if ((params.snp || params.sv || params.phased) && params.annotation) {
         genome_build = getGenome(bam_channel)
     }
     else {
@@ -433,7 +433,7 @@ workflow {
                 .flatten()
                 .collect() | failedQCReport
     
-    // Set up BED for wf-human-snp, wf-human-str or --phase_mod
+    // Set up BED for wf-human-snp, wf-human-str or run_haplotagging
     // CW-2383: we first call the SNPs to generate an haplotagged bam file for downstream analyses
     if (params.snp || run_haplotagging) {
         if(using_user_bed) {
@@ -563,19 +563,25 @@ workflow {
         // Prepare the report
         snp_report = report_snp(vcf_stats[0], clinvar_vcf)
 
-        // Emit the outputs
-        output_snp(
+        // If both sv and snp are reqeuested, then emit only joint phased VCF.
+        if (params.phased && params.sv && !params.output_separate_phased){
+            snp_report
+                .concat(clair3_results)
+                .concat(clinvar_vcf)
+                .flatten() | output_snp
+        // Otherwise emit the internally phased only.
+        } else {
             snp_report
                 .concat(clair3_results)
                 .concat(final_vcf)
                 .concat(clinvar_vcf)
-                .flatten()
-            )
+                .flatten() | output_snp
+        }
     }
 
     // wf-human-mod
     // Validate modified bam
-    if (params.mod || params.phase_mod){
+    if (params.mod){
         if (run_haplotagging){
             validate_modbam(clair_vcf.hp_bams, ref_channel)
         } else {
@@ -625,7 +631,8 @@ workflow {
         output_str(results_str)
     }
 
-    if (params.joint_phasing){
+    // Perform joint phasing only if params.sv and params.snp are requested.
+    if (params.phased && params.snp && params.sv){
         joint_phasing = phasing(final_vcf, sniffles_phasing_vcf, ref_channel, clair_vcf.str_bams)
     } else {
         joint_phasing = Channel.empty()
