@@ -600,7 +600,6 @@ workflow {
 
         // Save the other as input, keeping only the necessary elements
         validated_bam = validation_results.modbam.map{cram, crai, meta, code -> [cram, crai, meta]}
-        validation_results.modbam.ifEmpty{it -> log.warn "Alignment files do not contain modified base tags. Skipping mod aggregation and reporting."}
 
         results = mod(validated_bam, ref_channel)
         mod_stats = results.modkit.flatten()

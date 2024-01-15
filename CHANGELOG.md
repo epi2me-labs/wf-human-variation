@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--use_longphase_intermediate` is now deprecated, and `--use_longphase false` will use `whatshap` throughout consistently
 - Running `--phase --snp --use_longphase false` will now phase indels too
 
+### Fixed
+- Spurious warning for missing MM/ML tags when a BAM fails the coverage threshold
+
 ## [v1.9.2]
 ### Fixed
 - `--joint_phasing` generating single-chromosome VCF files.
