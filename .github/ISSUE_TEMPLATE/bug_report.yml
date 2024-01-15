@@ -122,3 +122,22 @@ body:
       render: shell
     validations:
       required: false
+  - type: dropdown
+    id: run-demo
+    attributes:
+      label: Were you able to successfully run the latest version of the workflow with the demo data?
+      description: For CLI execution, were you able to successfully run the workflow using the demo data available in the [Install and run](./README.md#install-and-run) section of the `README.md`? For execution in the EPI2ME application, were you able to successfully run the workflow via the "Use demo data" button?
+      options:
+        - yes
+        - no
+        - other (please describe below)
+    validations:
+      required: true
+  - type: textarea
+    id: demo-other
+    attributes:
+      label: Other demo data information
+      render: shell
+    validations:
+      required: false
+

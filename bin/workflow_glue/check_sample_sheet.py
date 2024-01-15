@@ -43,7 +43,7 @@ def main(args):
     ]
 
     if not os.path.exists(args.sample_sheet) or not os.path.isfile(args.sample_sheet):
-        sys.stdout.write(f"Could not open sample sheet '{args.sample_sheet}'.")
+        sys.stdout.write("Could not open sample sheet file.")
         sys.exit()
 
     try:
