@@ -91,7 +91,14 @@ Find related protocols in the [Nanopore community](https://community.nanoporetec
 
 
 
-## Inputs
+## Input example
+
+<!---Example of input directory structure, delete and edit as appropriate per workflow.--->
+This workflow accepts a path to a single BAM file (aligned or unaligned) as input.
+
+
+
+## Input parameters
 
 ### Workflow Options
 
@@ -114,6 +121,7 @@ Find related protocols in the [Nanopore community](https://community.nanoporetec
 | ref | string | Path to a reference FASTA file. | Reference against which to compare reads for variant calling. |  |
 | old_ref | string | Reference FASTA file for CRAM input (only required if the CRAM requires realignment) | You do not need to provide this unless the workflow specifically asks you to. If your input CRAM headers do not match the metadata of the input reference, the workflow will assume you want to realign your reads to the new input reference. CRAM files are compressed using the reference, so the read sequences cannot be realigned without the old reference. |  |
 | basecaller_cfg | string | Name of the model to use for converting signal and selecting a small variant calling model. | Required for basecalling and/or small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. Only a subset of these models can be used for basecalling with the workflow, these are shown at the top of the list. Models that begin with 'clair3:' cannot be used for basecalling and are included to allow SNP calling on existing datasets. You should select 'custom' to override the basecaller_cfg with basecaller_model_path. | dna_r10.4.1_e8.2_400bps_sup@v4.1.0 |
+| bam_min_coverage | number | Minimum read coverage required to run analysis. |  | 20 |
 | bed | string | An optional BED file enumerating regions to process for variant calling. |  |  |
 | annotation | boolean | SnpEff annotation. | If this option is unselected, VCFs will not be annotated with SnpEff. | True |
 | phased | boolean | Perform phasing. | This option enables phasing of SV, SNP and modifications, depending on which sub-workflow has been chosen; see [README](README.md#9-phasing-variants) for more details. | False |
@@ -202,7 +210,7 @@ Find related protocols in the [Nanopore community](https://community.nanoporetec
 
 ## Outputs
 
-Outputs files may be aggregated including information for all samples or provided per sample. Per-sample files will be prefixed with respective aliases and represented below as {{ alias }}.
+Output files may be aggregated including information for all samples or provided per sample. Per-sample files will be prefixed with respective aliases and represented below as {{ alias }}.
 
 | Title | File path | Description | Per sample or aggregated |
 |-------|-----------|-------------|--------------------------|

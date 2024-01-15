@@ -1,4 +1,4 @@
-Outputs files may be aggregated including information for all samples or provided per sample. Per-sample files will be prefixed with respective aliases and represented below as {{ alias }}.
+Output files may be aggregated including information for all samples or provided per sample. Per-sample files will be prefixed with respective aliases and represented below as {{ alias }}.
 
 | Title | File path | Description | Per sample or aggregated |
 |-------|-----------|-------------|--------------------------|
