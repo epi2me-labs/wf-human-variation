@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--phase_vcf`, `--joint_phasing` and `--phase_mod` are now deprecated for `--phased`; see the [README](README.md#9-phasing-variants) for more details.
 - `--use_longphase_intermediate` is now deprecated, and `--use_longphase false` will use `whatshap` throughout consistently
 - Running `--phase --snp --use_longphase false` will now phase indels too
+- `readStats` reports metrics on the downsampled BAM when `--downsample_coverage` is requested.
 
 ### Fixed
 - Spurious warning for missing MM/ML tags when a BAM fails the coverage threshold

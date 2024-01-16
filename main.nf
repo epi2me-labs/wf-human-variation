@@ -256,11 +256,6 @@ workflow {
     } else {
         mosdepth_perbase = Channel.from("$projectDir/data/OPTIONAL_FILE")
     }
-    
-    // readStats for alignment and QC -- passed into wf-snp :/
-    readStats(bam_channel, bed, ref_channel)
-    bam_stats = readStats.out.read_stats
-    bam_flag = readStats.out.flagstat
 
     if (params.mapula) {
         mapula(bam_channel, bed, ref_channel)
@@ -410,6 +405,16 @@ workflow {
             mosdepth_perbase = Channel.from("$projectDir/data/OPTIONAL_FILE")
         }
     }
+
+    // Run readStats depending on the downsampling, if requested.
+    if (params.downsample_coverage){
+        readStats(pass_bam_channel, bed, ref_channel)
+    // Otherwise, use input bam
+    } else {
+        readStats(bam_channel, bed, ref_channel)
+    }
+    bam_stats = readStats.out.read_stats
+    bam_flag = readStats.out.flagstat
 
     // Create reports for pass and fail channels
     // Create passing bam report
