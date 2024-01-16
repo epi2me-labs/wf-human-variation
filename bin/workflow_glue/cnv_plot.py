@@ -12,6 +12,7 @@ from ezcharts.layout.snippets import Stats
 from ezcharts.plots import Plot, util
 from ezcharts.plots.distribution import histplot
 import ezcharts.plots.ideogram as ideo
+import numpy as np
 import pandas as pd
 from pkg_resources import resource_filename
 from .util import wf_parser  # noqa: ABS101
@@ -130,6 +131,13 @@ def process_qdna(qdnaseq_results):
     # get the most frequent seg count for each chromosome
     aggregate_segs = d.groupby(['chr'])['segs'].agg(pd.Series.mode)
     dict_of_calls = aggregate_segs.to_dict()
+
+    # the above could result in the most frequent seg count appearing more than
+    # once for a given chromosome, so replace with a 'U' in these cases to
+    # represent an 'undetermined' seg
+    for key, value in dict_of_calls.items():
+        if isinstance(value, np.ndarray):
+            dict_of_calls[key] = 'U'
 
     return d, dict_of_calls
 
@@ -371,8 +379,11 @@ def make_report(
 
     with report.add_section(
             'Chromosome Copy Summary', 'Summary'):
+        # don't include 'Undetermined' category if not needed
+        conversion = {0: -2, 1: -1, 2: 0, 3: 1, 4: 2, "Undetermined": "U"}
+        if 'U' not in chr_calls.values():
+            conversion.pop('Undetermined')
 
-        conversion = {0: -2, 1: -1, 2: 0, 3: 1, 4: 2}
         with table(cls="table"):
             with thead():
                 for copies, cnv_call in conversion.items():
@@ -385,23 +396,34 @@ def make_report(
                         for chrom, call in chr_calls.items():
                             if call == cnv_call:
                                 count += 1
-                                if call > 0:
+                                if call == "U":
                                     cell.add(
                                         span(
                                             chrom,
-                                            cls="badge bg-danger"))
-                                elif call < 0:
-                                    cell.add(
-                                        span(
-                                            chrom,
-                                            cls="badge bg-primary"))
+                                            cls="badge bg-warning"))
                                 else:
-                                    cell.add(
-                                        span(
-                                            chrom,
-                                            cls="badge bg-light text-dark"))
+                                    if call > 0:
+                                        cell.add(
+                                            span(
+                                                chrom,
+                                                cls="badge bg-danger"))
+                                    elif call < 0:
+                                        cell.add(
+                                            span(
+                                                chrom,
+                                                cls="badge bg-primary"))
+                                    else:
+                                        cell.add(
+                                            span(
+                                                chrom,
+                                                cls="badge bg-light text-dark"))
                         if count == 0:
                             cell.add("-")
+
+        if 'U' in chr_calls.values():
+            p("""N.B. Chromosomes are reported as having undetermined copy number
+                if the output from QDNAseq is ambiguous. Please see the plots
+                below for more information on individual chromosomes.""")
 
     with report.add_section(
             'Ideoplot', 'Ideoplot'):
