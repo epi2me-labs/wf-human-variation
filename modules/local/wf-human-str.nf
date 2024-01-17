@@ -3,7 +3,9 @@ import groovy.json.JsonBuilder
 process call_str {
     // first subset the repeats BED file, then use this to do straglr genotyping
     label "wf_human_str"
-    cpus 1
+    // Occasionally, straglr shows 150% of usage; give two cores to prevent the issue. 
+    cpus 2
+    memory 4.GB
     input:
         tuple val(chr), path(xam), path(xam_idx)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
@@ -21,6 +23,7 @@ process call_str {
                 -v !{chr}_tmp.vcf \
                 --sex !{params.sex} !{xam} !{ref} \
                 --min_support 1 \
+                --threads 1 \
                 --min_cluster_size 1
             cat !{chr}_tmp.vcf | vcfstreamsort | bgziptabix !{chr}_straglr.vcf.gz
         else
@@ -33,6 +36,8 @@ process call_str {
 process annotate_repeat_expansions {
     // annotate using Stranger
     label "wf_human_str"
+    cpus 1
+    memory 4.GB
     input:
         tuple val (chr), path(vcf), path(tsv)
         path(variant_catalogue_hg38)
@@ -53,6 +58,8 @@ process annotate_repeat_expansions {
 
 process bam_region_filter {
     // subset contig BAM to include only STR regions
+    cpus 1
+    memory 4.GB
     input:
         tuple val(chr), path(xam), path(xam_idx)
         path (repeat_bed)
@@ -73,6 +80,8 @@ process bam_region_filter {
 
 process bam_read_filter {
     // subset contig STR regions BAM to include only supporting reads from straglr
+    cpus 1
+    memory 4.GB
     input:
         tuple val(chr), path(xam), path(xam_idx), path(vcf), path(straglr_tsv)
     output:
@@ -86,6 +95,8 @@ process bam_read_filter {
 
 process generate_str_content {
     // extract content info from BAM and generate TSV files for plot data
+    cpus 1
+    memory 4.GB
     input:
         tuple val(chr), path(straglr_vcf), path(straglr_tsv), path(annotated_vcf), path(annotated_vcf_tbi), path(stranger_tsv), path(stranger_annotation), path (xam), path(xam_idx)
         path (repeat_bed)
@@ -105,6 +116,8 @@ process generate_str_content {
 
 process merge_tsv {
     // merge the contig TSVs/CSVs
+    cpus 1
+    memory 4.GB
     input:
         path (plot_tsv)
         path (straglr_tsv)
@@ -125,6 +138,8 @@ process merge_tsv {
 
 process merge_vcf {
     // merge the contig VCFs
+    cpus { params.threads < 2 ? 2 : params.threads }
+    memory { (1.GB * params.threads) + 1.GB }
     input:
         path (vcfs)
         path (vcf_indexes)
@@ -132,7 +147,7 @@ process merge_vcf {
         tuple path ("*str.vcf.gz"), path("*str.vcf.gz.tbi"), emit: final_vcf
     script:
         """
-        bcftools concat ${vcfs} > ${params.sample_name}.wf_str.vcf
+        bcftools concat --threads ${task.cpus} ${vcfs} > ${params.sample_name}.wf_str.vcf
         bgzip ${params.sample_name}.wf_str.vcf
         tabix ${params.sample_name}.wf_str.vcf.gz
         """
@@ -140,6 +155,8 @@ process merge_vcf {
 
 
 process make_report {
+    cpus 1
+    memory 16.GB
     input:
         path(vcf)
         path(straglr_tsv) 

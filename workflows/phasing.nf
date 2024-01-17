@@ -3,10 +3,15 @@ include {
     haploblocks as haploblocks_joint
 } from '../modules/local/common.nf'
 
+def phaser_memory = params.use_longphase ? [8.GB, 32.GB, 56.GB] : [4.GB, 8.GB, 12.GB]
 
 process phase_all {
     // Phase VCF for a contig
     cpus 4
+    // Define memory from phasing tool and number of attempt
+    memory { phaser_memory[task.attempt - 1] }
+    maxRetries 3
+    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     input:
         tuple val(contig),
             path(xam),
@@ -26,13 +31,13 @@ process phase_all {
     script:
         // Define option for longphase
         def sv_option = is_sv_vcf ? "--sv-file sv.vcf" : ""
-        def sv_preparation = is_sv_vcf ? "bcftools view -r ${contig} -O v ${sv_vcf} > sv.vcf" : ""
+        def sv_preparation = is_sv_vcf ? "bcftools view --threads ${task.cpus} -r ${contig} -O v ${sv_vcf} > sv.vcf" : ""
         // Longphase requires SNPs to perform joint phasing
         """
         echo "Using longphase for phasing"
 
         # Extract contig of interest
-        bcftools view -r ${contig} -O v ${snp_vcf} > snp.vcf
+        bcftools view --threads ${task.cpus} -r ${contig} -O v ${snp_vcf} > snp.vcf
 
         # Same for the SV if available, otherwise this line will be empty
         ${sv_preparation}
@@ -55,7 +60,7 @@ process phase_all {
 
         # Combine with the SV, if present.
         if [ -e tmp_${contig}_SV.vcf.gz ]; then
-            bcftools concat -a -O u tmp_${contig}.vcf.gz tmp_${contig}_SV.vcf.gz | bcftools sort -O z - > phased_${contig}.vcf.gz
+            bcftools concat --threads ${task.cpus} -a -O u tmp_${contig}.vcf.gz tmp_${contig}_SV.vcf.gz | bcftools sort -O z - > phased_${contig}.vcf.gz
             tabix -f -p vcf phased_${contig}.vcf.gz
         else
             mv tmp_${contig}.vcf.gz phased_${contig}.vcf.gz
@@ -68,15 +73,18 @@ process phase_all {
 process vcf_concat_all {
     // Phase VCF for a contig
     // Emit directly since it is the only output from this stage
+    cpus 3
+    memory 4.GB
     input:
         path(phased_vcfs, stageAs: "phased/*")
         path(phased_tbis, stageAs: "phased/*")
     output:
         tuple path("${params.sample_name}.wf_human_variation.phased.vcf.gz"), path("${params.sample_name}.wf_human_variation.phased.vcf.gz.tbi"), emit: combined
     script:
+        def concat_threads = params.threads == 1 ? 1 : params.threads - 1
         """
         # Prepare correct input file
-        bcftools concat -O u phased/*.vcf.gz | bcftools sort -O z - > ${params.sample_name}.wf_human_variation.phased.vcf.gz
+        bcftools concat --threads ${concat_threads} -O u phased/*.vcf.gz | bcftools sort -O z - > ${params.sample_name}.wf_human_variation.phased.vcf.gz
         tabix -p vcf ${params.sample_name}.wf_human_variation.phased.vcf.gz
         """
 }

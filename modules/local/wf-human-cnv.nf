@@ -4,6 +4,9 @@ import groovy.json.JsonBuilder
 process callCNV {
     label "wf_cnv"
     cpus 1
+    memory { 16.GB * task.attempt }
+    maxRetries 1
+    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     // publish everything except the cnv_vcf to qdna_seq directory
     publishDir = [
         path: { "${params.out_dir}/qdna_seq" },
@@ -64,6 +67,7 @@ process getParams {
 
 process makeReport {
     cpus 1
+    memory 12.GB
     input:
         path(read_stats)
         tuple path(cnv_calls), val(cnv_files), path(noise_plot), path(isobar_plot)

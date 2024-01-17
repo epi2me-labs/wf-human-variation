@@ -1,6 +1,8 @@
 import groovy.json.JsonBuilder
 
 process cram_cache {
+    cpus 1
+    memory 4.GB
     input:
         path reference
     output:
@@ -16,6 +18,7 @@ process cram_cache {
 
 process index_ref_fai {
     cpus 1
+    memory 4.GB
     input:
         file reference
     output:
@@ -27,6 +30,7 @@ process index_ref_fai {
 
 process index_ref_gzi {
     cpus 1
+    memory 4.GB
     input:
         file reference
     output:
@@ -39,6 +43,7 @@ process index_ref_gzi {
 // NOTE -f required to compress symlink
 process decompress_ref {
     cpus 1
+    memory 4.GB
     input:
         file compressed_ref
     output:
@@ -52,6 +57,9 @@ process decompress_ref {
 //NOTE grep MOSDEPTH_TUPLE if changing output tuple
 process mosdepth {
     cpus 2
+    memory {4.GB * task.attempt}
+    maxRetries 2
+    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
         file target_bed
@@ -89,6 +97,10 @@ process mosdepth {
 
 
 process mapula {
+    cpus 1
+    memory { 4.GB * task.attempt }
+    maxRetries 2
+    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
         path target_bed
@@ -107,6 +119,7 @@ process mapula {
 process readStats {
     label "wf_common"
     cpus 4
+    memory 4.GB
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
         path target_bed
@@ -139,6 +152,7 @@ process publish_artifact {
 // todo https://github.com/mdshw5/pyfaidx/pull/164
 process getAllChromosomesBed {
     cpus 1
+    memory 4.GB
     input:
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
@@ -155,6 +169,7 @@ process getAllChromosomesBed {
 //TODO alignment track only output when alignment has been done, for now
 //TODO --variant locations should be constructed legitimately instead of guessed
 process configure_jbrowse {
+    cpus 2
     input:
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple path(xam), path(xam_idx), val(xam_meta)
@@ -176,6 +191,7 @@ process configure_jbrowse {
 
 process getGenome {
     cpus 1
+    memory 4.GB
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
     output:
@@ -192,6 +208,7 @@ process getGenome {
 
 process eval_downsampling {
     cpus 1
+    memory 4.GB
     input:
         path mosdepth_summary
         path bed
@@ -211,6 +228,7 @@ process eval_downsampling {
 
 process downsampling {
     cpus 4
+    memory 4.GB
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
@@ -232,6 +250,7 @@ process downsampling {
 // Process to get the genome coverage from the mosdepth summary.
 process get_coverage {
     cpus 1
+    memory 4.GB
     input:
         path mosdepth_summary
 
@@ -248,6 +267,7 @@ process get_coverage {
 // Process to get the genome coverage from the mosdepth summary.
 process get_region_coverage {
     cpus 1
+    memory 4.GB
     input:
         path bed
         tuple path(regions),
@@ -283,6 +303,8 @@ process get_region_coverage {
 
 // Make bam QC reporting.
 process failedQCReport  {
+    cpus 1
+    memory 12.GB
     input: 
         tuple path(xam),
             path(xam_idx),
@@ -305,7 +327,7 @@ process failedQCReport  {
         // If we do not provide that, then the interval will be considered as 0>BP, where BP is the highest value in the bed 
         // file for each chromosome. This will display the intervals not in the context of the chromosome (so showing a peak in
         // a small region, and flat everywhere else) but only for the regions selected.
-        def genome_wide_depth = params.bed ? "" : "--reference_fai ref.fasta.fai"
+        def genome_wide_depth = params.bed ? "" : "--reference_fai ${fai}"
         def report_name = "${params.sample_name}.wf-human-alignment-report.html"
         """
         workflow-glue report_al \\
@@ -323,6 +345,8 @@ process failedQCReport  {
 
 // Alignment report
 process makeAlignmentReport {
+    cpus 1
+    memory 12.GB
     input: 
         tuple path(xam),
             path(xam_idx),
@@ -390,7 +414,8 @@ process annotate_vcf {
     // variants - if any variants are present in this file, it is used to populate a table in 
     // the report.
     label "snpeff_annotation"
-    cpus 1
+    cpus 2
+    memory 8.GB
     input:
         tuple path("input.vcf.gz"), path("input.vcf.gz.tbi")
         val(genome)
@@ -422,7 +447,7 @@ process annotate_vcf {
         fi
 
         # Specify 4G of memory otherwise SnpEff will crash with the default 1G
-        snpEff -Xmx4g ann $snpeff_db input.vcf.gz > !{params.sample_name}.snpeff_annotated.vcf
+        snpEff -Xmx!{task.memory.giga - 1}g ann $snpeff_db input.vcf.gz > !{params.sample_name}.snpeff_annotated.vcf
         # Add ClinVar annotations
         SnpSift annotate $clinvar_vcf !{params.sample_name}.snpeff_annotated.vcf > !{params.sample_name}.wf_!{output_label}.vcf
         # Get the ClinVar-annotated variants into a separate VCF
@@ -441,6 +466,8 @@ process annotate_vcf {
 
 process haploblocks {
     // Extract phased blocks from a VCF file
+    cpus 1
+    memory 8.GB
     input:
         tuple path(phased_vcf), path(phased_tbi)
         val output_label
@@ -455,6 +482,8 @@ process haploblocks {
 
 process bed_filter {
     // filter a BED/VCF/GFF using a BED file
+    cpus 1
+    memory 4.GB
     input:
         tuple path(input, stageAs: 'input.gz'), path(input_tbi, stageAs: 'input.gz.tbi')
         path(bed)
@@ -474,6 +503,8 @@ process sanitise_bed {
     // 1) check that chromosome labelling matches reference, exit if it doesn't
     // 1) check and fix whitespace
     // 2) sort by chromosome/position
+    cpus 1
+    memory 4.GB
     input:
         path(bed)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
