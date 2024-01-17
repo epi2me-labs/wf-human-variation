@@ -1,6 +1,9 @@
 process modkit {
     label "wf_human_mod"
     cpus params.modkit_threads
+    memory {(1.GB * params.modkit_threads * task.attempt) + 3.GB}
+    maxRetries 1
+    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     input:
         tuple path(alignment), path(alignment_index), val(alignment_meta)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
@@ -24,6 +27,10 @@ process modkit {
 process modkit_phase {
     label "wf_human_mod"
     cpus params.modkit_threads
+    // Phasing is a bit more greedy for memory. Use 2.GB/core + buffer.
+    memory {(2.GB * params.modkit_threads * task.attempt) + 3.GB}
+    maxRetries 1
+    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     input:
         tuple path(alignment), path(alignment_index), val(alignment_meta)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
@@ -54,6 +61,8 @@ process modkit_phase {
 
 // Check that the bam has modifications
 process validate_modbam {
+    cpus 1
+    memory 4.GB
     input:
         tuple path(alignment), 
             path(alignment_index), 

@@ -43,6 +43,14 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--bcftools_threads",
+        help=(
+            "Number of threads to use for bcftools view (default: 1)."
+        ),
+        default=1
+    )
+
+    parser.add_argument(
         "--min_read_support",
         help=(
             "Set the lower cutoff for read support, "
@@ -90,7 +98,9 @@ def main():
         filter_string = f"-T {args.target_bedfile} " + filter_string
 
     # Print command to stdout
-    command = f"bcftools view {filter_string} {args.vcf}"
+    command = (
+        f"bcftools view --threads {args.bcftools_threads} {filter_string} {args.vcf}"
+    )
     sys.stdout.write(command)
 
 

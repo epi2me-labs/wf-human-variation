@@ -198,7 +198,6 @@ workflow snp {
             make_chunks.out.contigs_file,
             cmd_file)
 
-        // Compute haploblocks if phasing required and SV not required.
         if (params.phased && (!params.sv || params.output_separate_phased)){
             hp_snp_blocks = haploblocks_snp(clair_final.final_vcf, 'snp')
         } else {
@@ -225,6 +224,7 @@ workflow report_snp {
     take:
         vcf_stats
         clinvar_vcf
+
     main:
 
         // reporting

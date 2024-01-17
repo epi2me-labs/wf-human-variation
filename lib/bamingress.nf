@@ -35,6 +35,7 @@ Map parse_arguments(Map arguments) {
 // as you can imagine i am not happy about this
 process cram_to_bam {
     cpus 2
+    memory 4.GB
     input:
         tuple path(cram), path(crai)
         tuple path(ref), path(ref_idx)
@@ -49,8 +50,10 @@ process cram_to_bam {
 
 
 process minimap2_alignment {
-    memory '16 GB' // needs to be around 12 for humvar, bumped for breathing room (CW-2574) could be smaller if user isnt doing WGA
     cpus {params.ubam_map_threads + params.ubam_sort_threads + params.ubam_bam2fq_threads}
+    memory { 16.GB * task.attempt }
+    maxRetries 2
+    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     input:
         path reference
         tuple path(reads), path(reads_idx), path(old_reference)
@@ -67,6 +70,8 @@ process minimap2_alignment {
 
 
 process check_for_alignment {
+    cpus 2
+    memory 4.GB
 
     input:
         tuple path(reference), path(ref_idx)
@@ -90,6 +95,8 @@ process check_for_alignment {
 }
 
 process samtools_index {
+    cpus 1
+    memory 4.GB
     input:
         path(xam)
     output:
