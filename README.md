@@ -1,6 +1,6 @@
 # Human variation workflow
 
-Basecalling; SNV, SV and CNV calling, modified base calling, and STR genotyping of human samples.
+SNV, SV and CNV calling, modified base calling, and STR genotyping of human samples.
 
 
 
@@ -10,7 +10,6 @@ This repository contains a [nextflow](https://www.nextflow.io/) workflow
 for analysing variation in human genomic data. Specifically this workflow can
 perform the following:
 
-* basecalling of FAST5 (or POD5) sequencing data
 * diploid variant calling
 * structural variant calling
 * analysis of modified base calls
@@ -116,11 +115,10 @@ This workflow accepts a path to a single BAM file (aligned or unaligned) as inpu
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
 | sample_name | string | Sample name to be displayed in workflow outputs. |  | SAMPLE |
-| fast5_dir | string | Directory containing FAST5 signal for basecalling. | This directory will be searched recursively. All FAST5 or POD5 files (depending on which extension you select in the Basecalling Options) in this directory or any subdirectory (no matter how deep) will be basecalled. You may choose to provide a FAST5 directory, or a BAM/CRAM, but not both. |  |
-| bam | string | Path to a BAM (or CRAM) containing aligned or unaligned reads. | You may choose to provide a BAM/CRAM, or a FAST5 directory for basecalling, but not both. |  |
+| bam | string | Path to a BAM (or CRAM) containing aligned or unaligned reads. | The workflow currently accepts a single BAM or CRAM file. |  |
 | ref | string | Path to a reference FASTA file. | Reference against which to compare reads for variant calling. |  |
 | old_ref | string | Reference FASTA file for CRAM input (only required if the CRAM requires realignment) | You do not need to provide this unless the workflow specifically asks you to. If your input CRAM headers do not match the metadata of the input reference, the workflow will assume you want to realign your reads to the new input reference. CRAM files are compressed using the reference, so the read sequences cannot be realigned without the old reference. |  |
-| basecaller_cfg | string | Name of the model to use for converting signal and selecting a small variant calling model. | Required for basecalling and/or small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. Only a subset of these models can be used for basecalling with the workflow, these are shown at the top of the list. Models that begin with 'clair3:' cannot be used for basecalling and are included to allow SNP calling on existing datasets. You should select 'custom' to override the basecaller_cfg with basecaller_model_path. | dna_r10.4.1_e8.2_400bps_sup@v4.1.0 |
+| basecaller_cfg | string | Name of the model to use for selecting a small variant calling model. | Required for small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. You should select 'custom' to override the basecaller_cfg with clair3_model_path. | dna_r10.4.1_e8.2_400bps_sup@v4.1.0 |
 | bam_min_coverage | number | Minimum read coverage required to run analysis. |  | 20 |
 | bed | string | An optional BED file enumerating regions to process for variant calling. |  |  |
 | annotation | boolean | SnpEff annotation. | If this option is unselected, VCFs will not be annotated with SnpEff. | True |
@@ -156,15 +154,6 @@ This workflow accepts a path to a single BAM file (aligned or unaligned) as inpu
 | force_strand | boolean | Require modkit to call strand-aware modifications. |  | False |
 
 
-### Basecalling options
-
-| Nextflow parameter name  | Type | Description | Help | Default |
-|--------------------------|------|-------------|------|---------|
-| remora_cfg | string | Name of the model to use for calling modified bases. | Required for calling modified bases while basecalling. The model list only shows models that are compatible with this workflow. You should select 'custom' to override the remora_cfg with remora_model_path. |  |
-| dorado_ext | string | File extension for Dorado input. | Set this to fast5 if you have not converted your fast5 to pod5. It is recommended to [convert existing fast5 files to pod5 for use with Dorado](https://github.com/nanoporetech/pod5-file-format/blob/master/python/README.md#pod5-convert-from-fast5). | fast5 |
-| basecaller_basemod_threads | number | Number of threads to use for base modification calling. | You must set this to > 0 when using a modbase aware model. Modbase calling does not require much additional CPU and should be set carefully when using GPU servers with a small number of CPUs per GPU. | 2 |
-
-
 ### Advanced Options
 
 | Nextflow parameter name  | Type | Description | Help | Default |
@@ -173,16 +162,6 @@ This workflow accepts a path to a single BAM file (aligned or unaligned) as inpu
 | GVCF | boolean | Enable to output a gVCF file in addition to the VCF outputs (experimental). | By default the the workflow outputs a VCF file containing only records where a variant has been detected. Enabling this option will output additionally a gVCF with records spanning all reference positions regardless of whether a variant was detected in the sample. | False |
 | downsample_coverage | boolean | Downsample the coverage to along the genome. | This options will trigger a downsampling of the read alignments to the target coverage specified by --downsample_coverage_target. Downsampling will make the workflow run faster but could lead to non-deterministic variant calls. | False |
 | downsample_coverage_target | number | Average coverage or reads to use for the analyses. | This options will set the target coverage for the downsampling stage, if downsampling has been enabled. | 60 |
-
-
-### Advanced basecalling options
-
-| Nextflow parameter name  | Type | Description | Help | Default |
-|--------------------------|------|-------------|------|---------|
-| qscore_filter | number | Mean qscore by which to filter reads. Inclusive such that reads with score >= qscore_filter are kept. | The mean qscore of reads is calculated by dorado and rounded to an integer by dorado and stored as a tag in dorado's SAM output. The pipeline separates reads into pass and fail categories based on this SAM tag. | 10 |
-| basecaller_chunk_size | number | Number of input files to basecall in each basecalling process. |  | 25 |
-| cuda_device | string | GPU device to use for basecalling [cuda:all] | For local execution this can be used to pin GPU tasks to one (or more) specific GPU devices. Use cuda:all to use all available GPU devices, or cuda:<idx>[,idx,...] where idx is an index number of the GPU device to use. | cuda:all |
-| basecaller_args | string | Additional command line arguments to pass to the basecaller process. To provide custom arguments to `dorado` from command line proceed as follow: `--basecaller_args="--no-trim"` |  |  |
 
 
 ### Multiprocessing Options
@@ -237,12 +216,11 @@ Output files may be aggregated including information for all samples or provided
 
 The workflow is composed of 6 distinct subworkflows, each enabled by a command line option:
 
-* Basecalling: `--fast5_dir <input_dir>`
-* SNP calling: `--snp`
-* SV calling: `--sv`
-* Analysis of modified bases: `--mod`
-* CNV calling: `--cnv`
-* STR genotyping: `--str`
+* [SNP calling](#3-small-variant-calling-with-clair3): `--snp`
+* [SV calling](#4-structural-variant-sv-calling-with-sniffles2): `--sv`
+* [Analysis of modified bases](#5-modified-base-calling-with-modkit): `--mod`
+* [CNV calling](#6-copy-number-variants-cnv-calling-with-qdnaseq): `--cnv`
+* [STR genotyping](#7-short-tandem-repeat-str-genotyping-with-straglr): `--str`
 
 Subworkflows where the relevant option is omitted will not be run.
 
@@ -250,53 +228,11 @@ Subworkflows where the relevant option is omitted will not be run.
 
 The workflow relies on three primary input files:
 1. A reference genome in [FASTA format](https://www.ncbi.nlm.nih.gov/genbank/fastaformat/)
-2. Sequencing data for the sample in the form of:
-    1. A single [BAM file](https://samtools.github.io/hts-specs/SAMv1.pdf) for the sample (either aligned or unaligned) or
-    2. [POD5](https://github.com/nanoporetech/pod5-file-format)/[FAST5](https://github.com/nanoporetech/ont_fast5_api) files
+2. Sequencing data for the sample in the form of a single [BAM or CRAM file](https://samtools.github.io/hts-specs/SAMv1.pdf), either aligned or unaligned.
 
-The BAM file can be generated from:
-1. [POD5](https://github.com/nanoporetech/pod5-file-format)/[FAST5](https://github.com/nanoporetech/ont_fast5_api) files using the [wf-basecalling](https://github.com/epi2me-labs/wf-basecalling) workflow, or
-2. [fastq](https://www.ncbi.nlm.nih.gov/sra/docs/submitformats/#fastq) files using [wf-alignment](https://github.com/epi2me-labs/wf-alignment).
-Both workflows will generate aligned BAM file that is ready to be used with `wf-human-variation`.
+The input BAM file can be generated using the [wf-basecalling](https://github.com/epi2me-labs/wf-basecalling/) workflow, which is up to date with the current dorado releases and models.
 
-### 2. Basecalling
-The basecalling is performed automatically when the user provides `pod5`/`fast5` inputs through the `--fast5_dir`.
-Basecalling with [Dorado](https://github.com/nanoporetech/dorado) requires an NVIDIA GPU with [Volta architecture or newer](https://www.nvidia.com/en-gb/technologies/) and at least 8 GB of vRAM.
-
-#### Windows
-Windows should not be considered as a supported operating system for wf-basecalling as we do not directly support configuration of accelerated computing through WSL2 and Docker.
-Although we do not offer support, it is possible to set up Docker to use GPUs for most versions of Windows 11 and some versions of Windows 10 and we direct users to the [CUDA on WSL User Guide](https://docs.nvidia.com/cuda/wsl-user-guide/index.html).
-Users should take note of the support constraints section to ensure their environment is suitable before following the guidance. **Do not install an NVIDIA driver into your WSL2 environment**.
-Users are encouraged to download Dorado for Windows from the [Dorado GitHub repository](https://github.com/nanoporetech/dorado#installation).
-
-#### MacOS
-MacOS should not be considered as a supported operating system for wf-basecalling as we do not support accelerated computing through Docker on MacOS.
-On MacOS, GPU support through Docker remains in technical infancy. In addition, the containers we provide will not be able to leverage the M1 and M2 architecture and will not run as performantly as if Dorado had been run natively.
-Users are encouraged to download Dorado for MacOS directly from the [Dorado GitHub repository](https://github.com/nanoporetech/dorado#installation).
-
-#### Linux
-When using Docker for accelerated computing on Linux, you will need the `nvidia-container-toolkit` installed.
-If you observe the error "could not select device driver with capabilities gpu", you should follow the instructions to install `nvidia-container-toolkit` [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#setting-up-nvidia-container-toolkit).
-You will need to follow the steps to:
-
-- Setup the package repository and the GPG key (ignore the box about experimental releases)
-- Update package listings
-- Install nvidia-container-toolkit
-- Configure the Docker daemon to recognize the NVIDIA Container Runtime
-- Restart the Docker daemon to complete the installation after setting the default runtime
-
-By default, workflows are configured to run GPU tasks in serial. That is, only one basecalling task will be run at a time. This is to prevent the GPU from running out of memory on local execution.
-When running workflows on a cluster, or in a cloud where GPU resources are isolated from one another, users should specify `-profile discrete_gpus` as part of the command invocation. This will allow for parallel execution of GPU tasks.
-
-#### Options
-Ensure to provide the appropriate model for your data with `--basecaller_cfg`. If you are interested in analyzing the modifications, you should also provide the appropriate remora model with `--remora_cfg`. Refer to the [Dorado documentation](https://github.com/nanoporetech/dorado#available-basecalling-models) for a list of available basecalling models.
-
-If basecalling and alignment were conducted, the workflow will output two sorted, indexed CRAMs of basecalls aligned to the provided references, with reads separated by their quality score:
-    * `<sample_name>.pass.cram` contains reads with `qscore >= threshold` (only pass reads are used to make downstream variant calls)
-    * `<sample_name>.fail.cram` contains reads with `qscore < threshold`
-Take care to retain the input reference when basecalling or alignment has been performed as CRAM files cannot be read without the corresponding reference!
-
-### 3. Data QC and pre-processing
+### 2. Data QC and pre-processing
 The workflow starts by performing multiple checks of the input BAM file, as well as computing:
 1. depth of sequencing with [mosdepth](https://github.com/brentp/mosdepth);
 2. read alignment statistics with [fastcat](https://github.com/epi2me-labs/fastcat).
@@ -305,14 +241,14 @@ After computing the coverage, the workflow will check that the input BAM file ha
 In case the user specify `--bam_min_coverage 0`, the check will be skipped and the workflow will proceed directly to the downstream analyses.
 Some components work better withing certain ranges of coverage, and the user might achieve better results by providing a target coverage to downsample to. The user can set `--downsample_coverage true` to enable the downsampling of the reads, and `--downsample_coverage_target {{ X }}` to specify the target coverage (default: 60x).
 
-### 4. Small variant calling with Clair3
+### 3. Small variant calling with Clair3
 
-The workflow implements a deconstructed version of [Clair3](https://github.com/HKU-BAL/Clair3) (v1.0.4) to call germline variants.
+The workflow implements a deconstructed version of [Clair3](https://github.com/HKU-BAL/Clair3) (v1.0.4) to call germline variants. The appropriate model can be provided with the `--basecaller_cfg` option. To decide on the appropriate model you can check out the Dorado documentation for a list of available basecalling models.
 This workflow takes advantage of the parallel nature of Nextflow, providing optimal efficiency in high-performance, distributed systems. The workflow will automatically call small variants (SNPs and indels), collect statistics, annotate them with [SnpEff](https://pcingola.github.io/SnpEff/) (and additionally for SNPs, ClinVar details), and create a report summarising the findings.
 
 If desired, the workflow can perform phasing of structural variants by using the `--phased` option. This will lead the workflow to use [longphase](https://github.com/twolinin/longphase) to perform phasing of the variants, with the option to use [whatshap](https://whatshap.readthedocs.io/) instead by setting `--use_longphase false`. The phasing will also generate a GFF file with the annotation of the phase blocks, facilitating the detection of these within genome visualizers.
 
-### 5. Structural variant (SV) calling with Sniffles2
+### 4. Structural variant (SV) calling with Sniffles2
 
 The workflow allows for calling of SVs using long-read sequencing data with [Sniffles2](https://github.com/fritzsedlazeck/Sniffles).
 The workflow will perform SV calling, filtering and generation of a report.
@@ -320,7 +256,7 @@ Optionally, the workflow can also evaluate calls on HG002 against a truth set (p
 The SV workflow takes an optional `--tr_bed` option to specify tandem repeats in the reference sequence --- see the [sniffles](https://github.com/fritzsedlazeck/Sniffles) documentation for more information.
 SVs can be phased using `--phased`. However, this will cause the workflow to run SNP analysis, as SV phasing relies on the haplotagged reads generated in this stage.
 
-### 6. Modified base calling with modkit
+### 5. Modified base calling with modkit
 
 Modified base calling can be performed by specifying `--mod`. The workflow will call modified bases using [modkit](https://github.com/nanoporetech/modkit). 
 The workflow will automatically check whether the files contain the appropriate `MM`/`ML` tags, required for running [modkit pileup](https://nanoporetech.github.io/modkit/intro_bedmethyl.html). If the tags are not found, the workflow will not run the individual analysis, but will still run the other subworkflows requested by the user.
@@ -328,18 +264,18 @@ The default behaviour of the workflow is to run modkit with the `--cpg --combine
 The modkit run can be fully customized by providing `--modkit_args`. This will override any preset, and allow full control over the run of modkit.
 Haplotype-resolved aggregated counts of modified bases can be obtained with the `--phased` option. This will generate three distinct BEDMethyl files with the naming pattern `{{ alias }}_{{ haplotype }}.wf_mods.bedmethyl.gz`, where `haplotype` can be `1`, `2` or `ungrouped`.
 
-### 7. Copy number variants (CNV) calling with QDNASeq
+### 6. Copy number variants (CNV) calling with QDNASeq
 
 CNV calling is performed using [QDNAseq](https://github.com/ccagc/QDNAseq). This workflow is compatible with genome builds hg19/GRCh37 or hg38/GRCh38.
 In addition to the VCF of CNV calls, the workflow emits QDNAseq-generated plots and BED files of both raw read counts per bin and corrected, normalised, and smoothed read counts per bin.
 
-### 8. Short tandem repeat (STR) genotyping with Straglr
+### 7. Short tandem repeat (STR) genotyping with Straglr
 
 STR genotyping is performed using a fork of [straglr](https://github.com/philres/straglr). This workflow is compatible with genome build hg38/GRCh38.
 The STR workflow takes a required `--sex` option which is `male` or `female`. If `--sex` is not specified, the workflow will default to `female`. Please be aware that incorrect sex assignment will result in the wrong number of calls for all repeats on chrX.
 In addition to a gzipped VCF file containing STRs found in the dataset, the workflow emits a TSV straglr output containing reads spanning STRs, and a haplotagged BAM. 
 
-### 9. Phasing variants
+### 8. Phasing variants
 The workflow can perform joint physical phasing with `longphase` of SNP, Indels and SVs by setting the `--phased --snp --sv` options.
 The behaviour of the phasing is summarised in the below table:
 
@@ -363,12 +299,10 @@ Running the workflow on non-human samples will require this option to be disable
 
 ## Troubleshooting
 
-+ You should ask your system administrator if you need to configure any additional options to leverage GPUs on your cluster. For example, you may need to provide a special string to the workflow's `--cuda_device` option to ensure tasks use the GPU assigned to them by the job scheduler.
 + Annotations for `--snp` and `--sv` are generated using [SnpEff](https://pcingola.github.io/SnpEff/). For `--snp`, additional [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) annotations are displayed in the report where available (please note, the report will not display any variants classified as 'Benign' or 'Likely benign', however these variants will be present in the
 output VCF).
 + Specifying a suitable [tandem repeat BED for your reference](https://raw.githubusercontent.com/fritzsedlazeck/Sniffles/master/annotations/) with `--tr_bed` can improve the accuracy of SV calling.
 + Aggregation of modified calls with `--mod` requires data to be basecalled with a model that includes base modifications, providing the `MM` and `ML` BAM tags
-+ Refer to the [Dorado documentation](https://github.com/nanoporetech/dorado#available-basecalling-models) for a list of available basecalling models
 + CRAM files generated within the workflow cannot be read without the corresponding reference
 + The STR workflow performs genotyping of specific repeats, which can be found [here](https://github.com/epi2me-labs/wf-human-variation/blob/master/data/wf_str_repeats.bed).
 + While designed to work on human genomes, the workflow can be run on non-human species by setting `--cnv false --str false --annotation false`.

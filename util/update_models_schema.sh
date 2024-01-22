@@ -19,7 +19,7 @@ else
 fi
 
 # work out how to inspect the container contents
-DORADO_CONTAINER=$(${NEXTFLOW} config -flat | grep "process.'withLabel:wf_basecalling'.container" | awk -F'= ' '{print $2}' | sed "s,',,g")
+DORADO_CONTAINER="nanoporetech/dorado:latest"
 echo "# DORADO_CONTAINER=${DORADO_CONTAINER}"
 if [ "$ENGINE" = "simg" ]; then
     CMD_PREFIX="singularity exec docker://${DORADO_CONTAINER}"
@@ -43,7 +43,7 @@ if [[ $(wc -l < unmentioned_dorado_models.ls) -ne 0 ]]; then
     sed 's,^,* ,' unmentioned_dorado_models.ls
     exit 1
 fi
-comm -23 valid_clair3_dorado_models.ls simplex_models.ls | cat - valid_clair3_nondorado_models.ls | sed 's,^,clair3:,' | sort > clair3_only_models.ls
+comm -23 valid_clair3_dorado_models.ls simplex_models.ls | cat - valid_clair3_nondorado_models.ls | sort > clair3_only_models.ls
 
 # Convert model lists to JSON arrays
 SIMPLEX_MODELS=$(cat simplex_models.ls | sed '$a\custom' | cat - clair3_only_models.ls | jq -Rn '[inputs]')
@@ -54,9 +54,7 @@ jq \
     -j \
     --indent 4 \
     --argjson simplex_models "${SIMPLEX_MODELS}" \
-    --argjson modbase_models "${MODBASE_MODELS}" \
-    '(.definitions.input.properties.basecaller_cfg.enum) = $simplex_models |
-    (.definitions.basecalling_options.properties.remora_cfg.enum) = $modbase_models' \
+    '(.definitions.input.properties.basecaller_cfg.enum) = $simplex_models' \
     ${TARGET}/nextflow_schema.json > ${TARGET}/nextflow_schema.json.new
 
 echo "# Updated schema generated, you should inspect it before adopting it!"

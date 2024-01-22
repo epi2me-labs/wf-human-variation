@@ -13,12 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--phase_vcf`, `--joint_phasing` and `--phase_mod` are now deprecated for `--phased`; see the [README](README.md#9-phasing-variants) for more details.
 - `--use_longphase_intermediate` is now deprecated, and `--use_longphase false` will use `whatshap` throughout consistently
 - Running `--phase --snp --use_longphase false` will now phase indels too
+- `--basecalling_cfg` currently provides the configuration to Clair3.
+- The `clair3:` prefix to Clair3 specific models is no longer required.
 
 ### Fixed
 - CNV report generation fails if there is no consensus on the copy number of a chromosome
     - `Undetermined` category has been added to the `Chromosome Copy Summary` to account for these cases
 - `readStats` reports metrics on the downsampled BAM when `--downsample_coverage` is requested.
 - Spurious warning for missing MM/ML tags when a BAM fails the coverage threshold
+
+### Removed
+- wf-basecalling subworkflow
+    - fast5_dir input and other basecalling related options have been removed from the workflow parameters
+    - Users should run the standalone wf-basecalling workflow and provide the output to wf-human-variation
 
 ## [v1.9.2]
 ### Fixed

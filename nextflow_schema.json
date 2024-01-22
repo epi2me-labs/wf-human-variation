@@ -3,7 +3,7 @@
     "$id": "https://raw.githubusercontent.com/epi2me-labs/wf-human-variation/master/nextflow_schema.json",
     "title": "epi2me-labs/wf-human-variation",
     "workflow_title": "Human variation workflow",
-    "description": "Basecalling; SNV, SV and CNV calling, modified base calling, and STR genotyping of human samples.",
+    "description": "SNV, SV and CNV calling, modified base calling, and STR genotyping of human samples.",
     "demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo.tar.gz",
     "aws_demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo/aws.nextflow.config",
     "url": "https://github.com/epi2me-labs/wf-human-variation",
@@ -13,7 +13,7 @@
             "title": "Workflow Options",
             "type": "object",
             "fa_icon": "fas fa-arrow-right",
-            "description": "Select which sub-workflows of wf-human-variation you wish to run. Parameters for each sub-workflow can be changed using the sections below. Basecalling is run if you provide a FAST5 directory instead of a BAM in the Input Options.",
+            "description": "Select which sub-workflows of wf-human-variation you wish to run. Parameters for each sub-workflow can be changed using the sections below.",
             "properties": {
                 "sv": {
                     "title": "SV: Structural variants",
@@ -98,19 +98,12 @@
                     "description": "Sample name to be displayed in workflow outputs.",
                     "help_text": ""
                 },
-                "fast5_dir": {
-                    "title": "Input: FAST5/POD5 signal directory",
-                    "type": "string",
-                    "format": "directory-path",
-                    "description": "Directory containing FAST5 signal for basecalling.",
-                    "help_text": "This directory will be searched recursively. All FAST5 or POD5 files (depending on which extension you select in the Basecalling Options) in this directory or any subdirectory (no matter how deep) will be basecalled. You may choose to provide a FAST5 directory, or a BAM/CRAM, but not both."
-                },
                 "bam": {
                     "title": "Input: BAM or CRAM file",
                     "type": "string",
                     "format": "file-path",
                     "description": "Path to a BAM (or CRAM) containing aligned or unaligned reads.",
-                    "help_text": "You may choose to provide a BAM/CRAM, or a FAST5 directory for basecalling, but not both."
+                    "help_text": "The workflow currently accepts a single BAM or CRAM file."
                 },
                 "ref": {
                     "title": "Reference file",
@@ -129,8 +122,8 @@
                 "basecaller_cfg": {
                     "title": "Basecaller configuration",
                     "type": "string",
-                    "description": "Name of the model to use for converting signal and selecting a small variant calling model.",
-                    "help_text": "Required for basecalling and/or small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. Only a subset of these models can be used for basecalling with the workflow, these are shown at the top of the list. Models that begin with 'clair3:' cannot be used for basecalling and are included to allow SNP calling on existing datasets. You should select 'custom' to override the basecaller_cfg with basecaller_model_path.",
+                    "description": "Name of the model to use for selecting a small variant calling model.",
+                    "help_text": "Required for small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. You should select 'custom' to override the basecaller_cfg with clair3_model_path.",
                     "default": "dna_r10.4.1_e8.2_400bps_sup@v4.1.0",
                     "enum": [
                         "dna_r10.4.1_e8.2_260bps_fast@v4.1.0",
@@ -138,26 +131,28 @@
                         "dna_r10.4.1_e8.2_260bps_sup@v4.1.0",
                         "dna_r10.4.1_e8.2_400bps_fast@v4.1.0",
                         "dna_r10.4.1_e8.2_400bps_fast@v4.2.0",
+                        "dna_r10.4.1_e8.2_400bps_fast@v4.3.0",
                         "dna_r10.4.1_e8.2_400bps_hac@v4.1.0",
-                        "dna_r10.4.1_e8.2_400bps_hac@v4.2.0",
+                        "dna_r10.4.1_e8.2_400bps_hac@v4.3.0",
                         "dna_r10.4.1_e8.2_400bps_sup@v4.1.0",
-                        "dna_r10.4.1_e8.2_400bps_sup@v4.2.0",
+                        "dna_r10.4.1_e8.2_400bps_sup@v4.3.0",
                         "dna_r9.4.1_e8_fast@v3.4",
                         "dna_r9.4.1_e8_hac@v3.3",
                         "dna_r9.4.1_e8_sup@v3.3",
+                        "dna_r9.4.1_e8_sup@v3.6",
                         "custom",
-                        "clair3:dna_r10.4.1_e8.2_260bps_hac@v4.0.0",
-                        "clair3:dna_r10.4.1_e8.2_260bps_sup@v4.0.0",
-                        "clair3:dna_r10.4.1_e8.2_400bps_hac",
-                        "clair3:dna_r10.4.1_e8.2_400bps_hac@v3.5.2",
-                        "clair3:dna_r10.4.1_e8.2_400bps_hac@v4.0.0",
-                        "clair3:dna_r10.4.1_e8.2_400bps_hac@v4.3.0",
-                        "clair3:dna_r10.4.1_e8.2_400bps_hac_prom",
-                        "clair3:dna_r10.4.1_e8.2_400bps_sup@v3.5.2",
-                        "clair3:dna_r10.4.1_e8.2_400bps_sup@v4.0.0",
-                        "clair3:dna_r10.4.1_e8.2_400bps_sup@v4.3.0",
-                        "clair3:dna_r9.4.1_450bps_hac",
-                        "clair3:dna_r9.4.1_450bps_hac_prom"
+                        "dna_r10.4.1_e8.2_260bps_hac@v4.0.0",
+                        "dna_r10.4.1_e8.2_260bps_sup@v4.0.0",
+                        "dna_r10.4.1_e8.2_400bps_hac",
+                        "dna_r10.4.1_e8.2_400bps_hac@v3.5.2",
+                        "dna_r10.4.1_e8.2_400bps_hac@v4.0.0",
+                        "dna_r10.4.1_e8.2_400bps_hac@v4.2.0",
+                        "dna_r10.4.1_e8.2_400bps_hac_prom",
+                        "dna_r10.4.1_e8.2_400bps_sup@v3.5.2",
+                        "dna_r10.4.1_e8.2_400bps_sup@v4.0.0",
+                        "dna_r10.4.1_e8.2_400bps_sup@v4.2.0",
+                        "dna_r9.4.1_450bps_hac",
+                        "dna_r9.4.1_450bps_hac_prom"
                     ]
                 },
                 "bam_min_coverage": {
@@ -200,26 +195,9 @@
                     "description": "Directory for output of all workflow results."
                 }
             },
-            "allOf": [
-                {
-                    "required": [
-                        "ref"
-                    ]
-                },
-                {
-                    "oneOf": [
-                        {
-                            "required": [
-                                "fast5_dir"
-                            ]
-                        },
-                        {
-                            "required": [
-                                "bam"
-                            ]
-                        }
-                    ]
-                }
+            "required": [
+                "ref",
+                "bam"
             ]
         },
         "sv_options": {
@@ -444,55 +422,6 @@
                 }
             }
         },
-        "basecalling_options": {
-            "title": "Basecalling options",
-            "fa_icon": "fas fa-gear",
-            "type": "object",
-            "description": "Basecalling model selection and performance options.",
-            "help_text": "This section contains options that should be checked before basecalling.",
-            "properties": {
-                "basecaller": {
-                    "type": "string",
-                    "default": "dorado",
-                    "hidden": true
-                },
-                "remora_cfg": {
-                    "title": "Modified basecalling configuration",
-                    "type": "string",
-                    "description": "Name of the model to use for calling modified bases.",
-                    "help_text": "Required for calling modified bases while basecalling. The model list only shows models that are compatible with this workflow. You should select 'custom' to override the remora_cfg with remora_model_path.",
-                    "enum": [
-                        "dna_r10.4.1_e8.2_400bps_fast@v4.1.0_5mCG_5hmCG@v2",
-                        "dna_r10.4.1_e8.2_400bps_fast@v4.2.0_5mCG_5hmCG@v2",
-                        "dna_r10.4.1_e8.2_400bps_hac@v4.1.0_5mCG_5hmCG@v2",
-                        "dna_r10.4.1_e8.2_400bps_hac@v4.2.0_5mCG_5hmCG@v2",
-                        "dna_r10.4.1_e8.2_400bps_sup@v4.1.0_5mCG_5hmCG@v2",
-                        "dna_r10.4.1_e8.2_400bps_sup@v4.2.0_5mCG_5hmCG@v2",
-                        "dna_r9.4.1_e8_fast@v3.4_5mCG@v0",
-                        "dna_r9.4.1_e8_hac@v3.3_5mCG@v0",
-                        "dna_r9.4.1_e8_sup@v3.3_5mCG@v0",
-                        "custom"
-                    ]
-                },
-                "dorado_ext": {
-                    "type": "string",
-                    "description": "File extension for Dorado input.",
-                    "help_text": "Set this to fast5 if you have not converted your fast5 to pod5. It is recommended to [convert existing fast5 files to pod5 for use with Dorado](https://github.com/nanoporetech/pod5-file-format/blob/master/python/README.md#pod5-convert-from-fast5).",
-                    "default": "fast5",
-                    "enum": [
-                        "fast5",
-                        "pod5"
-                    ]
-                },
-                "basecaller_basemod_threads": {
-                    "type": "number",
-                    "default": 2,
-                    "description": "Number of threads to use for base modification calling.",
-                    "help_text": "You must set this to > 0 when using a modbase aware model. Modbase calling does not require much additional CPU and should be set carefully when using GPU servers with a small number of CPUs per GPU."
-                }
-            },
-            "required": []
-        },
         "advanced_options": {
             "title": "Advanced Options",
             "type": "object",
@@ -539,52 +468,6 @@
                     "help_text": "This option enables to save individually phased SV and SNP VCF files even when `--phased --sv --snv` are provided."
                 }
             }
-        },
-        "advanced_basecalling_options": {
-            "title": "Advanced basecalling options",
-            "fa_icon": "fas fa-gears",
-            "type": "object",
-            "description": "Basecaller performance and load settings.",
-            "help_text": "These basecalling options do not typically need to be changed.",
-            "properties": {
-                "qscore_filter": {
-                    "type": "number",
-                    "default": 10,
-                    "description": "Mean qscore by which to filter reads. Inclusive such that reads with score >= qscore_filter are kept.",
-                    "help_text": "The mean qscore of reads is calculated by dorado and rounded to an integer by dorado and stored as a tag in dorado's SAM output. The pipeline separates reads into pass and fail categories based on this SAM tag."
-                },
-                "basecaller_chunk_size": {
-                    "type": "number",
-                    "default": 25,
-                    "description": "Number of input files to basecall in each basecalling process.",
-                    "help_text": ""
-                },
-                "cuda_device": {
-                    "type": "string",
-                    "default": "cuda:all",
-                    "description": "GPU device to use for basecalling [cuda:all]",
-                    "help_text": "For local execution this can be used to pin GPU tasks to one (or more) specific GPU devices. Use cuda:all to use all available GPU devices, or cuda:<idx>[,idx,...] where idx is an index number of the GPU device to use."
-                },
-                "basecaller_model_path": {
-                    "type": "string",
-                    "format": "directory-path",
-                    "description": "Override the inferred model with a custom basecalling model",
-                    "help_text": "For typical use, users should set --basecaller_cfg which will use a named model from inside the container. Experimental or custom basecallers will not be available in the container and can be loaded from the host with --basecaller_model_path.",
-                    "hidden": true
-                },
-                "remora_model_path": {
-                    "type": "string",
-                    "format": "directory-path",
-                    "description": "Override the inferred model with a custom remora model",
-                    "help_text": "For typical use, users should set --remora_cfg which will use a named model from inside the container. Experimental or custom models will not be available in the container and can be loaded from the host with --remora_model_path.",
-                    "hidden": true
-                },
-                "basecaller_args": {
-                    "type": "string",
-                    "description": "Additional command line arguments to pass to the basecaller process. To provide custom arguments to `dorado` from command line proceed as follow: `--basecaller_args=\"--no-trim\"`"
-                }
-            },
-            "required": []
         },
         "multiprocessing_options": {
             "title": "Multiprocessing Options",
@@ -665,12 +548,6 @@
         },
         {
             "$ref": "#/definitions/sv_options"
-        },
-        {
-            "$ref": "#/definitions/basecalling_options"
-        },
-        {
-            "$ref": "#/definitions/advanced_basecalling_options"
         },
         {
             "$ref": "#/definitions/advanced_options"

@@ -2,7 +2,6 @@ This repository contains a [nextflow](https://www.nextflow.io/) workflow
 for analysing variation in human genomic data. Specifically this workflow can
 perform the following:
 
-* basecalling of FAST5 (or POD5) sequencing data
 * diploid variant calling
 * structural variant calling
 * analysis of modified base calls

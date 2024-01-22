@@ -1,1 +1,1 @@
-Basecalling; SNV, SV and CNV calling, modified base calling, and STR genotyping of human samples.
+SNV, SV and CNV calling, modified base calling, and STR genotyping of human samples.
