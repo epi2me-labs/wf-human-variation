@@ -51,7 +51,6 @@ include {
     output_snp
 } from "./modules/local/wf-human-snp.nf"
 
-include { basecalling } from './workflows/basecalling'
 include { mod; validate_modbam} from './workflows/methyl'
 
 include { str } from './workflows/wf-human-str'
@@ -88,6 +87,11 @@ workflow {
         can_start = false
     }
 
+    if (params.containsKey("fast5_dir")) {
+        log.error (colors.red + "--fast5_dir is deprecated as this workflow does not run basecalling anymore. Use wf-basecalling to generate a valid BAM file instead." + colors.reset)
+        can_start = false
+    }
+
     // check snp has basecaller config for clair3 model lookup
     if(params.snp || params.phased) {
         if(!params.basecaller_cfg && !params.clair3_model_path) {
@@ -104,7 +108,7 @@ workflow {
     if (params.cnv) {
         log.warn "CNV calling subworkflow does not support CRAM. You don't need to do anything, but we're just letting you know that:"
         log.warn "- If your input file is CRAM, it will be converted to a temporary BAM inside the workflow automatically."
-        log.warn "- If your input requires alignment or basecalling, the outputs will be saved to your output directory as BAM instead of CRAM."
+        log.warn "- If your input requires alignment, the outputs will be saved to your output directory as BAM instead of CRAM."
         output_bam = true
     }
     else {
@@ -127,51 +131,10 @@ workflow {
         ref = Channel.fromPath(params.ref, checkIfExists: true)
         ref_index_fp = file(params.ref + ".fai")
     }
-    if (params.fast5_dir) {
 
-        // Basecall fast5 input
-        if (params.bam) {
-            throw new Exception(colors.red + "Cannot use --fast5_dir with --bam." + colors.reset)
-        }
-        // Ensure a valid basecaller is set
-        if (params.basecaller != "dorado"){
-            throw new Exception(colors.red + "Basecaller ${params.basecaller} is not supported. Use --basecaller dorado." + colors.reset)
-        }
-        // Ensure basecaller config is set
-        if (!params.basecaller_cfg && !params.basecaller_model_path) {
-            throw new Exception(colors.red + "You must provide a basecaller profile with --basecaller_cfg <profile>" + colors.reset)
-        }
-        // Ensure basecaller config is not Clair3 only
-        if (params.basecaller_cfg.startsWith("clair3:")) {
-            throw new Exception(colors.red + "You have chosen a --basecaller_cfg that can only be used for Clair3 SNP calling.\nPlease review the list of available models with --help and pick a model that is not prefixed with 'clair3:' to enable basecalling with Dorado." + colors.reset)
-        }
-        if (params.basecaller_cfg == "custom" && !params.basecaller_model_path){
-            throw new Exception(colors.red + "You have selected a custom basecalling model but have not provided the path of the custom model with --basecaller_model_path" + colors.reset)
-        }
-        if (params.remora_cfg == "custom" && !params.remora_model_path){
-            throw new Exception(colors.red + "You have selected a custom modbasecalling model but have not provided the path of the custom model with --remora_model_path" + colors.reset)
-        }
-        // Ensure modbase threads are set if calling them
-        if ((params.remora_cfg || params.remora_model_path) && params.basecaller_basemod_threads == 0) {
-            throw new Exception(colors.red + "--remora_cfg modbase aware config requires setting --basecaller_basemod_threads > 0" + colors.reset)
-        }
-
-        // ring ring it's for you
-        crams = basecalling(params.fast5_dir, file(params.ref), output_bam) // TODO fix file calls
-        bam_channel = crams.pass
-        bam_fail = crams.fail
-
-    }
-    else {
-        // Set-up any non basecalling structs
-        bam_fail = Channel.empty()
-
-        // Otherwise handle (u)BAM/CRAM
-        if (!params.bam) {
-            throw new Exception(colors.red + "Missing required input argument, use --bam or --fast5_dir." + colors.reset)
-        }
-
-        check_bam = params.bam
+    // Otherwise handle (u)BAM/CRAM
+    if (!params.bam) {
+        throw new Exception(colors.red + "Missing required --bam input argument." + colors.reset)
     }
 
     // ************************************************************************
@@ -197,15 +160,13 @@ workflow {
     Pinguscript.ping_start(nextflow, workflow, params)
 
     // Determine if (re)alignment is required for input BAM
-    if(!params.fast5_dir){
-        bam_channel = bam_ingress(
-            ref,
-            ref_index,
-            check_bam,
-            [output_bam: output_bam],
-        )
-    }
-
+    bam_channel = bam_ingress(
+        ref,
+        ref_index,
+        params.bam,
+        [output_bam: output_bam],
+    )
+    
     // Check if the genome build in the BAM is suitable for any workflows that have restrictions
     // NOTE getGenome will exit non-zero if the build is neither hg19 or hg38, so it shouldn't be called
     // if annotation is skipped for snp, sv and phased, to allow other genomes (including non-human)
@@ -457,7 +418,7 @@ workflow {
             // map basecalling model to clair3 model
             lookup_table = Channel.fromPath("${projectDir}/data/clair3_models.tsv", checkIfExists: true)
             // TODO basecaller_model_path
-            clair3_model = lookup_clair3_model(lookup_table, params.basecaller_cfg - "clair3:").map {
+            clair3_model = lookup_clair3_model(lookup_table, params.basecaller_cfg).map {
                 log.info "Autoselected Clair3 model: ${it[0]}" // use model name for log message
                 it[1] // then just return the path to match the interface above
             }
@@ -652,8 +613,6 @@ workflow {
         ref_channel.map{it[0..2]}.flatten().mix(
             // emit bams with the "output" meta tag
             bam_channel.filter( { it[2].output } ),
-            // bam_fail can only exist if basecalling was performed
-            bam_fail.flatten(),
             bam_stats.flatten(),
             bam_flag.flatten(),
             mosdepth_stats.flatten(),
