@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - wf-basecalling subworkflow
     - fast5_dir input and other basecalling related options have been removed from the workflow parameters
     - Users should run the standalone wf-basecalling workflow and provide the output to wf-human-variation
+- Mapula statistics with `--mapula`
 
 ## [v1.9.2]
 ### Fixed
