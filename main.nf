@@ -23,7 +23,6 @@ include {
     mosdepth as mosdepth_input;
     mosdepth as mosdepth_downsampled;
     readStats;
-    mapula;
     getAllChromosomesBed;
     publish_artifact;
     configure_jbrowse;
@@ -216,14 +215,6 @@ workflow {
         mosdepth_perbase = mosdepth_input.out.perbase
     } else {
         mosdepth_perbase = Channel.from("$projectDir/data/OPTIONAL_FILE")
-    }
-
-    if (params.mapula) {
-        mapula(bam_channel, bed, ref_channel)
-        mapula_stats = mapula.out
-    }
-    else {
-        mapula_stats = Channel.empty()
     }
     
     // Determine if the coverage threshold is met to perform analysis.
@@ -619,7 +610,6 @@ workflow {
             mosdepth_summary.flatten(),
             mosdepth_perbase.flatten(),
             mod_stats.flatten(),
-            mapula_stats.flatten(),
             jb_conf.flatten(),
             report_pass.flatten(),
             report_fail.flatten(),

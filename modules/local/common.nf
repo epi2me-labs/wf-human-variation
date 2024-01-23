@@ -96,26 +96,6 @@ process mosdepth {
 }
 
 
-process mapula {
-    cpus 1
-    memory { 4.GB * task.attempt }
-    maxRetries 2
-    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
-    input:
-        tuple path(xam), path(xam_idx), val(xam_meta)
-        path target_bed
-        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
-    output:
-        tuple \
-            path("${params.sample_name}.mapula.csv"),
-            path("${params.sample_name}.mapula.json")
-    script:
-        """
-        mapula count -r ${ref} -f all -n '${params.sample_name}.mapula' ${xam}
-        """
-}
-
-
 process readStats {
     label "wf_common"
     cpus 4

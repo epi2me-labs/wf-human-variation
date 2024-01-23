@@ -49,13 +49,6 @@
                     "description": "Enable output of modified calls to a bedMethyl file [requires input BAM with Ml and Mm tags]",
                     "help_text": "This option is automatically selected and aggregation of modified calls with be carried out using modkit if Ml and Mm tags are found. Disable this option to prevent output of a bedMethyl file.",
                     "default": false
-                },
-                "mapula": {
-                    "type": "boolean",
-                    "description": "Enable mapula to generate basic alignment QC statistics (can be slow on very large data sets)",
-                    "help_text": "Mapula is a tool that is able to parse alignments and produce a range of useful stats. In most cases the other outputs are sufficient and this does not need to be enabled.",
-                    "hidden": true,
-                    "default": false
                 }
             },
             "anyOf": [
