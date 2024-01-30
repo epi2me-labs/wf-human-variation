@@ -70,7 +70,7 @@ The workflow can be run with the demo data using:
 ```
 nextflow run epi2me-labs/wf-human-variation \ 
             --bam 'wf-human-variation-demo/demo.bam' \
-            --basecaller_cfg 'clair3:dna_r10.4.1_e8.2_400bps_hac_prom' \
+            --basecaller_cfg 'dna_r10.4.1_e8.2_400bps_hac_prom' \
             --mod \
             --ref 'wf-human-variation-demo/demo.fasta' \
             --sample_name 'DEMO' \
