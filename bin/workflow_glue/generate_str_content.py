@@ -256,6 +256,10 @@ def main(args):
     # Merging Straglr and Stranger Plot TSV's
     pd_straglr = pd.read_csv(args.straglr, sep="\t", header=1)
     pd_stranger = pd.read_csv(args.stranger, sep="\t", header=0)
+    # subtract one from start position to account for how STRs
+    # are called by straglr
+    pd_stranger["POS"] = pd_stranger["POS"] - 1
+
     merged = pd.merge(pd_straglr, pd_stranger, left_on='start', right_on='POS')
     # Merging BED RU info
     merged = bed_ru_merge(merged, args.repeat_bed)

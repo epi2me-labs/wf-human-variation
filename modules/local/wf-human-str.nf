@@ -25,7 +25,8 @@ process call_str {
                 --min_support 1 \
                 --threads 1 \
                 --min_cluster_size 1
-            cat !{chr}_tmp.vcf | vcfstreamsort | bgziptabix !{chr}_straglr.vcf.gz
+            bgzip -c !{chr}_tmp.vcf > !{chr}_straglr.vcf.gz
+            tabix -p vcf !{chr}_straglr.vcf.gz
         else
             echo "blank subset BED"
         fi
@@ -47,7 +48,8 @@ process annotate_repeat_expansions {
         """
         stranger -f ${variant_catalogue_hg38} ${vcf} \
             | sed 's/\\ /_/g' \
-            | bgziptabix ${chr}_repeat-expansion_annotated.vcf.gz
+            | bgzip -c > ${chr}_repeat-expansion_annotated.vcf.gz
+        tabix -p vcf ${chr}_repeat-expansion_annotated.vcf.gz
         SnpSift extractFields ${chr}_repeat-expansion_annotated.vcf.gz \
             CHROM POS ALT FILTER REF RL RU REPID VARID STR_STATUS > ${chr}_repeat-expansion_annotated.tsv
         SnpSift extractFields ${chr}_repeat-expansion_annotated.vcf.gz \
@@ -112,7 +114,6 @@ process generate_str_content {
             --str_reads_bam ${xam} 
         """
 }
-
 
 process merge_tsv {
     // merge the contig TSVs/CSVs
