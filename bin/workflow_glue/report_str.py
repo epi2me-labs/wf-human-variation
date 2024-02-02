@@ -454,8 +454,14 @@ def make_report(
 
         data = pd.read_csv(straglr, sep="\t", header=0)
         stranger_data = pd.read_csv(stranger, sep="\t", header=0)
+        # subtract one from start position to account for how STRs
+        # are called by straglr
+        stranger_data["POS"] = stranger_data["POS"] - 1
         # read in annotations to get str status
         stranger_annotations = pd.read_csv(stranger_annotation, sep="\t", header=0)
+        # subtract one from start position to account for how STRs
+        # are called by straglr
+        stranger_annotations["POS"] = stranger_annotations["POS"] - 1
 
         merged = pd.merge(data, stranger_data, left_on='start', right_on='POS')
 
@@ -484,7 +490,9 @@ def make_report(
 
             chromosome = merged[merged['VARID'] == repeat]['CHROM'].unique()[0]
 
-            start = merged[merged['VARID'] == repeat]['start'].unique()[0]
+            # increment start position by one as this is a variand call and therefore
+            # should be 1-based
+            start = merged[merged['VARID'] == repeat]['start'].unique()[0] + 1
 
             end = merged[merged['VARID'] == repeat]['end'].unique()[0]
 
