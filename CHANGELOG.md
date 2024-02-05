@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated the version of Straglr, which fixes inconsistencies and errors in the output VCF:
     - Start position of called STRs is now 1-based rather than 0-based
     - VCF headers now match those in the `FORMAT` field
+- Generate `allChromosomes.bed` using `samtools faidx` index instead of `pyfaidx`, to avoid a KeyError
 
 ## [v1.10.1]
 ### Fixed

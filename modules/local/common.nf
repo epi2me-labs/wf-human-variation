@@ -129,7 +129,6 @@ process publish_artifact {
 }
 
 
-// todo https://github.com/mdshw5/pyfaidx/pull/164
 process getAllChromosomesBed {
     cpus 1
     memory 4.GB
@@ -137,9 +136,10 @@ process getAllChromosomesBed {
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         path "allChromosomes.bed", emit: all_chromosomes_bed
-    """
-    faidx --transform bed $ref > allChromosomes.bed
-    """
+    shell:
+    '''
+    awk '{OFS="\t"; print $1, "0", $2}' !{ref_idx} > allChromosomes.bed
+    '''
 }
 
 
