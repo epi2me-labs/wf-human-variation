@@ -226,9 +226,11 @@ Subworkflows where the relevant option is omitted will not be run.
 
 ### 1. Input and data preparation
 
-The workflow relies on three primary input files:
+The workflow relies on two primary input files:
 1. A reference genome in [FASTA format](https://www.ncbi.nlm.nih.gov/genbank/fastaformat/)
 2. Sequencing data for the sample in the form of a single [BAM or CRAM file](https://samtools.github.io/hts-specs/SAMv1.pdf), either aligned or unaligned.
+
+When analysing human data, we recommend using [human_g1k_v37.fasta.gz (FTP link)](ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz) or [GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz (FTP link)](ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz). For more information see [this blog post](https://lh3.github.io/2017/11/13/which-human-reference-genome-to-use) which outlines potential pitfalls with the various flavours of human references.
 
 The input BAM file can be generated using the [wf-basecalling](https://github.com/epi2me-labs/wf-basecalling/) workflow, which is up to date with the current dorado releases and models.
 
