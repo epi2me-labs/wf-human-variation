@@ -7,7 +7,7 @@ import sys
 
 from natsort import natsort_keygen
 import pandas as pd
-from pyfaidx import Fasta
+import pysam
 
 
 def read_bed_file(bed_file):
@@ -18,8 +18,9 @@ def read_bed_file(bed_file):
 
 def get_chrs_from_fasta(fasta_file):
     """Read reference FASTA file, return the chromosome labels."""
-    fasta = Fasta(fasta_file)
-    return list(fasta.keys())
+    fasta = pysam.FastaFile(fasta_file)
+    chromosome_labels = fasta.references
+    return chromosome_labels
 
 
 def write_updated_bed_file(updated_bed_data, output_bed_file):

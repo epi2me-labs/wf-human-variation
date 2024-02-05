@@ -121,7 +121,7 @@ workflow {
     ref = null
     ref_index_fp = null
     if (params.ref.toLowerCase().endsWith("gz")) {
-        // gzipped ref not supported by some downstream tools (pyfaidx, cram_cache)
+        // gzipped ref not supported by some downstream tools (e.g. cram_cache)
         // easier to just decompress and pass it around rather than confusing the user
         decompress_ref(file(params.ref))
         ref = decompress_ref.out.decompressed_ref
