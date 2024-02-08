@@ -1,7 +1,9 @@
 include {
+    concat_vcfs as concat_str_vcfs;
+} from "../modules/local/common.nf"
+include {
     call_str;
     annotate_repeat_expansions;
-    merge_vcf;
     merge_tsv;
     bam_region_filter;
     bam_read_filter;
@@ -51,11 +53,9 @@ workflow str {
     )
 
     // merge the contig VCFs
-    annotations.stranger_annotation.map{it -> it[1]}.collect().set { all_vcfs }
-    annotations.stranger_annotation.map{it -> it[2]}.collect().set { all_vcf_indexes }
-    merged_vcf_and_index = merge_vcf(all_vcfs, all_vcf_indexes)
-    merged_vcf_and_index.collect{it[0]}.set { merged_vcf }
-  
+    stranger_vcfs_and_tbis = annotations.stranger_annotation.map{ it -> [it[1], it[2]] }.collect()
+    merged_vcf = concat_str_vcfs(stranger_vcfs_and_tbis, "${params.sample_name}.wf_str").final_vcf
+
     // merge the contig TSVs/CSVs
     plot_tsv_all = annotations.stranger_annotation.map{it -> it[3]}.collect()
     straglr_tsv_all = str_vcf_and_tsv.map{it -> it[2]}.collect()
@@ -73,6 +73,6 @@ workflow str {
     report = make_report(merged_vcf, merged_straglr, merged_plot, merged_stranger, merged_str_content, software_versions, workflow_params, read_stats)
 
   emit:
-    merged_vcf_and_index.concat(report).concat(merged_straglr).flatten()
+    merged_vcf.concat(report).concat(merged_straglr).flatten()
 
 }

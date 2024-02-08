@@ -36,6 +36,8 @@ include {
     eval_downsampling;
     downsampling;
     annotate_vcf as annotate_snp_vcf;
+    concat_vcfs as concat_snp_vcfs;
+    sift_clinvar_vcf as sift_clinvar_snp_vcf;
     bed_filter;
     sanitise_bed
     } from './modules/local/common'
@@ -495,7 +497,7 @@ workflow {
 
         // Filter by BED, if provided
         if (params.bed) {
-            final_snp_vcf_filtered = bed_filter(final_snp_vcf, roi_filter_bed, "snp", "vcf")
+            final_snp_vcf_filtered = bed_filter(final_snp_vcf, roi_filter_bed, "snp", "vcf").filtered
         }
         else {
             final_snp_vcf_filtered = final_snp_vcf
@@ -509,9 +511,12 @@ workflow {
         }
         else {
             // do annotation and get a list of ClinVar variants for the report
-            annotate_snp_vcf(final_snp_vcf_filtered, genome_build, "snp")
-            final_vcf = annotate_snp_vcf.out.final_vcf
-            clinvar_vcf = annotate_snp_vcf.out.final_vcf_clinvar
+            // snpeff is slow so we'll just pass the whole VCF but annotate per contig
+            annotations = annotate_snp_vcf(
+                final_snp_vcf_filtered.combine(clair_vcf.contigs), genome_build.first(), "snp"
+            )
+            final_vcf = concat_snp_vcfs(annotations.collect(), "${params.sample_name}.wf_snp").final_vcf
+            clinvar_vcf = sift_clinvar_snp_vcf(final_vcf, genome_build, "snp").final_vcf_clinvar
         }
 
         // Run vcf statistics on the final VCF file

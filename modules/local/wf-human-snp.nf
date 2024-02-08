@@ -195,7 +195,7 @@ process phase_contig_haplotag {
             --regions ${contig} \
             phased_${contig}.vcf.gz \
             ${xam} \
-        | samtools view -b -1 -@3 -o ${contig}_hp.bam##idx##${contig}_hp.bam.bai --write-index
+        | samtools view -b -1 -@3 -o ${contig}_hp.bam##idx##${contig}_hp.bam.bai --write-index --no-PG
 
         """
     else
@@ -218,10 +218,7 @@ process phase_contig_haplotag {
             --regions ${contig} \
             phased_${contig}.vcf.gz \
             ${xam} \
-        | samtools view -b -1 -@3 -o ${contig}_hp.bam
-
-        # --write-index produces .csi not .bai, which downstream things seem not to like
-        samtools index -@${task.cpus} ${contig}_hp.bam
+        | samtools view -b -1 -@3 -o ${contig}_hp.bam##idx##${contig}_hp.bam.bai --write-index --no-PG
 
         """
 }
@@ -266,20 +263,43 @@ process phase_contig {
         """
 }
 
-process merge_haplotagged_contigs {
+process cat_haplotagged_contigs {
     label "wf_human_snp"
-    cpus params.merge_threads
-    memory 4.GB
+    cpus 4
+    memory 15.GB // cat should not need this, but weirdness occasionally strikes
     input:
-        path contig_xams
+        path contig_bams // always bam
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple val(xam_fmt), val(xai_fmt)
     output:
-        tuple path("*haplotagged.${xam_fmt}"), path("*haplotagged.${xam_fmt}.${xai_fmt}"), emit: merged_bam
+        tuple path("${params.sample_name}.haplotagged.${xam_fmt}"), path("${params.sample_name}.haplotagged.${xam_fmt}.${xai_fmt}"), emit: merged_bam
     script:
+    def threads = Math.max(task.cpus - 1, 1)
     """
-    samtools merge -@ $task.cpus -O ${xam_fmt} -o ${params.sample_name}.haplotagged.${xam_fmt} ${contig_xams}
-    samtools index -@ $task.cpus ${params.sample_name}.haplotagged.${xam_fmt}
+    # ensure this bit is idempotent as it will inevitably not be called so
+    if [ -f seq_list.txt ]; then
+        rm seq_list.txt
+    fi
+    # pick the "first" bam and read its SQ list to determine sort order
+    samtools view -H --no-PG `ls *_hp.bam | head -n1` | grep '^@SQ' | sed -nE 's,.*SN:([^[:space:]]*).*,\\1,p' > seq_list.txt
+    # append present contigs to a file of file names, to cat according to SQ order
+    while read sq; do
+        if [ -f "\${sq}_hp.bam" ]; then
+            echo "\${sq}_hp.bam" >> cat.fofn
+        fi
+    done < seq_list.txt
+    if [ ! -s cat.fofn ]; then
+        echo "No haplotagged inputs to cat? Are the input file names staged correctly?"
+        exit 70 # EX_SOFTWARE
+    fi
+
+    # cat just cats, if we want cram, we'll have to deal with that ourselves
+    if [ "${xam_fmt}" = "cram" ]; then
+        samtools cat -b cat.fofn --no-PG -@ $threads -o - | samtools view --no-PG --reference ${ref} -O CRAM --write-index -o "${params.sample_name}.haplotagged.cram##idx##${params.sample_name}.haplotagged.cram.crai"
+    else
+        samtools cat -b cat.fofn --no-PG -@ $threads -o "${params.sample_name}.haplotagged.bam"
+        samtools index -@ $threads -b "${params.sample_name}.haplotagged.bam"
+    fi
     """
 }
 
@@ -576,7 +596,7 @@ process aggregate_all_variants{
 
 process refine_with_sv {
     label "wf_human_snp"
-    cpus 1
+    cpus 4
     memory { 8.GB * task.attempt }
     maxRetries 2
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}

@@ -6,7 +6,7 @@ include {
     select_het_snps;
     phase_contig;
     phase_contig_haplotag;
-    merge_haplotagged_contigs;
+    cat_haplotagged_contigs;
     get_qual_filter;
     create_candidates;
     evaluate_candidates;
@@ -84,7 +84,7 @@ workflow snp {
             phase_contig_haplotag.out.phased_bam_and_vcf.map{it -> tuple(it[0], it[1], it[2])}.set { bam_for_str }
             // Merge the haplotagged contigs into a single BAM
             phase_contig_haplotag.out.phased_bam_and_vcf.collect{it[1]}.set { contig_bams }
-            haplotagged_bam = merge_haplotagged_contigs(contig_bams, ref, extensions)
+            haplotagged_bam = cat_haplotagged_contigs(contig_bams, ref, extensions)
 
         }
         else {
@@ -216,6 +216,7 @@ workflow snp {
         str_bams = bam_for_str
         vcf_files = clair_final.final_vcf
         hp_bams = haplotagged_bam.combine(bam_channel.map{it[2]})
+        contigs = contigs
 }
 
 

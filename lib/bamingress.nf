@@ -95,7 +95,7 @@ process check_for_alignment {
 }
 
 process samtools_index {
-    cpus 1
+    cpus 8
     memory 4.GB
     input:
         path(xam)
@@ -103,7 +103,7 @@ process samtools_index {
         path("${xam}.*ai")
     script:
     """
-    samtools index $xam
+    samtools index -@ ${task.cpus} $xam
     """
 }
 

@@ -108,8 +108,9 @@ process readStats {
         path "${params.sample_name}.readstats.tsv.gz", emit: read_stats
         path "${params.sample_name}.flagstat.tsv", emit: flagstat
     script:
+        def stats_threads = Math.max(task.cpus - 1, 1)
         """
-        bamstats -s ${params.sample_name} -u -f ${params.sample_name}.flagstat.tsv --threads 3 "${xam}" | gzip > "${params.sample_name}.readstats.tsv.gz"
+        bamstats -s ${params.sample_name} -u -f ${params.sample_name}.flagstat.tsv --threads ${stats_threads} "${xam}" | gzip > "${params.sample_name}.readstats.tsv.gz"
         """
 }
 
@@ -179,7 +180,8 @@ process getGenome {
      script:
         def workflow_arg = params.str ? "-w str" : ""
         """
-        samtools idxstats ${xam} > ${xam}_genome.txt
+        # use view -H rather than idxstats, as idxstats will still cause a scan of the whole CRAM (https://github.com/samtools/samtools/issues/303)
+        samtools view -H ${xam} --no-PG | grep '^@SQ' | sed -nE 's,.*SN:([^[:space:]]*).*LN:([^[:space:]]*).*,\\1\\t\\2,p' > ${xam}_genome.txt
         get_genome.py --chr_counts ${xam}_genome.txt -o output.txt ${workflow_arg}
         genome_build=`cat output.txt`
         """
@@ -389,59 +391,94 @@ process getParams {
 
 
 process annotate_vcf {
-    // use SnpEff to generate basic functional annotations, SnpSift annotate to add 
-    // ClinVar annotations, and SnpSift filter to produce a separate VCF of Clinvar-annotated 
-    // variants - if any variants are present in this file, it is used to populate a table in 
-    // the report.
+    // use SnpEff to generate basic functional annotations,
+    // followed by SnpSift annotate to add ClinVar annotations
     label "snpeff_annotation"
-    cpus 2
-    memory 8.GB
+    cpus 1
+    memory 6.GB
     input:
-        tuple path("input.vcf.gz"), path("input.vcf.gz.tbi")
+        tuple path("input.vcf.gz"), path("input.vcf.gz.tbi"), val(contig)
         val(genome)
         val(output_label)
     output:
-        tuple path("${params.sample_name}.wf_${output_label}.vcf.gz"), path("${params.sample_name}.wf_${output_label}.vcf.gz.tbi"), emit: final_vcf
-        path("${params.sample_name}.wf_${output_label}.snpEff_genes.txt")
-        path("${params.sample_name}.wf_${output_label}_clinvar.vcf"), emit: final_vcf_clinvar
+        tuple path("${params.sample_name}.wf_${output_label}*.vcf.gz"), path("${params.sample_name}.wf_${output_label}*.vcf.gz.tbi"), emit: annot_vcf
     shell:
     '''
+    if [ "!{contig}" == '*' ]; then
+        # SV is quick to annotate, dont bother breaking it apart
+        INPUT_FILENAME=input.vcf.gz
+        OUTPUT_LABEL="!{output_label}"
+    else
+        # SNP is slow to annotate, we'll break it apart by contig
+        # and merge it back later. filter the master VCF to current contig
+        bcftools view -r !{contig} input.vcf.gz | bgzip > input.chr.vcf.gz
+        INPUT_FILENAME=input.chr.vcf.gz
+        OUTPUT_LABEL="!{output_label}.!{contig}"
+    fi
+
     # deal with samples which aren't hg19 or hg38
     if [[ "!{genome}" != "hg38" ]] && [[ "!{genome}" != "hg19" ]]; then
         # return the original VCF and index as the outputs
-        cp input.vcf.gz !{params.sample_name}.wf_!{output_label}.vcf.gz
-        cp input.vcf.gz.tbi !{params.sample_name}.wf_!{output_label}.vcf.gz.tbi
-        # create an empty snpEff_genes file
-        touch !{params.sample_name}.wf_!{output_label}.snpEff_genes.txt
-        # create an empty ClinVar VCF
-        touch !{params.sample_name}.wf_!{output_label}_clinvar.vcf
+        cp ${INPUT_FILENAME} !{params.sample_name}.wf_${OUTPUT_LABEL}.vcf.gz
+        cp ${INPUT_FILENAME}.tbi !{params.sample_name}.wf_${OUTPUT_LABEL}.vcf.gz.tbi
     else
         # do some annotation
         if [[ "!{genome}" == "hg38" ]]; then
             snpeff_db="GRCh38.p13"
             clinvar_vcf="${CLINVAR_PATH}/clinvar_GRCh38.vcf.gz"
-            
+
         elif [[ "!{genome}" == "hg19" ]]; then
             snpeff_db="GRCh37.p13"
             clinvar_vcf="${CLINVAR_PATH}/clinvar_GRCh37.vcf.gz"
         fi
 
-        # Specify 4G of memory otherwise SnpEff will crash with the default 1G
-        snpEff -Xmx!{task.memory.giga - 1}g ann $snpeff_db input.vcf.gz > !{params.sample_name}.snpeff_annotated.vcf
+        snpEff -Xmx!{task.memory.giga - 1}g ann -noStats -noLog $snpeff_db ${INPUT_FILENAME} > !{params.sample_name}.intermediate.snpeff_annotated.vcf
         # Add ClinVar annotations
-        SnpSift annotate $clinvar_vcf !{params.sample_name}.snpeff_annotated.vcf > !{params.sample_name}.wf_!{output_label}.vcf
-        # Get the ClinVar-annotated variants into a separate VCF
-        cat !{params.sample_name}.wf_!{output_label}.vcf | SnpSift filter "( exists CLNSIG )" > !{params.sample_name}.wf_!{output_label}_clinvar.vcf
-    
-        bgzip -c !{params.sample_name}.wf_!{output_label}.vcf > !{params.sample_name}.wf_!{output_label}.vcf.gz
-        tabix !{params.sample_name}.wf_!{output_label}.vcf.gz
-    
+        SnpSift annotate $clinvar_vcf !{params.sample_name}.intermediate.snpeff_annotated.vcf | bgzip > !{params.sample_name}.wf_${OUTPUT_LABEL}.vcf.gz
+        tabix !{params.sample_name}.wf_${OUTPUT_LABEL}.vcf.gz
+
         # tidy up
-        rm !{params.sample_name}.snpeff_annotated.vcf
-        rm !{params.sample_name}.wf_!{output_label}.vcf
-        mv snpEff_genes.txt !{params.sample_name}.wf_!{output_label}.snpEff_genes.txt
+        rm !{params.sample_name}.intermediate*
     fi
     '''
+}
+
+process sift_clinvar_vcf {
+    label "snpeff_annotation"
+    cpus 1
+    memory 3.GB
+    input:
+        tuple path("input.vcf.gz"), path("input.vcf.gz.tbi")
+        val(genome)
+        val(output_label)
+    output:
+        path("${params.sample_name}.wf_${output_label}_clinvar.vcf"), emit: final_vcf_clinvar
+    shell:
+    '''
+    # deal with samples which aren't hg19 or hg38
+    if [[ "!{genome}" != "hg38" ]] && [[ "!{genome}" != "hg19" ]]; then
+        # create an empty ClinVar VCF
+        touch !{params.sample_name}.wf_!{output_label}_clinvar.vcf
+    else
+        bcftools view input.vcf.gz | SnpSift filter "( exists CLNSIG )" > !{params.sample_name}.wf_!{output_label}_clinvar.vcf
+    fi
+    '''
+}
+
+process concat_vcfs {
+    cpus 2
+    memory 3.GB
+    input:
+        path (vcfs_artifacts, stageAs: "vcfs/*")
+        val(prefix)
+    output:
+        tuple path ("${prefix}.vcf.gz"), path("${prefix}.vcf.gz.tbi"), emit: final_vcf
+    script:
+        def concat_threads = Math.max(task.cpus - 1, 1)
+        """
+        bcftools concat --threads ${concat_threads} -O u vcfs/*.vcf.gz | bcftools sort -O z - > ${prefix}.vcf.gz
+        tabix -p vcf ${prefix}.vcf.gz
+        """
 }
 
 process haploblocks {

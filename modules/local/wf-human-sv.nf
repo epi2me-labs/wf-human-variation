@@ -1,25 +1,8 @@
 import groovy.json.JsonBuilder
 
-// Remove unmapped (4), non-primary (256) and supplemental (2048) alignments
-process filterBam {
-    label "wf_human_sv"
-    cpus params.threads
-    memory 4.GB
-    input:
-        tuple path(xam), path(xam_idx)
-        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
-        tuple val(xam_fmt), val(xai_fmt)
-    output:
-        tuple path("${params.sample_name}.filtered.${xam_fmt}"), path("${params.sample_name}.filtered.${xam_fmt}.${xai_fmt}"), emit: xam
-    script:
-    """
-    samtools view -@ $task.cpus -F 2308 -o ${params.sample_name}.filtered.${xam_fmt}##idx##${params.sample_name}.filtered.${xam_fmt}.${xai_fmt} -O ${xam_fmt} --write-index --reference ${ref} ${xam}
-    """
-}
-
-
 // NOTE VCF entries for alleles with no support are removed to prevent them from
 //      breaking downstream parsers that do not expect them
+// --input-exclude-flags 2308: Remove unmapped (4), non-primary (256) and supplemental (2048) alignments
 process sniffles2 {
     label "wf_human_sv"
     cpus params.threads
@@ -44,6 +27,7 @@ process sniffles2 {
         ${min_sv_len} \
         --cluster-merge-pos $params.cluster_merge_pos \
         --input $xam \
+        --input-exclude-flags 2308 \
         $tr_arg \
         $sniffles_args \
         $phase \
