@@ -1,6 +1,7 @@
 
 include { 
-    haploblocks as haploblocks_joint
+    haploblocks as haploblocks_joint;
+    concat_vcfs as concat_phased_vcfs;
 } from '../modules/local/common.nf'
 
 def phaser_memory = params.use_longphase ? [8.GB, 32.GB, 56.GB] : [4.GB, 8.GB, 12.GB]
@@ -26,8 +27,7 @@ process phase_all {
             path(ref_cache),
             env(REF_PATH)
     output:
-        path("phased_${contig}.vcf.gz"), emit: vcf
-        path("phased_${contig}.vcf.gz.tbi"), emit: tbi
+        tuple path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"), emit: phased_vcf
     script:
         // Define option for longphase
         def sv_option = is_sv_vcf ? "--sv-file sv.vcf" : ""
@@ -70,26 +70,6 @@ process phase_all {
 }
 
 
-process vcf_concat_all {
-    // Phase VCF for a contig
-    // Emit directly since it is the only output from this stage
-    cpus 3
-    memory 4.GB
-    input:
-        path(phased_vcfs, stageAs: "phased/*")
-        path(phased_tbis, stageAs: "phased/*")
-    output:
-        tuple path("${params.sample_name}.wf_human_variation.phased.vcf.gz"), path("${params.sample_name}.wf_human_variation.phased.vcf.gz.tbi"), emit: combined
-    script:
-        def concat_threads = params.threads == 1 ? 1 : params.threads - 1
-        """
-        # Prepare correct input file
-        bcftools concat --threads ${concat_threads} -O u phased/*.vcf.gz | bcftools sort -O z - > ${params.sample_name}.wf_human_variation.phased.vcf.gz
-        tabix -p vcf ${params.sample_name}.wf_human_variation.phased.vcf.gz
-        """
-}
-
-
 workflow phasing {
     take:
         clair_vcf
@@ -116,16 +96,15 @@ workflow phasing {
             .combine(struct_vcf)
             .combine(reference_ch) | phase_all
 
-        // Collect phased files
-        vcfs = phase_all.out.vcf.collect()
-        tbis = phase_all.out.tbi.collect()
-
         // Concatenate the phased files
-        vcf_concat_all(vcfs, tbis)
+        phased_vcf = concat_phased_vcfs(
+            phase_all.out.phased_vcf.collect(),
+            "${params.sample_name}.wf_human_variation.phased"
+        ).final_vcf
 
         // Define joint haploblocks
-        haploblocks_joint(vcf_concat_all.out, 'human_variation')
+        haploblocks_joint(phased_vcf, 'human_variation')
 
     emit:
-        vcf_concat_all.out.combined.concat(haploblocks_joint.out.phase_blocks)
+        phased_vcf.concat(haploblocks_joint.out.phase_blocks)
 }

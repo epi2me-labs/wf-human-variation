@@ -43,7 +43,7 @@ process annotate_repeat_expansions {
         tuple val (chr), path(vcf), path(tsv)
         path(variant_catalogue_hg38)
     output:
-        tuple val(chr), path("*.vcf.gz"), path("*.vcf.gz.tbi"), path("*_plot.tsv"), path("*_annotated.tsv"), emit: stranger_annotation
+        tuple val(chr), path("${chr}_repeat-expansion_annotated.vcf.gz"), path("${chr}_repeat-expansion_annotated.vcf.gz.tbi"), path("*_plot.tsv"), path("*_annotated.tsv"), emit: stranger_annotation
     script:
         """
         stranger -f ${variant_catalogue_hg38} ${vcf} \
@@ -137,30 +137,12 @@ process merge_tsv {
 }
 
 
-process merge_vcf {
-    // merge the contig VCFs
-    cpus { params.threads < 2 ? 2 : params.threads }
-    memory { (1.GB * params.threads) + 1.GB }
-    input:
-        path (vcfs)
-        path (vcf_indexes)
-    output:
-        tuple path ("*str.vcf.gz"), path("*str.vcf.gz.tbi"), emit: final_vcf
-    script:
-        """
-        bcftools concat --threads ${task.cpus} ${vcfs} > ${params.sample_name}.wf_str.vcf
-        bgzip ${params.sample_name}.wf_str.vcf
-        tabix ${params.sample_name}.wf_str.vcf.gz
-        """
-}
-
-
 process make_report {
     cpus 1
     memory 16.GB
     input:
-        path(vcf)
-        path(straglr_tsv) 
+        tuple path(vcf), path(vcf_idx)
+        path(straglr_tsv)
         path(plot_tsv)
         path(stranger_annotation)
         path(str_content)

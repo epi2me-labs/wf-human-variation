@@ -1,7 +1,6 @@
 import groovy.json.JsonBuilder
 
 include {
-    filterBam;
     sniffles2;
     filterCalls;
     sortVCF;
@@ -14,7 +13,7 @@ include {
     intersectBedWithTruthset;
     truvari;
 } from "../modules/local/wf-human-sv-eval.nf"
-include { 
+include {
     annotate_vcf as annotate_sv_vcf;
     haploblocks as haploblocks_sv
 } from '../modules/local/common.nf'
@@ -50,11 +49,10 @@ workflow bam {
             )
         }
         else {
-            vcf_for_annotation = called.vcf.combine(called.vcf_index)
+            // append '*' to indicate that annotation should be performed on all chr at once
+            vcf_for_annotation = called.vcf.combine(called.vcf_index).map{ it << '*' }
             // annotate with SnpEff
-            annotations = annotate_sv_vcf(vcf_for_annotation, genome_build, "sv")
-            final_vcf = annotations.final_vcf
-
+            final_vcf = annotate_sv_vcf(vcf_for_annotation, genome_build, "sv").annot_vcf
             report = runReport(
                 final_vcf.map{it[0]},
                 benchmark_result
@@ -149,8 +147,7 @@ workflow variantCall {
             tr_bed = Channel.fromPath(params.tr_bed, checkIfExists: true)
         }
 
-        filterBam(bam, reference, extensions)
-        sniffles2(filterBam.out.xam, tr_bed, reference)
+        sniffles2(bam, tr_bed, reference)
         filterCalls(sniffles2.out.vcf, mosdepth_stats, target_bed)
         sortVCF(filterCalls.out.vcf)
 

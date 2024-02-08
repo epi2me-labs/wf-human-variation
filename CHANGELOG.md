@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unambiguous naming of bedMethyl files generated with `--mod`
     - Unphased outputs will have the pattern `[sample_name].wf_mods.bedmethyl.gz`
     - Phased outputs will have the pattern `[sample_name]_[1|2|ungrouped].wf_mods.bedmethyl.gz`
+- Improved configuration for running in cloud
 ### Fixed
 - Report step failing if bcftools stats file has only some sub-sections
 - Clair3 ignoring the bed file
