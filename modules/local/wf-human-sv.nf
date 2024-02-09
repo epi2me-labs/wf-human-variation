@@ -27,6 +27,7 @@ process sniffles2 {
         ${min_sv_len} \
         --cluster-merge-pos $params.cluster_merge_pos \
         --input $xam \
+        --reference $ref \
         --input-exclude-flags 2308 \
         $tr_arg \
         $sniffles_args \

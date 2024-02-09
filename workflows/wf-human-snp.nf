@@ -5,7 +5,6 @@ include {
     aggregate_pileup_variants;
     select_het_snps;
     phase_contig;
-    phase_contig_haplotag;
     cat_haplotagged_contigs;
     get_qual_filter;
     create_candidates;
@@ -13,6 +12,7 @@ include {
     aggregate_full_align_variants;
     merge_pileup_and_full_vars;
     post_clair_phase_contig;
+    post_clair_contig_haplotag;
     aggregate_all_variants;
     hap;
     getParams;
@@ -39,7 +39,7 @@ workflow snp {
 
         // truncate bam channel to remove meta to keep compat with snp pipe
         bam = bam_channel.map{ it -> tuple(it[0], it[1]) }
-        
+
         // Run preliminaries to find contigs and generate regions to process in
         // parallel.
         // > Step 0
@@ -76,26 +76,10 @@ workflow snp {
         phase_inputs = select_het_snps.out.het_snps_vcf
             .combine(bam).combine(ref)
         // > Step 3
-        // > Step 4 (haplotagging performed as part of STR sub-workflow only)
-        if (run_haplotagging) {
-            phase_contig_haplotag(phase_inputs)
-            phase_contig_haplotag.out.phased_bam_and_vcf.set { phased_bam_and_vcf }
+        // > Step 4 (haplotagging is now done at the end of the workflow, rather than here)
+        phase_contig(phase_inputs)
+        phase_contig.out.phased_bam_and_vcf.set { phased_bam_and_vcf }
 
-            phase_contig_haplotag.out.phased_bam_and_vcf.map{it -> tuple(it[0], it[1], it[2])}.set { bam_for_str }
-            // Merge the haplotagged contigs into a single BAM
-            phase_contig_haplotag.out.phased_bam_and_vcf.collect{it[1]}.set { contig_bams }
-            haplotagged_bam = cat_haplotagged_contigs(contig_bams, ref, extensions)
-
-        }
-        else {
-            phase_contig(phase_inputs)
-            phase_contig.out.phased_bam_and_vcf.set { phased_bam_and_vcf }
-            // SNP only so we don't need these
-            bam_for_str = Channel.empty()
-            haplotagged_bam = Channel.empty()
-        }
-
-        
         // Find quality filter to select variants for "full alignment"
         // processing, then generate bed files containing the candidates.
         // > Step 5
@@ -173,18 +157,27 @@ workflow snp {
         // phased requires haplotagged bam to perform appropriate phasing
         // perform internal phasing only if snp+phase is requested, but not sv.
         // Otherwise use final joint phasing only.
-        if (params.phased) {
-            data = merge_pileup_and_full_vars.out.merged_vcf
-                .combine(haplotagged_bam).combine(ref)
-            
-            post_clair_phase_contig(data)
+        if (run_haplotagging) {
+            post_clair_phase = merge_pileup_and_full_vars.out.merged_vcf
+                .combine(bam)
+                .combine(ref) |
+                post_clair_phase_contig
+            post_clair_phase.vcf
                 .map { it -> [it[1]] }
                 .set { final_vcfs }
-            
+            post_clair_phase.for_tagging | post_clair_contig_haplotag
+
+            post_clair_contig_haplotag.out.phased_cram.set { cram_for_str }
+            // Merge the haplotagged contigs into a single BAM
+            post_clair_contig_haplotag.out.phased_cram.collect{it[1]}.set { contig_crams }
+            haplotagged_xam = cat_haplotagged_contigs(contig_crams, ref, extensions)
         } else {
             merge_pileup_and_full_vars.out.merged_vcf
                 .map { it -> [it[1]] }
                 .set { final_vcfs }
+            // SNP only so we don't need these
+            cram_for_str = Channel.empty()
+            haplotagged_xam = Channel.empty()
         }
 
         // ...then collate final per-contig VCFs for whole genome results
@@ -206,16 +199,16 @@ workflow snp {
 
         // Define clair3 results, adding GVCF if needed
         if (params.GVCF){
-            clair3_results = haplotagged_bam.concat(clair_final.final_vcf).concat(clair_final.final_gvcf).concat(hp_snp_blocks)
+            clair3_results = haplotagged_xam.concat(clair_final.final_vcf).concat(clair_final.final_gvcf).concat(hp_snp_blocks)
         } else {
-            clair3_results = haplotagged_bam.concat(clair_final.final_vcf).concat(hp_snp_blocks)
+            clair3_results = haplotagged_xam.concat(clair_final.final_vcf).concat(hp_snp_blocks)
         }
 
     emit:
         clair3_results = clair3_results
-        str_bams = bam_for_str
+        str_bams = cram_for_str
         vcf_files = clair_final.final_vcf
-        hp_bams = haplotagged_bam.combine(bam_channel.map{it[2]})
+        hp_bams = haplotagged_xam.combine(bam_channel.map{it[2]})
         contigs = contigs
 }
 

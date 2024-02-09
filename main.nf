@@ -286,7 +286,7 @@ workflow {
             .set{ratio}
 
         // Perform downsampling
-        downsampling(pass_bam_channel, ref_channel, ratio.subset)
+        downsampling(pass_bam_channel, ref_channel, ratio.subset, extensions)
 
         // prepare ready files
         ratio.ready
@@ -300,14 +300,14 @@ workflow {
         // - [meta, xam, xai, null]
         // Using it - null removes the inputs from the wrong channel, retaining 
         // Before merging properly, we first check that the merged channel size is not malformed
-        downsampling.out.bam
+        downsampling.out.xam
             .join(ready_bam_channel, by:2, remainder: true)
             .filter{it.size() > 4}
             .subscribe{
                 throw new Exception(colors.red + "Unexpected channel size when merging." + colors.reset) 
             }
         // If this passes, then we can create the proper channel.
-        downsampling.out.bam
+        downsampling.out.xam
             .join(ready_bam_channel, by:2, remainder: true)
             .map{it - null}
             .map{meta, xam, xai -> [xam, xai, meta]}
@@ -447,8 +447,7 @@ workflow {
             bed,
             mosdepth_input.out.summary,
             OPTIONAL,
-            genome_build,
-            extensions
+            genome_build
         )
         artifacts = results.report.flatten()
         sniffles_vcf = results.sniffles_vcf

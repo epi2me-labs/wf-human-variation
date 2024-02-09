@@ -35,7 +35,7 @@ Minimum requirements:
 + CPUs = 12
 + Memory = 32GB
 
-Approximate run time: Variable depending on whether it is targeted sequencing or whole genome sequencing, as well as coverage and the individual analyses requested. For instance, a 90X human sample run (options: `--snp --sv --mod --str --cnv --phased_vcf --joint_phasing --phase_mod --sex male`) takes less than 8h with recommended resources.
+Approximate run time: Variable depending on whether it is targeted sequencing or whole genome sequencing, as well as coverage and the individual analyses requested. For instance, a 90X human sample run (options: `--snp --sv --mod --str --cnv --phased --sex male`) takes less than 8h with recommended resources.
 
 ARM processor support: False
 
@@ -248,7 +248,7 @@ Some components work better withing certain ranges of coverage, and the user mig
 The workflow implements a deconstructed version of [Clair3](https://github.com/HKU-BAL/Clair3) (v1.0.4) to call germline variants. The appropriate model can be provided with the `--basecaller_cfg` option. To decide on the appropriate model you can check out the Dorado documentation for a list of available basecalling models.
 This workflow takes advantage of the parallel nature of Nextflow, providing optimal efficiency in high-performance, distributed systems. The workflow will automatically call small variants (SNPs and indels), collect statistics, annotate them with [SnpEff](https://pcingola.github.io/SnpEff/) (and additionally for SNPs, ClinVar details), and create a report summarising the findings.
 
-If desired, the workflow can perform phasing of structural variants by using the `--phased` option. This will lead the workflow to use [longphase](https://github.com/twolinin/longphase) to perform phasing of the variants, with the option to use [whatshap](https://whatshap.readthedocs.io/) instead by setting `--use_longphase false`. The phasing will also generate a GFF file with the annotation of the phase blocks, facilitating the detection of these within genome visualizers.
+If desired, the workflow can perform phasing of structural variants by using the `--phased` option. This will lead the workflow to use [longphase](https://github.com/twolinin/longphase) to perform phasing of the variants, with the option to use [whatshap](https://whatshap.readthedocs.io/) instead by setting `--use_longphase false`. Deactivating the longphase phasing will not disable the final joint phasing with longphase, and if you want the individually phased VCFs you should provide the `--output_separate_phased` option. The phasing will also generate a GFF file with the annotation of the phase blocks, facilitating the detection of these within genome visualizers.
 
 ### 4. Structural variant (SV) calling with Sniffles2
 
@@ -278,18 +278,24 @@ The STR workflow takes a required `--sex` option which is `male` or `female`. If
 In addition to a gzipped VCF file containing STRs found in the dataset, the workflow emits a TSV straglr output containing reads spanning STRs, and a haplotagged BAM. 
 
 ### 8. Phasing variants
-The workflow can perform joint physical phasing with `longphase` of SNP, Indels and SVs by setting the `--phased --snp --sv` options.
+Variant phasing is switched on simply using the `--phased` option.
+By default, the workflow uses [longphase](https://github.com/twolinin/longphase) to perform phasing of the variants, with the option to use [whatshap](https://whatshap.readthedocs.io/) instead by setting `--use_longphase false`.
+The workflow will automatically turn on the necessary phasing processes based on the selected subworkflows.
 The behaviour of the phasing is summarised in the below table:
 
-|  |  |  |  | phased SNP VCF | phased SV VCF | Joint SV+SNP phased VCF | Phased bedMethyl |
-|---------|--------|---------|------------|--------|--------|--------|--------|
-| `--snp` | `--sv` | `--mod` | `--phased` |  |  | &check; | &check; |
-| `--snp` | `--sv` |  | `--phased` |  |  | &check; |  |
-| `--snp` |  |  | `--phased` | &check; |  |  |
-|  | `--sv` |  | `--phased` |  | &check; |  |  |  |
-|  |  | `--mod` | `--phased` |  |  |  | &check; |
+|         |        |         |            | Phased SNP VCF | Phased SV VCF | Joint SV+SNP phased VCF | Phased bedMethyl |
+|---------|--------|---------|------------|----------------|---------------|-------------------------|------------------|
+| `--snp` | `--sv` | `--mod` | `--phased` |                |               |          &check;        |       &check;    |
+| `--snp` | `--sv` |         | `--phased` |                |               |          &check;        |                  |
+| `--snp` |        |         | `--phased` |     &check;    |               |                         |                  |
+|         | `--sv` |         | `--phased` |                |     &check;   |                         |                  |
+|         |        | `--mod` | `--phased` |                |               |                         |       &check;    |
+
+The joint physical phasing of SNP and SVs can only be performed with [longphase](https://github.com/twolinin/longphase) by selecting the options: `--phased --snp --sv`. Setting `--use_longphase false` will not disable the final joint phasing with longphase.
 
 In some circumstances, users may wish to keep the separate VCF files before joint phasing. This can be done with `--output_separate_phased`.
+
+Running the phasing is a compute intensive process. Running the workflow in phasing mode doubles the runtime, and significantly increases the storage requirements to the order of terabytes.
 
 ### 9. Variant annotation
 Annotation will be performed automatically by the SNP and SV subworkflows, and can be disabled by the user with `--annotation false`. The workflow will annotate the variants using [SnpEff](https://pcingola.github.io/SnpEff/), and currently only support the human hg19 and hg38 genomes. Additionally, the workflow will add the [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) annotations for the SNP variants.

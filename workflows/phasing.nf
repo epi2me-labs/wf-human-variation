@@ -45,7 +45,6 @@ process phase_all {
         # Run longphase
         longphase phase \
             --ont \
-            --indels \
             -o tmp_${contig} \
             -s snp.vcf \
             -b ${xam} \

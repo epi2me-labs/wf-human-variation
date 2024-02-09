@@ -215,16 +215,20 @@ process downsampling {
         tuple path(xam), path(xam_idx), val(xam_meta)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple val(to_downsample), val(downsampling_rate)
+        tuple val(xam_fmt), val(xai_fmt)
     output:
-        tuple path("downsampled.bam"), path("downsampled.bam.bai"), val(xam_meta), emit: bam optional true
+        tuple path("downsampled.${xam_fmt}"), path("downsampled.${xam_fmt}.${xai_fmt}"), val(xam_meta), emit: xam optional true
     script:
         """
         samtools view \\
             -@ ${task.cpus} \\
-            -hb \\
+            -h \\
+            -O ${xam_fmt} \\
+            --write-index \\
+            --reference $ref \\
             --subsample ${downsampling_rate} \\
-            $xam > downsampled.bam
-        samtools index -@ ${task.cpus} downsampled.bam
+            -o downsampled.${xam_fmt}##idx##downsampled.${xam_fmt}.${xai_fmt} \\
+            $xam
         """
 }
 
