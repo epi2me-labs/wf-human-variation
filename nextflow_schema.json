@@ -274,7 +274,7 @@
                     "default": true,
                     "description": "Use longphase for final phasing of output variants (experimental).",
                     "hidden": true,
-                    "help_text": "The default behaviour of the workflow is to use longphase for the final variant phasing. Setting this to false will have the workflow to run [whatshap](https://whatshap.readthedocs.io/) instead."
+                    "help_text": "The default behaviour of the workflow is to use longphase for the variant phasing. If set to false, the workflow will execute [whatshap](https://whatshap.readthedocs.io/) instead."
                 },
                 "clair3_model_path": {
                     "type": "string",
@@ -339,7 +339,6 @@
                 },
                 "ctg_name": {
                     "type": "string",
-                    "default": "EMPTY",
                     "description": "The name of the sequence to be processed.",
                     "hidden": true
                 },
@@ -593,7 +592,7 @@
             "cpus": 12,
             "memory": "32GB"
         },
-        "run_time": "Variable depending on whether it is targeted sequencing or whole genome sequencing, as well as coverage and the individual analyses requested. For instance, a 90X human sample run (options: `--snp --sv --mod --str --cnv --phased_vcf --joint_phasing --phase_mod --sex male`) takes less than 8h with recommended resources.",
+        "run_time": "Variable depending on whether it is targeted sequencing or whole genome sequencing, as well as coverage and the individual analyses requested. For instance, a 90X human sample run (options: `--snp --sv --mod --str --cnv --phased --sex male`) takes less than 8h with recommended resources.",
         "arm_support": false
     }
 }

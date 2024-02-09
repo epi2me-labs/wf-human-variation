@@ -1,6 +1,7 @@
 import groovy.json.JsonBuilder
 
 def phaser_memory = params.use_longphase ? [8.GB, 32.GB, 56.GB] : [4.GB, 8.GB, 12.GB]
+def haptag_memory = [4.GB, 8.GB, 12.GB]
 
 process make_chunks {
     // Do some preliminaries. Ordinarily this would setup a working directory
@@ -22,10 +23,27 @@ process make_chunks {
     script:
         def bedargs = bed.name != 'OPTIONAL_FILE' ? "--bed_fn ${bed}" : ''
         def bedprnt = bed.name != 'OPTIONAL_FILE' ? "--bed_fn=${bed}" : ''
+        // Programmatically define chromosome codes.
+        ArrayList chromosome_codes = []
+        ArrayList chromosomes = [1..22] + ["X", "Y", "M", "MT"]
+        for (N in chromosomes.flatten()){
+            chromosome_codes += ["chr${N}", "${N}"]
+        }
+        String ctgs = chromosome_codes.join(',')
+        // Define contigs in order to enforce the mitochondrial genome calling, which is otherwise skipped.
+        def ctg_name = "--ctg_name ${ctgs}"
+        // If a single contig is required, then set it as option
+        if (params.ctg_name){
+            ctg_name = "--ctg_name ${params.ctg_name}"
+        }
+        // If all contigs are required, then set the ctg_name to EMPTY
+        if (params.include_all_ctgs || bed.name != 'OPTIONAL_FILE'){
+            ctg_name = '--ctg_name "EMPTY"'
+        }
         """
         # CW-2456: save command line to add to VCF file (very long command...)
         mkdir -p clair_output/tmp
-        echo "run_clair3.sh --bam_fn=${xam} ${bedprnt} --ref_fn=${ref} --vcf_fn=${params.vcf_fn} --output=clair_output --platform=ont --sample_name=${params.sample_name} --model_path=${model_path.simpleName} --ctg_name=${params.ctg_name} --include_all_ctgs=${params.include_all_ctgs} --chunk_num=0 --chunk_size=5000000 --qual=${params.min_qual} --var_pct_full=${params.var_pct_full} --ref_pct_full=${params.ref_pct_full} --snp_min_af=${params.snp_min_af} --indel_min_af=${params.indel_min_af} --min_contig_size=${params.min_contig_size}" > clair_output/tmp/CMD
+        echo "run_clair3.sh --bam_fn=${xam} ${bedprnt} --ref_fn=${ref} --vcf_fn=${params.vcf_fn} --output=clair_output --platform=ont --sample_name=${params.sample_name} --model_path=${model_path.simpleName} --ctg_name=${params.ctg_name} ${ctg_name} --include_all_ctgs=${params.include_all_ctgs} --chunk_num=0 --chunk_size=5000000 --qual=${params.min_qual} --var_pct_full=${params.var_pct_full} --ref_pct_full=${params.ref_pct_full} --snp_min_af=${params.snp_min_af} --indel_min_af=${params.indel_min_af} --min_contig_size=${params.min_contig_size}" > clair_output/tmp/CMD
         # CW-2456: prepare other inputs normally
         python \$(which clair3.py) CheckEnvs \
             --bam_fn ${xam} \
@@ -33,7 +51,7 @@ process make_chunks {
             --output_fn_prefix clair_output \
             --ref_fn ${ref} \
             --vcf_fn ${params.vcf_fn} \
-            --ctg_name ${params.ctg_name} \
+            ${ctg_name} \
             --chunk_num 0 \
             --chunk_size 5000000 \
             --include_all_ctgs ${params.include_all_ctgs} \
@@ -162,67 +180,6 @@ process select_het_snps {
         '''
 }
 
-process phase_contig_haplotag {
-    // Tags reads in an input BAM from heterozygous SNPs
-    // Also haplotag for those modes that need it (--str)
-
-    cpus 4
-    // Define memory from phasing tool and number of attempt
-    memory { phaser_memory[task.attempt - 1] }
-    maxRetries 3
-    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
-
-    input:
-        tuple val(contig), 
-            path(het_snps), path(het_snps_tbi), 
-            path(xam), path(xam_idx), 
-            path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
-    output:
-        tuple val(contig), path("${contig}_hp.bam"), path("${contig}_hp.bam.bai"), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
-    script:
-    if (params.use_longphase)
-        """
-        # REF_PATH points to the reference cache and allows faster parsing of CRAM files
-        longphase phase --ont -o phased_${contig} \
-            -s ${het_snps} -b ${xam} -r ${ref} -t ${task.cpus}
-        bgzip phased_${contig}.vcf
-
-        tabix -f -p vcf phased_${contig}.vcf.gz
-
-        whatshap haplotag \
-            --reference ${ref} \
-            --ignore-read-groups \
-            --regions ${contig} \
-            phased_${contig}.vcf.gz \
-            ${xam} \
-        | samtools view -b -1 -@3 -o ${contig}_hp.bam##idx##${contig}_hp.bam.bai --write-index --no-PG
-
-        """
-    else
-        """
-            echo "Using whatshap for phasing"
-            whatshap phase \
-                --output phased_${contig}.vcf.gz \
-                --reference ${ref} \
-                --chromosome ${contig} \
-                --distrust-genotypes \
-                --ignore-read-groups \
-                ${het_snps} \
-                ${xam}
-
-        tabix -f -p vcf phased_${contig}.vcf.gz
-
-        whatshap haplotag \
-            --reference ${ref} \
-            --ignore-read-groups \
-            --regions ${contig} \
-            phased_${contig}.vcf.gz \
-            ${xam} \
-        | samtools view -b -1 -@3 -o ${contig}_hp.bam##idx##${contig}_hp.bam.bai --write-index --no-PG
-
-        """
-}
-
 process phase_contig {
     // Tags reads in an input BAM from heterozygous SNPs
     // The haplotag step was removed in clair-v0.1.11 so this step re-emits
@@ -268,11 +225,11 @@ process cat_haplotagged_contigs {
     cpus 4
     memory 15.GB // cat should not need this, but weirdness occasionally strikes
     input:
-        path contig_bams // always bam
+        path contig_crams
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple val(xam_fmt), val(xai_fmt)
     output:
-        tuple path("${params.sample_name}.haplotagged.${xam_fmt}"), path("${params.sample_name}.haplotagged.${xam_fmt}.${xai_fmt}"), emit: merged_bam
+        tuple path("${params.sample_name}.haplotagged.${xam_fmt}"), path("${params.sample_name}.haplotagged.${xam_fmt}.${xai_fmt}"), emit: merged_xam
     script:
     def threads = Math.max(task.cpus - 1, 1)
     """
@@ -280,12 +237,12 @@ process cat_haplotagged_contigs {
     if [ -f seq_list.txt ]; then
         rm seq_list.txt
     fi
-    # pick the "first" bam and read its SQ list to determine sort order
-    samtools view -H --no-PG `ls *_hp.bam | head -n1` | grep '^@SQ' | sed -nE 's,.*SN:([^[:space:]]*).*,\\1,p' > seq_list.txt
+    # pick the "first" cram and read its SQ list to determine sort order
+    samtools view -H --no-PG `ls *_hp.cram | head -n1` | grep '^@SQ' | sed -nE 's,.*SN:([^[:space:]]*).*,\\1,p' > seq_list.txt
     # append present contigs to a file of file names, to cat according to SQ order
     while read sq; do
-        if [ -f "\${sq}_hp.bam" ]; then
-            echo "\${sq}_hp.bam" >> cat.fofn
+        if [ -f "\${sq}_hp.cram" ]; then
+            echo "\${sq}_hp.cram" >> cat.fofn
         fi
     done < seq_list.txt
     if [ ! -s cat.fofn ]; then
@@ -293,12 +250,13 @@ process cat_haplotagged_contigs {
         exit 70 # EX_SOFTWARE
     fi
 
-    # cat just cats, if we want cram, we'll have to deal with that ourselves
+    # cat just cats, if we want bam, we'll have to deal with that ourselves
     if [ "${xam_fmt}" = "cram" ]; then
-        samtools cat -b cat.fofn --no-PG -@ $threads -o - | samtools view --no-PG --reference ${ref} -O CRAM --write-index -o "${params.sample_name}.haplotagged.cram##idx##${params.sample_name}.haplotagged.cram.crai"
+        samtools cat -b cat.fofn --no-PG -@ ${threads} -o "${params.sample_name}.haplotagged.cram"
+        samtools index -@ $threads -b "${params.sample_name}.haplotagged.cram"
     else
-        samtools cat -b cat.fofn --no-PG -@ $threads -o "${params.sample_name}.haplotagged.bam"
-        samtools index -@ $threads -b "${params.sample_name}.haplotagged.bam"
+        # note that samtools cat does not to read the CRAM ref, but samtools view does
+        samtools cat -b cat.fofn --no-PG -o - | samtools view --no-PG -@ ${threads} --reference ${ref} -O BAM --write-index -o "${params.sample_name}.haplotagged.bam##idx##${params.sample_name}.haplotagged.bam.bai"
     fi
     """
 }
@@ -506,14 +464,24 @@ process post_clair_phase_contig {
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
     input:
-        tuple val(contig), path(vcf), path(vcf_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
+        tuple val(contig), 
+            path(vcf), path(vcf_tbi), 
+            path(xam), path(xam_idx), 
+            path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
-        tuple val(contig), path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"), emit: vcf
+        tuple val(contig), 
+            path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"), 
+            emit: vcf
+        tuple val(contig), 
+            path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"), 
+            path(xam), path(xam_idx), 
+            path(ref), path(ref_idx), path(ref_cache), env(REF_PATH),
+            emit: for_tagging
     script:
     if (params.use_longphase)
         """
         echo "Using longphase for phasing"
-        longphase phase --ont -o phased_${contig} --indels \
+        longphase phase --ont -o phased_${contig} \
             -s ${vcf} -b ${xam} -r ${ref} -t ${task.cpus}
         bgzip phased_${contig}.vcf
         tabix -f -p vcf phased_${contig}.vcf.gz
@@ -532,6 +500,35 @@ process post_clair_phase_contig {
             ${xam}
         tabix -f -p vcf phased_${contig}.vcf.gz
         """
+}
+
+process post_clair_contig_haplotag {
+    // Tags reads in an input BAM from heterozygous SNPs
+    // Also haplotag for those modes that need it
+
+    cpus 4
+    // Define memory from phasing tool and number of attempt
+    memory { haptag_memory[task.attempt - 1] }
+    maxRetries 3
+    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
+
+    input:
+        tuple val(contig), 
+            path(vcf), path(tbi), 
+            path(xam), path(xam_idx), 
+            path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
+    output:
+        tuple val(contig), path("${contig}_hp.cram"), path("${contig}_hp.cram.crai"), emit: phased_cram
+    script:
+    """
+    whatshap haplotag \
+        --reference ${ref} \
+        --ignore-read-groups \
+        --regions ${contig} \
+        phased_${contig}.vcf.gz \
+        ${xam} \
+    | samtools view -O cram --reference $ref -1 -@3 -o ${contig}_hp.cram##idx##${contig}_hp.cram.crai --write-index
+    """
 }
 
 
@@ -553,7 +550,7 @@ process aggregate_all_variants{
         tuple path("${params.sample_name}.wf_snp.vcf.gz"), path("${params.sample_name}.wf_snp.vcf.gz.tbi"), emit: final_vcf
         tuple path("${params.sample_name}.wf_snp.gvcf.gz"), path("${params.sample_name}.wf_snp.gvcf.gz.tbi"), emit: final_gvcf, optional: true
     script:
-        def prefix = params.phased ? "phased" : "merge" 
+        def prefix = params.phased || params.str ? "phased" : "merge"
         """
         ls merge_output/*.vcf.gz | parallel --jobs 4 "bgzip -d {}"
 

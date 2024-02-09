@@ -4,10 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
-### [Fixed]
-- Updated the version of Straglr, which fixes inconsistencies and errors in the output VCF:
-    - Start position of called STRs is now 1-based rather than 0-based
+## [v1.11.0]
+### Changed
+- Add an additional `whatshap haplotag` process after the final VCF phasing.
+- Updates to the phasing subworkflow significantly impact the runtime and storage requirement for the workflow, as detailed [here](README.md#9-phasing-variants).
+- Several performance improvements which should noticeably reduce the running time of the workflow
+### Fixed
+- Updated the version of Straglr, which addresses the following:
+    - Repeats can now be called in *RFC1*
+    - Start position of called STRs is 1-based rather than 0-based
     - VCF headers now match those in the `FORMAT` field
 - Generate `allChromosomes.bed` using `samtools faidx` index instead of `pyfaidx`, to avoid a KeyError
 
@@ -27,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `clair3:` prefix to Clair3 specific models is no longer required.
 
 ### Fixed
+- SNP workflow ignoring the mitochondrial genome.
 - CNV report generation fails if there is no consensus on the copy number of a chromosome
     - `Undetermined` category has been added to the `Chromosome Copy Summary` to account for these cases
 - `readStats` reports metrics on the downsampled BAM when `--downsample_coverage` is requested.
@@ -63,7 +69,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unambiguous naming of bedMethyl files generated with `--mod`
     - Unphased outputs will have the pattern `[sample_name].wf_mods.bedmethyl.gz`
     - Phased outputs will have the pattern `[sample_name]_[1|2|ungrouped].wf_mods.bedmethyl.gz`
-- Improved configuration for running in cloud
 ### Fixed
 - Report step failing if bcftools stats file has only some sub-sections
 - Clair3 ignoring the bed file
