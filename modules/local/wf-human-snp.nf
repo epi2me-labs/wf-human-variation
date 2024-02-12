@@ -225,7 +225,7 @@ process cat_haplotagged_contigs {
     cpus 4
     memory 15.GB // cat should not need this, but weirdness occasionally strikes
     input:
-        path contig_crams
+        path contig_bams // intermediate input always BAM here
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple val(xam_fmt), val(xai_fmt)
     output:
@@ -237,12 +237,12 @@ process cat_haplotagged_contigs {
     if [ -f seq_list.txt ]; then
         rm seq_list.txt
     fi
-    # pick the "first" cram and read its SQ list to determine sort order
-    samtools view -H --no-PG `ls *_hp.cram | head -n1` | grep '^@SQ' | sed -nE 's,.*SN:([^[:space:]]*).*,\\1,p' > seq_list.txt
+    # pick the "first" bam and read its SQ list to determine sort order
+    samtools view -H --no-PG `ls *_hp.bam | head -n1` | grep '^@SQ' | sed -nE 's,.*SN:([^[:space:]]*).*,\\1,p' > seq_list.txt
     # append present contigs to a file of file names, to cat according to SQ order
     while read sq; do
-        if [ -f "\${sq}_hp.cram" ]; then
-            echo "\${sq}_hp.cram" >> cat.fofn
+        if [ -f "\${sq}_hp.bam" ]; then
+            echo "\${sq}_hp.bam" >> cat.fofn
         fi
     done < seq_list.txt
     if [ ! -s cat.fofn ]; then
@@ -252,11 +252,10 @@ process cat_haplotagged_contigs {
 
     # cat just cats, if we want bam, we'll have to deal with that ourselves
     if [ "${xam_fmt}" = "cram" ]; then
-        samtools cat -b cat.fofn --no-PG -@ ${threads} -o "${params.sample_name}.haplotagged.cram"
-        samtools index -@ $threads -b "${params.sample_name}.haplotagged.cram"
+        samtools cat -b cat.fofn --no-PG -o - | samtools view --no-PG -@ ${threads} --reference ${ref} -O CRAM --write-index -o "${params.sample_name}.haplotagged.cram##idx##${params.sample_name}.haplotagged.cram.crai"
     else
-        # note that samtools cat does not to read the CRAM ref, but samtools view does
-        samtools cat -b cat.fofn --no-PG -o - | samtools view --no-PG -@ ${threads} --reference ${ref} -O BAM --write-index -o "${params.sample_name}.haplotagged.bam##idx##${params.sample_name}.haplotagged.bam.bai"
+        samtools cat -b cat.fofn --no-PG -@ ${threads} -o "${params.sample_name}.haplotagged.bam"
+        samtools index -@ ${threads} -b "${params.sample_name}.haplotagged.bam"
     fi
     """
 }
@@ -505,6 +504,9 @@ process post_clair_phase_contig {
 process post_clair_contig_haplotag {
     // Tags reads in an input BAM from heterozygous SNPs
     // Also haplotag for those modes that need it
+    // We emit BAM as the STR workflow does not fully support CRAM, and so the
+    // STR workflow can start while the haplotagged XAM is being catted and
+    // written for the final output
 
     cpus 4
     // Define memory from phasing tool and number of attempt
@@ -513,12 +515,12 @@ process post_clair_contig_haplotag {
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
     input:
-        tuple val(contig), 
-            path(vcf), path(tbi), 
-            path(xam), path(xam_idx), 
+        tuple val(contig),
+            path(vcf), path(tbi),
+            path(xam), path(xam_idx),
             path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
-        tuple val(contig), path("${contig}_hp.cram"), path("${contig}_hp.cram.crai"), emit: phased_cram
+        tuple val(contig), path("${contig}_hp.bam"), path("${contig}_hp.bam.bai"), emit: phased_bam
     script:
     """
     whatshap haplotag \
@@ -527,7 +529,7 @@ process post_clair_contig_haplotag {
         --regions ${contig} \
         phased_${contig}.vcf.gz \
         ${xam} \
-    | samtools view -O cram --reference $ref -1 -@3 -o ${contig}_hp.cram##idx##${contig}_hp.cram.crai --write-index
+    | samtools view -O bam --reference $ref -@3 -o ${contig}_hp.bam##idx##${contig}_hp.bam.bai --write-index
     """
 }
 

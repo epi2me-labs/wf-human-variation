@@ -167,17 +167,22 @@ workflow snp {
                 .set { final_vcfs }
             post_clair_phase.for_tagging | post_clair_contig_haplotag
 
-            post_clair_contig_haplotag.out.phased_cram.set { cram_for_str }
-            // Merge the haplotagged contigs into a single BAM
-            post_clair_contig_haplotag.out.phased_cram.collect{it[1]}.set { contig_crams }
-            haplotagged_xam = cat_haplotagged_contigs(contig_crams, ref, extensions)
+            // intermediate ctg BAMs can flow to STR
+            haplotagged_ctg_bams = post_clair_contig_haplotag.out.phased_bam
+            // meanwhile cat all the intermediate ctg BAMs to desired XAM format for user output dir
+            haplotagged_cat_xam = cat_haplotagged_contigs(
+                haplotagged_ctg_bams.collect{it[1]}, // only need the BAMs themselves
+                ref,
+                extensions
+            )
+
         } else {
             merge_pileup_and_full_vars.out.merged_vcf
                 .map { it -> [it[1]] }
                 .set { final_vcfs }
             // SNP only so we don't need these
-            cram_for_str = Channel.empty()
-            haplotagged_xam = Channel.empty()
+            haplotagged_ctg_bams = Channel.empty()
+            haplotagged_cat_xam = Channel.empty()
         }
 
         // ...then collate final per-contig VCFs for whole genome results
@@ -199,16 +204,16 @@ workflow snp {
 
         // Define clair3 results, adding GVCF if needed
         if (params.GVCF){
-            clair3_results = haplotagged_xam.concat(clair_final.final_vcf).concat(clair_final.final_gvcf).concat(hp_snp_blocks)
+            clair3_results = haplotagged_cat_xam.concat(clair_final.final_vcf).concat(clair_final.final_gvcf).concat(hp_snp_blocks)
         } else {
-            clair3_results = haplotagged_xam.concat(clair_final.final_vcf).concat(hp_snp_blocks)
+            clair3_results = haplotagged_cat_xam.concat(clair_final.final_vcf).concat(hp_snp_blocks)
         }
 
     emit:
         clair3_results = clair3_results
-        str_bams = cram_for_str
+        str_bams = haplotagged_ctg_bams // intermediate haplotagged contigs used for STR
         vcf_files = clair_final.final_vcf
-        hp_bams = haplotagged_xam.combine(bam_channel.map{it[2]})
+        haplotagged_xam = haplotagged_cat_xam.combine(bam_channel.map{it[2]}) // haplotagged XAM with meta appended
         contigs = contigs
 }
 
