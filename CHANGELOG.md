@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Start position of called STRs is 1-based rather than 0-based
     - VCF headers now match those in the `FORMAT` field
 - Generate `allChromosomes.bed` using `samtools faidx` index instead of `pyfaidx`, to avoid a KeyError
+- Inconsistent file ownership of bundled Clair3 model files which could lead to subuid errors in some environments
 
 ## [v1.10.1]
 ### Fixed
