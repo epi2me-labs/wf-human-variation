@@ -46,11 +46,25 @@
 | include_all_ctgs | boolean | Call for variants on all sequences in the reference, otherwise small variants will only be called on chr{1..22,X,Y}. | Enabling this option will call for variants on all contigs of the input reference sequence. Typically this option is not required as standard human reference sequences contain decoy and unplaced contigs that are usually omitted for the purpose of variant calling. This option might be useful for non-standard reference sequence databases. | False |
 
 
+### Copy number variant calling options
+
+| Nextflow parameter name  | Type | Description | Help | Default |
+|--------------------------|------|-------------|------|---------|
+| bin_size | integer | Bin size for QDNAseq in kbp. | Pre-computed bin annotations are available for a range of bin sizes. Larger sizes reduce noise, however this may result in reduced sensitivity. | 500 |
+
+
 ### Modified base calling options
 
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
 | force_strand | boolean | Require modkit to call strand-aware modifications. |  | False |
+
+
+### Short tandem repeat expansion genotyping options
+
+| Nextflow parameter name  | Type | Description | Help | Default |
+|--------------------------|------|-------------|------|---------|
+| sex | string | Sex (male or female) to be passed to Straglr-genotype. | The sex determines how many calls will be obtained for all repeats on chrX. Defaults to female if not specified. | female |
 
 
 ### Advanced Options
