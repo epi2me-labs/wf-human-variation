@@ -437,7 +437,7 @@ workflow {
         // cause the workflow to wait for the tagged reads, but not enable phasing of sv since --phase 
         // won't be set; hence skip it if not required).
         if (run_haplotagging){
-            sv_bam = clair_vcf.hp_bams
+            sv_bam = clair_vcf.haplotagged_xam
         } else {
             sv_bam = pass_bam_channel
         }
@@ -481,7 +481,7 @@ workflow {
 
         // Define which bam to use
         if (run_haplotagging){
-            snp_bam = clair_vcf.hp_bams
+            snp_bam = clair_vcf.haplotagged_xam
         } else {
             snp_bam = pass_bam_channel
         }
@@ -544,7 +544,7 @@ workflow {
     // Validate modified bam
     if (params.mod){
         if (run_haplotagging){
-            validate_modbam(clair_vcf.hp_bams, ref_channel)
+            validate_modbam(clair_vcf.haplotagged_xam, ref_channel)
         } else {
             validate_modbam(pass_bam_channel, ref_channel)
         }
