@@ -119,6 +119,46 @@
       "mime-type": "application/octet-stream",
       "optional": true,
       "type": "per-sample"
+    },
+    "coverage-by-region": {
+      "filepath": "{{ alias }}.regions.bed.gz",
+      "title": "Mean coverage for each region",
+      "description": "The mean coverage in the individual regions of the genome in BED format.",
+      "mime-type": "application/gzip",
+      "optional": false,
+      "type": "per-sample"
+    },
+    "coverage-by-threshold": {
+      "filepath": "{{ alias }}.thresholds.bed.gz",
+      "title": "Coverage per region above the given thresholds",
+      "description": "The BED reporting the number of bases in each region that are covered at or above each threshold values (1x, 10x, 20x and 30x).",
+      "mime-type": "application/gzip",
+      "optional": false,
+      "type": "per-sample"
+    },
+    "distribution-of-coverage": {
+      "filepath": "{{ alias }}.mosdepth.global.dist.txt",
+      "title": "Distribution of the proportion of total bases covered by a given coverage value",
+      "description": "The cumulative distribution indicating the proportion of total bases covered by a given coverage value, both genome-wide and by sequence.",
+      "mime-type": "text/plain",
+      "optional": false,
+      "type": "per-sample"
+    },
+    "coverage-summary": {
+      "filepath": "{{ alias }}.mosdepth.summary.txt",
+      "title": "Mean coverage per sequence and target region",
+      "description": "The summary of mean depths per chromosome and within specified regions per chromosome.",
+      "mime-type": "text/plain",
+      "optional": false,
+      "type": "per-sample"
+    },
+    "coverage-per-base": {
+      "filepath": "{{ alias }}.per-base.bedgraph.gz",
+      "title": "BEDgraph of the single-base coverage",
+      "description": "The single-base coverage of the genome in BED graph format.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
     }
   }
 }
