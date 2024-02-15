@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+### Fixed
+- EPI2ME Desktop incorrectly allowed selection of directory for `tr_bed`
+
 ## [v1.11.0]
 ### Changed
 - Add an additional `whatshap haplotag` process after the final VCF phasing.
