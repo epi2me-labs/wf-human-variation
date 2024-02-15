@@ -70,7 +70,7 @@ process mosdepth {
             path("${params.sample_name}.mosdepth.global.dist.txt"),
             path("${params.sample_name}.thresholds.bed.gz"), emit: mosdepth_tuple
         path "${params.sample_name}.mosdepth.summary.txt", emit: summary
-        path("${params.sample_name}.per-base.bed.gz"), emit: perbase, optional: true
+        path("${params.sample_name}.per-base.bedgraph.gz"), emit: perbase, optional: true
     script:
         def perbase_args = params.depth_intervals ? "" : "--no-per-base"
         """
@@ -92,6 +92,11 @@ process mosdepth {
         ${perbase_args} \
         ${params.sample_name} \
         $xam
+
+        # Rename the output, avoiding ambiguity in the output formatting
+        if [ -e ${params.sample_name}.per-base.bed.gz ]; then
+            mv ${params.sample_name}.per-base.bed.gz ${params.sample_name}.per-base.bedgraph.gz
+        fi
         """
 }
 
