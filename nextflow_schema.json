@@ -201,7 +201,7 @@
                 "tr_bed": {
                     "title": "Tandem repeat BED file",
                     "type": "string",
-                    "format": "path",
+                    "format": "file-path",
                     "description": "Input BED file containing tandem repeat annotations for the reference genome.",
                     "help_text": "Providing a tandem repeat BED can improve calling in repetitive regions. An appropriate tandem repeat BED can be downloaded for your reference genome [from the Sniffles2 repository](https://github.com/fritzsedlazeck/Sniffles/tree/master/annotations)."
                 },
