@@ -5,7 +5,7 @@ import dominate.tags as dom_tags  # noqa: I100,I202
 
 import ezcharts as ezc  # noqa: I202
 from ezcharts.components.ezchart import EZChart
-from ezcharts.layout.snippets import Grid, Progress, Tabs
+from ezcharts.layout.snippets import Grid, Progress, Stats, Tabs
 
 from .common import THEME  # noqa: ABS101
 
@@ -150,16 +150,6 @@ def summary(report, sample_names, stats_df, flagstat_df):
     :param flagstat_df: `pd.DataFrame` with bamstats per-file stats
     """
     with report.add_section("Summary", "Summary"):
-        # basic stats + intro
-        dom_tags.p(
-            """
-            This report contains visualisations of statistics that can help in
-            understanding the results from the wf-human-variation workflow. Each section
-            contains different plots or tables, and in general the results are broken
-            down by sample. You can quickly jump to an individual section with the links
-            in the header bar.
-            """
-        )
         n_reads_total = stats_df.shape[0]
         n_bases_total = stats_df["read_length"].sum()
         tabs = Tabs()
@@ -271,3 +261,31 @@ def depths(report, depth_df):
                     for s in plt.series:
                         s.showSymbol = False
                     EZChart(plt, theme=THEME)
+
+
+def at_a_glance(report, sample_names, values):
+    """Generate at-a-glance statistics: read n50 and mean coverage."""
+    with report.add_section("At a glance", "Description"):
+        # at-a-glace stats + intro
+        dom_tags.p(
+            """
+            This report contains visualisations of statistics that can help in
+            understanding the results from the wf-human-variation workflow. Each section
+            contains different plots or tables, and in general the results are broken
+            down by sample. You can quickly jump to an individual section with the links
+            in the header bar.
+            """
+        )
+        # Create tabs for each sample
+        tabs = Tabs()
+        for sample_name in [*sample_names]:
+            with tabs.add_tab(
+                sample_name if sample_name is not None else "total"
+            ):
+                Stats(
+                    columns=3,
+                    items=[
+                        (value, title)
+                        for title, value in values.items()
+                        ],
+                    )

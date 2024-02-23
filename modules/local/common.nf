@@ -303,6 +303,7 @@ process failedQCReport  {
             path("readstats/*"),
             path("flagstats/*"),
             path("depths/*"),
+            path("summary/*"),
             path('ref.fasta'),
             path('ref.fasta.fai'),
             path('ref_cache/'),
@@ -324,6 +325,7 @@ process failedQCReport  {
         workflow-glue report_al \\
             --name ${report_name} \\
             --stats_dir readstats/ \\
+            --summary_dir summary/ \\
             --flagstat_dir flagstats/ \\
             --depths_dir depths/ \\
             --versions versions.txt \\
@@ -345,6 +347,7 @@ process makeAlignmentReport {
             path("readstats/*"),
             path("flagstats/*"),
             path("depths/*"),
+            path("summary/*"),
             path('ref.fasta'),
             path('ref.fasta.fai'),
             path('ref_cache/'),
@@ -361,6 +364,7 @@ process makeAlignmentReport {
         workflow-glue report_al \\
             --name ${report_name} \\
             --stats_dir readstats/ \\
+            --summary_dir summary/ \\
             --reference_fai ref.fasta.fai \\
             --flagstat_dir flagstats/ \\
             --depths_dir depths/ \\

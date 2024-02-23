@@ -4,11 +4,12 @@ from dominate.tags import p
 from ezcharts.components.common import fasta_idx
 from ezcharts.components.fastcat import load_bamstats_flagstat, load_stats
 from ezcharts.components.fastcat import SeqSummary
-from ezcharts.components.mosdepth import load_mosdepth_regions
+from ezcharts.components.mosdepth import load_mosdepth_regions, load_mosdepth_summary
 from ezcharts.components.reports import labs
 import pandas as pd
 
 from .report_utils import sections  # noqa: ABS101
+from .report_utils import common  # noqa: ABS101
 
 from .util import get_named_logger, wf_parser  # noqa: ABS101
 
@@ -27,6 +28,19 @@ def main(args):
 
     # read input stats data
     stats_df = load_stats(args.stats_dir, format='bamstats')
+    read_number_str = str(len(stats_df.index))
+
+    # get read n50
+    read_n50 = common.compute_n50(stats_df["read_length"].values)
+    n50_str = str(read_n50) + " bp"
+
+    # get total region depth summary
+    depth_t, depth_r = load_mosdepth_summary(args.summary_dir)
+
+    # get mean coverage
+    logger.info("Compute average cvg...")
+    cov = depth_r.loc[depth_r["chrom"] == "total_region", "mean"].values[0]
+    cov_str = "{}x".format(cov)
 
     # read input flagstats data
     flagstat_df = load_bamstats_flagstat(args.flagstat_dir)
@@ -62,6 +76,14 @@ def main(args):
                 f"""This dataset was not processed by the workflow as it did not
                 meet the minimum bam coverage of {args.low_cov}x required.
                 """)
+
+    # Add at-a-glance section with intro
+    fields = {
+        "Sample total reads": read_number_str,
+        "Sample read N50": n50_str,
+        "Sample mean coverage": cov_str
+    }
+    sections.at_a_glance(report, sample_names, fields)
 
     # Add summary table of the input flagstats
     sections.summary(report, sample_names, stats_df, flagstat_df)
@@ -103,6 +125,10 @@ def argparser():
     parser.add_argument(
         "--depths_dir",
         help="directory with depth files for the sample",
+    )
+    parser.add_argument(
+        "--summary_dir",
+        help="directory with depth summary files for the sample"
     )
     parser.add_argument(
         "--reference_fai",
