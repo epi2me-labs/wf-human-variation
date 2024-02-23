@@ -77,3 +77,14 @@ def hist_plot(
         if s.type == 'line':
             s.symbolSize = 0
     return plt
+
+
+def compute_n50(lengths):
+    """Compute read N50."""
+    # Sort the read lengths
+    sorted_l = np.sort(lengths)[::-1]
+    # Generate cumsum
+    cumsum = np.cumsum(sorted_l)
+    # Get lowest cumulative value >= (total_length/2)
+    n50 = sorted_l[cumsum >= cumsum[-1]/2][0]
+    return n50

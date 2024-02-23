@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Output definitions for coverage files.
+- N50 and mean coverage added to alignment report.
 
 ### Fixed
 - EPI2ME Desktop incorrectly allowed selection of directory for `tr_bed`
