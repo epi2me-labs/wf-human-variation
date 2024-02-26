@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Changed
 - The output of `--depth_intervals` now has `.bedgraph.gz` extension.
+- SV workflow outputs SVs in the autosomes, sex chromosomes and MT; use `--include_all_ctgs` to output calls on all the sequences.
 
 ### Added
 - Output definitions for coverage files.

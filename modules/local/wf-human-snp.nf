@@ -15,6 +15,7 @@ process make_chunks {
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path bed
         path model_path
+        val chromosome_codes
     output:
         path "clair_output/tmp/CONTIGS", emit: contigs_file
         path "clair_output/tmp/CHUNK_LIST", emit: chunks_file
@@ -23,12 +24,6 @@ process make_chunks {
     script:
         def bedargs = bed.name != 'OPTIONAL_FILE' ? "--bed_fn ${bed}" : ''
         def bedprnt = bed.name != 'OPTIONAL_FILE' ? "--bed_fn=${bed}" : ''
-        // Programmatically define chromosome codes.
-        ArrayList chromosome_codes = []
-        ArrayList chromosomes = [1..22] + ["X", "Y", "M", "MT"]
-        for (N in chromosomes.flatten()){
-            chromosome_codes += ["chr${N}", "${N}"]
-        }
         String ctgs = chromosome_codes.join(',')
         // Define contigs in order to enforce the mitochondrial genome calling, which is otherwise skipped.
         def ctg_name = "--ctg_name ${ctgs}"

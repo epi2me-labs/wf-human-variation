@@ -116,6 +116,14 @@ workflow {
         output_bam = false
     }
 
+    // Define chromosome codes
+        // Programmatically define chromosome codes.
+    ArrayList chromosome_codes = []
+    ArrayList chromosomes = [1..22] + ["X", "Y", "M", "MT"]
+    for (N in chromosomes.flatten()){
+        chromosome_codes += ["chr${N}", "${N}"]
+    }
+
     // Trigger haplotagging
     def run_haplotagging = params.str || params.phased ? true : false
 
@@ -428,6 +436,7 @@ workflow {
             extensions,
             run_haplotagging,
             using_user_bed,
+            chromosome_codes
         )
     }
     
@@ -449,7 +458,8 @@ workflow {
             bed,
             mosdepth_input.out.summary,
             OPTIONAL,
-            genome_build
+            genome_build,
+            chromosome_codes
         )
         artifacts = results.report.flatten()
         sniffles_vcf = results.sniffles_vcf

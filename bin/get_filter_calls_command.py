@@ -69,6 +69,15 @@ def parse_arguments():
         type=int
     )
 
+    parser.add_argument(
+        "--contigs",
+        help=(
+            "Comma-separated list of contigs to keep."
+        ),
+        required=False,
+        default=None
+    )
+
     return parser.parse_args()
 
 
@@ -96,6 +105,10 @@ def main():
     # Add target_bed filter (optional)
     if args.target_bedfile:
         filter_string = f"-T {args.target_bedfile} " + filter_string
+
+    # Add list of contigs to keep
+    if args.contigs:
+        filter_string = f"{filter_string} -r {args.contigs} "
 
     # Print command to stdout
     command = (
