@@ -46,18 +46,27 @@ process filterCalls {
         file vcf
         path mosdepth_summary // MOSDEPTH_TUPLE
         file target_bed
+        val chromosome_codes
     output:
         path "*.filtered.vcf", emit: vcf
     script:
+    String ctgs = chromosome_codes.join(',')
+    def ctgs_filter = params.include_all_ctgs ? "" : "--contigs ${ctgs}"
     """
+    # Filter contigs requre the input VCF to be compressed and indexed
+    bcftools view -O z $vcf > input.vcf.gz && tabix -p vcf input.vcf.gz
+
+    # Create filtering script
     get_filter_calls_command.py \
         --bcftools_threads $task.cpus \
         --target_bedfile $target_bed \
-        --vcf $vcf \
+        --vcf input.vcf.gz \
         --depth_summary $mosdepth_summary \
         --min_read_support $params.min_read_support \
-        --min_read_support_limit $params.min_read_support_limit > filter.sh
+        --min_read_support_limit $params.min_read_support_limit \
+        ${ctgs_filter} > filter.sh
 
+    # Run filtering
     bash filter.sh > ${params.sample_name}.filtered.vcf
     """
 }

@@ -35,6 +35,7 @@ workflow snp {
         extensions
         run_haplotagging
         using_user_bed
+        chromosome_codes
     main:
 
         // truncate bam channel to remove meta to keep compat with snp pipe
@@ -43,7 +44,7 @@ workflow snp {
         // Run preliminaries to find contigs and generate regions to process in
         // parallel.
         // > Step 0
-        make_chunks(bam, ref, bed, model)
+        make_chunks(bam, ref, bed, model, chromosome_codes)
         chunks = make_chunks.out.chunks_file
             .splitText(){ 
                 cols = (it =~ /(.+)\s(.+)\s(.+)/)[0]
