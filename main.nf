@@ -44,6 +44,7 @@ include {
 
 include {
     bam_ingress;
+    cram_to_bam
 } from './lib/bamingress'
 
 include {
@@ -106,11 +107,13 @@ workflow {
     }
 
     // switch workflow to BAM if calling CNV
+    // CW-3324: Prevent ingress from running the CRAM to BAM conversion if
+    //   downsampling is on, as the downsampling step can output BAM instead.
     if (params.cnv) {
         log.warn "CNV calling subworkflow does not support CRAM. You don't need to do anything, but we're just letting you know that:"
         log.warn "- If your input file is CRAM, it will be converted to a temporary BAM inside the workflow automatically."
         log.warn "- If your input requires alignment, the outputs will be saved to your output directory as BAM instead of CRAM."
-        output_bam = true
+        output_bam = params.downsample_coverage ? false : true
     }
     else {
         output_bam = false
@@ -272,7 +275,8 @@ workflow {
         bam_channel.set{pass_bam_channel}
         discarded_bams = Channel.empty()
     }
-    // Set extensions for analyses
+    // Set extensions for downstream analyses based on the input type
+    // This will affect only the haplotagging.
     extensions = pass_bam_channel.map{
         xam, xai, meta -> 
         meta.is_cram ? ['cram', 'crai'] : ['bam', 'bai']
@@ -293,14 +297,30 @@ workflow {
             }
             .set{ratio}
 
-        // Perform downsampling
-        downsampling(pass_bam_channel, ref_channel, ratio.subset, extensions)
+        // Define extension based on whether we are asking for CNV. If so,
+        // use BAM, otherwise CRAM.
+        downsampling_ext = pass_bam_channel.map{
+            xam, xai, meta -> 
+            params.cnv ? ['bam', 'bai'] : ['cram', 'crai']
+        }
+        downsampling(pass_bam_channel, ref_channel, ratio.subset, downsampling_ext)
 
         // prepare ready files
         ratio.ready
             .combine(pass_bam_channel)
             .map{ready, ratio, xam, xai, meta -> [xam, xai, meta]}
             .set{ready_bam_channel}
+        
+        // If downsampling && cnv > no conversion was done in advance.
+        // If it doesn't pass the downsampling threshold, it needs to be done here.
+        if (params.cnv){
+            ready_bam_channel = cram_to_bam(
+                ready_bam_channel.map{xam, xai, meta -> [xam, xai]}, 
+                ref_channel.map{[it[0], it[1]]}
+            ) | map{
+                xam, xai -> [xam, xai, [output: false, is_cram: false]] 
+            }
+        }
 
         // Join allowing a remainder, so that only one for each is retained.
         // we drop all null, and due to the structure the joined channel can only be:

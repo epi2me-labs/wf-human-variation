@@ -223,6 +223,8 @@ aws-run:
             - MATRIX_NAME: [
                 "wf-human-cnv-ubam-to-bam",
                 "wf-human-cnv-cram-to-bam",
+                "wf-human-cnv-downsample",
+                "wf-human-cnv-skip-downsample",
               ]
     rules:
         # NOTE As we're overriding the rules block for the included docker-run
@@ -237,6 +239,20 @@ aws-run:
               NF_PROCESS_FILES: "modules/local/wf-human-cnv.nf"
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
               NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --str false --bam demo_data/test.cram --ref demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz --bin_size 500 --bam_min_coverage 0.00001"
+
+        - if: $MATRIX_NAME == "wf-human-cnv-downsample"
+          variables:
+              NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/snp_demo/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_PROCESS_FILES: "modules/local/wf-human-cnv.nf"
+              NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --str false --bam snp_demo/chr6_chr20.cram --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --bin_size 500 --bam_min_coverage 0.00001 --downsample_coverage --downsample_coverage_target 20"
+
+        - if: $MATRIX_NAME == "wf-human-cnv-skip-downsample"
+          variables:
+              NF_BEFORE_SCRIPT: "wget -q -O demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/snp_demo/snp_demo.tar.gz && tar -xzvf demo_data.tar.gz"
+              NF_PROCESS_FILES: "modules/local/wf-human-cnv.nf"
+              NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --str false --bam snp_demo/chr6_chr20.cram --bed snp_demo/chr6_chr20.bed --ref snp_demo/chr6_chr20.fasta --bin_size 500 --bam_min_coverage 0.00001 --downsample_coverage --downsample_coverage_target 1000"
 
         - if: $MATRIX_NAME == "wf-human-cnv-ubam-to-bam"
           variables:
