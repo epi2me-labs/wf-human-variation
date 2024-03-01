@@ -116,19 +116,19 @@ def argparser():
     )
     parser.add_argument(
         "--stats_dir",
-        help="directory with `bamstats` per-read stats for the sample",
+        help="Directory with `bamstats` per-read stats for the sample",
     )
     parser.add_argument(
         "--flagstat_dir",
-        help="directory with `bamstats` per-file stats",
+        help="Directory with `bamstats` per-file stats",
     )
     parser.add_argument(
         "--depths_dir",
-        help="directory with depth files for the sample",
+        help="Directory with depth files for the sample",
     )
     parser.add_argument(
         "--summary_dir",
-        help="directory with depth summary files for the sample"
+        help="Directory with depth summary files for the sample"
     )
     parser.add_argument(
         "--reference_fai",
@@ -143,7 +143,7 @@ def argparser():
     parser.add_argument(
         "--low_cov",
         type=int,
-        help="define if the QC report should be for low-cov bam"
+        help="Define if the QC report should be for low-coverage BAM"
     )
     parser.add_argument(
         "--params",

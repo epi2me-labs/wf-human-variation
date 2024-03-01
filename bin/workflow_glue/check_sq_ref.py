@@ -21,12 +21,14 @@ def argparser():
     parser = wf_parser("check_sq_ref")
 
     parser.add_argument(
-        "--xam", "--bam", "--cram",
+        "--xam",
         required=True,
+        help="Input BAM or CRAM"
     )
     parser.add_argument(
         "--ref",
         required=True,
+        help="Reference FASTA file"
     )
     return parser
 

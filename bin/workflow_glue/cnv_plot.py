@@ -73,23 +73,23 @@ def argparser():
     parser = wf_parser("cnv_plot")
     parser.add_argument(
         '-q', '--qdna_seq', required=True, dest="qdnaseq_results",
-        help="Output from running QDNAseq")
-    # parser.add_argument('-s', '--sample', required=True, dest="sample",
-    # help="Sample name")
+        help="Output from running QDNAseq"
+    )
     parser.add_argument(
         '-r', '--read_stats', required=True, dest="read_stats",
-        help="Output from bamstats")
+        help="Output from bamstats"
+    )
     parser.add_argument(
         '--bin_size', type=int,
-        help="workflow paramters"
+        help="QDNAseq bin size"
     )
     parser.add_argument(
         '--genome',
-        help="genome version"
+        help="Genome version"
     )
     parser.add_argument(
         '--sample_id',
-        help="sample_id"
+        help="Sample ID"
     )
     parser.add_argument(
         '--noise_plot',
@@ -101,11 +101,11 @@ def argparser():
     )
     parser.add_argument(
         '--params',
-        help="workflow parameters"
+        help="Workflow parameters"
     )
     parser.add_argument(
         '--versions',
-        help="workflow versions"
+        help="Workflow versions"
     )
     parser.add_argument(
         '-o', '--output', required=True, dest="output_report",

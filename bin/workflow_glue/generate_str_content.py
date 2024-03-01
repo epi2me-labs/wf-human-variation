@@ -16,17 +16,17 @@ def argparser():
 
     parser.add_argument(
         '--straglr',
-        help="STRAGLR tsv",
+        help="Straglr TSV",
         required=True
     )
     parser.add_argument(
         '--stranger',
-        help="STRANGER tsv",
+        help="Stranger TSV",
         required=True
     )
     parser.add_argument(
         '--chr',
-        help="BAM Chr",
+        help="Chromosome label",
         required=True
     )
     parser.add_argument(
