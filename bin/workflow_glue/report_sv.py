@@ -337,38 +337,48 @@ def argparser():
     parser = wf_parser("report_sv")
     parser.add_argument(
         "output",
-        help="Report output file.")
+        help="Report output file."
+    )
     parser.add_argument(
         "--vcf",
         nargs='+',
-        required=True)
+        required=True
+    )
     parser.add_argument(
         "--genome",
         default='hg38',
-        required=False)
+        required=False
+    )
     parser.add_argument(
         "--hist_sv_max_length",
         default=5000,
         help="Max length of an SV to display in the histogram",
-        required=False)
+        required=False
+    )
     parser.add_argument(
         "--eval_results",
         nargs='+',
-        required=False)
+        required=False
+    )
     parser.add_argument(
         "--revision", default='unknown',
-        help="git branch/tag of the executed workflow")
+        help="Git branch/tag of the executed workflow"
+    )
     parser.add_argument(
         "--commit", default='unknown',
-        help="git commit of the executed workflow")
+        help="Git commit of the executed workflow"
+    )
     parser.add_argument(
         "--params", default=None, required=True,
-        help="A csv containing the parameter key/values")
+        help="A CSV containing the parameter key/values"
+    )
     parser.add_argument(
         "--params-hidden", default="",
-        help="Comma delimited list of keys to hide from parameters table")
+        help="Comma delimited list of keys to hide from parameters table"
+    )
     parser.add_argument(
         "--versions", required=True,
-        help="directory contained CSVs containing name,version.")
+        help="directory containing CSVs containing name,version."
+    )
 
     return parser

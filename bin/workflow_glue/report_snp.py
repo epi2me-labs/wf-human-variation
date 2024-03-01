@@ -216,24 +216,31 @@ def argparser():
     parser.add_argument("report", help="Report output file")
     parser.add_argument(
         "--read_stats", default='unknown',
-        help="read statistics output from bamstats")
+        help="Read statistics output from bamstats"
+    )
     parser.add_argument(
         "--vcf_stats", default='unknown',
-        help="final vcf stats file")
+        help="Final VCF stats file"
+    )
     parser.add_argument(
         "--clinvar_vcf", required=True,
-        help="VCF file of variants annotated in ClinVar")
+        help="VCF file of variants annotated in ClinVar"
+    )
     parser.add_argument(
         "--sample_name", default='Sample',
-        help="final vcf stats file")
+        help="Sample name"
+    )
     parser.add_argument(
         "--versions", required=True,
-        help="directory containing CSVs containing name,version.")
+        help="Directory containing CSVs containing name,version"
+    )
     parser.add_argument(
         "--params", required=True,
-        help="directory containing CSVs containing name,version.")
+        help="Directory containing workflow parameters"
+    )
     parser.add_argument(
         "--skip_annotation", action="store_true",
-        help="Do not show ClinVar variants in report.")
+        help="Do not show ClinVar variants in report"
+    )
 
     return parser

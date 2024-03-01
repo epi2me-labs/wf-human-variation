@@ -27,14 +27,15 @@ def argparser():
 
     parser.add_argument(
         '-o', '--output', required=True, dest="output_report",
-        help="Output report")
+        help="Output report"
+    )
     parser.add_argument(
         '--params',
-        help="workflow parameters"
+        help="Workflow parameters"
     )
     parser.add_argument(
         '--versions',
-        help="workflow versions"
+        help="Workflow versions"
     )
     parser.add_argument(
         '--vcf',
@@ -63,12 +64,12 @@ def argparser():
     parser.add_argument(
         "--str_content",
         required=True,
-        help="str content csv"
+        help="STR content csv"
     )
     parser.add_argument(
         "--read_stats",
         required=True,
-        help="read statistics output from bamstats"
+        help="Read statistics output from bamstats"
     )
 
     return parser
