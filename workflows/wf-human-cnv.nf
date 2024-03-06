@@ -10,7 +10,8 @@ include {
 } from "../modules/local/wf-human-cnv.nf"
 
 include {
-    mosdepth
+    mosdepth;
+    annotate_vcf
 } from "../modules/local/common.nf"
 
 workflow cnv {
@@ -35,8 +36,12 @@ workflow cnv {
         
         cnvs = callCNV(clair3_vcf, mosdepth_all, ref)
         spectre_vcf = cnvs.spectre_vcf
-        spectre_final_vcf = bgzip_and_index_vcf(spectre_vcf)
+        spectre_vcf_bgzipped = bgzip_and_index_vcf(spectre_vcf)
         spectre_bed = cnvs.spectre_bed
+
+        // append '*' to indicate that annotation should be performed on all chr at once
+        vcf_for_annotation = spectre_vcf_bgzipped.map{ it << '*' }
+        spectre_final_vcf = annotate_vcf(vcf_for_annotation, "hg38", "cnv").annot_vcf
 
         software_versions_tmp = getVersions()
         software_versions = add_snp_tools_to_versions(software_versions_tmp)

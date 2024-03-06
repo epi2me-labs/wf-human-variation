@@ -275,7 +275,7 @@ Haplotype-resolved aggregated counts of modified bases can be obtained with the 
 
 ### 6a. Copy number variants (CNV) calling with Spectre
 
-CNV calling is performed using a fork of [Spectre](https://github.com/fritzsedlazeck/Spectre/tree/ont-dev), using the `--cnv` flag. Spectre is the default CNV caller in the workflow, and is compatible with hg38/GRCh38. The output of this workflow is a VCF of CNV calls.
+CNV calling is performed using a fork of [Spectre](https://github.com/fritzsedlazeck/Spectre/tree/ont-dev), using the `--cnv` flag. Spectre is the default CNV caller in the workflow, and is compatible with hg38/GRCh38. The output of this workflow is a VCF of CNV calls, annotated with SnpEff.
 
 ### 6b. Copy number variants (CNV) calling with QDNASeq
 
