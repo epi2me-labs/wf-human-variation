@@ -93,17 +93,17 @@ def get_genome(sizes):
     return ""
 
 
-def check_genome(genome_build, workflow):
+def check_genome(genome_build, str_flag, cnv, use_qdnaseq):
     """Determine if genome is suitable for this workflow."""
     bad_genome = False
     extra_msg_context = ""
     if not genome_build:
         bad_genome = True
-    elif workflow == "str" and genome_build != "hg38":
+    elif (str_flag or (cnv and not use_qdnaseq)) and genome_build != "hg38":
         bad_genome = True
         extra_msg_context = (
-            f"Detected genome: {genome_build}, but STRs can only be genotyped "
-            "when aligned to build 38.\n")
+            f"Detected genome: {genome_build}, but genotyping STRs and calling "
+            "CNVs with Spectre can only be performed when aligned to build 38.\n")
     return (bad_genome, extra_msg_context)
 
 
@@ -112,19 +112,36 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--chr_counts', required=True, dest="chr_counts",
-        help="Output from samtools faidx")
+        help="Output from samtools faidx"
+    )
     parser.add_argument(
         '-o', '--output', required=True, dest="output",
-        help="Output genome")
+        help="Output genome"
+    )
     parser.add_argument(
-        '-w', '--workflow', dest="workflow",
-        help="Subworkflow name")
+        '--str',  action='store_true',
+        dest="str_",
+        default=False,
+        help="STR flag"
+    )
+    parser.add_argument(
+        '--cnv',  action='store_true',
+        default=False,
+        help="CNV flag"
+    )
+    parser.add_argument(
+        '--use_qdnaseq',  action='store_true',
+        default=False,
+        help="QDNAseq flag"
+    )
     args = parser.parse_args()
 
     all_sizes = chromosome_sizes(args.chr_counts)
 
     genome_build = get_genome(all_sizes)
-    bad_genome, extra_msg_context = check_genome(genome_build, args.workflow)
+    bad_genome, extra_msg_context = check_genome(
+        genome_build, args.str_, args.cnv, args.use_qdnaseq
+    )
 
     # explode on bad genome
     if bad_genome:

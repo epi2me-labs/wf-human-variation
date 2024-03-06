@@ -17,8 +17,8 @@ import pandas as pd
 from .util import wf_parser  # noqa: ABS101
 
 
-WORKFLOW_NAME = 'wf-human-str'
-REPORT_TITLE = f'{WORKFLOW_NAME} report'
+WORKFLOW_NAME = 'wf-human-variation'
+REPORT_TITLE = f'{WORKFLOW_NAME} STR report'
 
 
 def argparser():

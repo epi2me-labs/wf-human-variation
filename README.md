@@ -105,8 +105,8 @@ This workflow accepts a path to a single BAM file (aligned or unaligned) as inpu
 |--------------------------|------|-------------|------|---------|
 | sv | boolean | Call for structural variants. | If this option is selected, structural variant calling will be carried out using Sniffles2. | False |
 | snp | boolean | Call for small variants | If this option is selected, small variant calling will be carried out using Clair3. | False |
-| cnv | boolean | Call for copy number variants. | If this option is selected, copy number variant calling will be carried out using QDNAseq. | False |
-| str | boolean | Enable Straglr to genotype STR expansions. | If this option is selected, genotyping of STR expansions will be carried out using Straglr. This sub-workflow is only compatible with genome build 38. | False |
+| cnv | boolean | Call for copy number variants. | If this option is selected, copy number variant calling will be carried out with either Spectre (default) or QDNAseq. To use QDNAseq instead of Spectre, use the option `--use_qdnaseq`. Spectre is only compatible with genome build hg38, and if QDNAseq is used, it is only compatible with genome builds hg37 and hg38. | False |
+| str | boolean | Enable Straglr to genotype STR expansions. | If this option is selected, genotyping of STR expansions will be carried out using Straglr. This sub-workflow is only compatible with genome build hg38. | False |
 | mod | boolean | Enable output of modified calls to a bedMethyl file [requires input BAM with Ml and Mm tags] | This option is automatically selected and aggregation of modified calls with be carried out using modkit if Ml and Mm tags are found. Disable this option to prevent output of a bedMethyl file. | False |
 
 
@@ -139,6 +139,14 @@ This workflow accepts a path to a single BAM file (aligned or unaligned) as inpu
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
 | sv_benchmark | boolean | Benchmark called structural variants. | If this option is selected, automated benchmarking of structural variant calls will be carried out using Truvari. | False |
+
+
+### Copy number variant calling options
+
+| Nextflow parameter name  | Type | Description | Help | Default |
+|--------------------------|------|-------------|------|---------|
+| use_qdnaseq | boolean | Use QDNAseq for CNV calling. | Set this to true to use QDNASeq for CNV calling instead of Spectre. QDNAseq is better suited to shorter reads such as those generated from adaptive sampling experiments. | False |
+| qdnaseq_bin_size | integer | Bin size for QDNAseq in kbp. | Pre-computed bin annotations are available for a range of bin sizes. Larger sizes reduce noise, however this may result in reduced sensitivity. | 500 |
 
 
 ### Modified base calling options
@@ -265,10 +273,13 @@ The default behaviour of the workflow is to run modkit with the `--cpg --combine
 The modkit run can be fully customized by providing `--modkit_args`. This will override any preset, and allow full control over the run of modkit.
 Haplotype-resolved aggregated counts of modified bases can be obtained with the `--phased` option. This will generate three distinct BEDMethyl files with the naming pattern `{{ alias }}_{{ haplotype }}.wf_mods.bedmethyl.gz`, where `haplotype` can be `1`, `2` or `ungrouped`.
 
-### 6. Copy number variants (CNV) calling with QDNASeq
+### 6a. Copy number variants (CNV) calling with Spectre
 
-CNV calling is performed using [QDNAseq](https://github.com/ccagc/QDNAseq). This workflow is compatible with genome builds hg19/GRCh37 or hg38/GRCh38.
-In addition to the VCF of CNV calls, the workflow emits QDNAseq-generated plots and BED files of both raw read counts per bin and corrected, normalised, and smoothed read counts per bin.
+CNV calling is performed using a fork of [Spectre](https://github.com/fritzsedlazeck/Spectre/tree/ont-dev), using the `--cnv` flag. Spectre is the default CNV caller in the workflow, and is compatible with hg38/GRCh38. The output of this workflow is a VCF of CNV calls.
+
+### 6b. Copy number variants (CNV) calling with QDNASeq
+
+CNV calling may alternatively be performed using [QDNAseq](https://github.com/ccagc/QDNAseq), using `--cnv --use_qdnaseq`. This workflow is compatible with genome builds hg19/GRCh37 or hg38/GRCh38, and is recommended for shallow WGS or adaptive sampling data. In addition to the VCF of CNV calls, the workflow emits QDNAseq-generated plots and BED files of both raw read counts per bin and corrected, normalised, and smoothed read counts per bin. Please note that QDNAseq was the default CNV caller until version 1.11.0 of the workflow, and the additional `--use_qdnaseq` flag is now required to use it.
 
 ### 7. Short tandem repeat (STR) genotyping with Straglr
 
@@ -299,8 +310,19 @@ Running the phasing is a compute intensive process. Running the workflow in phas
 ### 9. Variant annotation
 Annotation will be performed automatically by the SNP and SV subworkflows, and can be disabled by the user with `--annotation false`. The workflow will annotate the variants using [SnpEff](https://pcingola.github.io/SnpEff/), and currently only support the human hg19 and hg38 genomes. Additionally, the workflow will add the [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) annotations for the SNP variants.
 
-Running the workflow on non-human samples will require this option to be disabled.
+Running the workflow on non-human samples will require this option to be disabled. For more detail, see Section 10 below.
 
+### 10. Genome compatibility and running the workflow on non-human genomes
+Some of the sub-workflows in wf-human-variation are restricted to certain genome builds, which means they will not be executable on non-human genomes or human genome builds outside hg19/GRCh37 and hg38/GRCh38. The following table summarises which subworkflows and options are available (or required) for a desired input genome:
+
+|    Genome    | `--snp`  | `--sv`  | `--mod` | `--cnv` | `--cnv --use_qdnaseq` | `--str` | `--annotation false` | `--include_all_ctgs` |
+|--------------|----------|---------|---------|---------|-----------------------|---------|----------------------|----------------------|
+| hg19/GRCh37  | &check;  | &check; | &check; |         |        &check;        |         |         \*           |                      |
+| hg38/GRCh38  | &check;  | &check; | &check; | &check; |        &check;        | &check; |         \*           |                      |
+| Other human  | &check;  | &check; | &check; |         |                       |         |       &check;        |                      |
+| Non human    | &check;  | &check; | &check; |         |                       |         |       &check;        |       &check;        |
+
+\* As noted above, annotation is performed by default but can be switched off for hg19/GRCh37 and hg38/GRCh38.
 
 
 

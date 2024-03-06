@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-"""Plot CNVs."""
+"""Plot QDNAseq CNVs."""
 
 import base64
 
-from dominate.tags import h6, img, p, span, table, tbody, td, th, thead, tr
+from dominate.tags import a, h6, img, p, span, table, tbody, td, th, thead, tr
 from ezcharts.components.ezchart import EZChart
 from ezcharts.components.reports.labs import LabsReport
 from ezcharts.components.theme import LAB_head_resources
@@ -18,8 +18,8 @@ from pkg_resources import resource_filename
 from .util import wf_parser  # noqa: ABS101
 
 # Setup simple globals
-WORKFLOW_NAME = 'wf-cnv'
-REPORT_TITLE = f'{WORKFLOW_NAME} report'
+WORKFLOW_NAME = 'wf-human-variation'
+REPORT_TITLE = f'{WORKFLOW_NAME} CNV report'
 Colors = util.Colors
 
 GENETIC_SEX = {
@@ -70,7 +70,7 @@ KNOWN_CHROMOSOME_CONFIGURATIONS = {
 
 def argparser():
     """Argument parser for entrypoint."""
-    parser = wf_parser("cnv_plot")
+    parser = wf_parser("report_cnv_qdnaseq")
     parser.add_argument(
         '-q', '--qdna_seq', required=True, dest="qdnaseq_results",
         help="Output from running QDNAseq"
@@ -365,6 +365,15 @@ def make_report(
     report = LabsReport(
         f"{args.sample_id} | {REPORT_TITLE}", WORKFLOW_NAME, params, versions,
         head_resources=[*LAB_head_resources])
+
+    with report.add_section(
+            'Introduction', 'Intro'):
+        qdnaseq_url = "https://github.com/ccagc/QDNAseq"
+        p(
+            "This report contains CNVs detected using ",
+            a("QDNAseq", href=qdnaseq_url),
+            ", as part of the wf-human-variation workflow."
+        )
 
     with report.main_content:
         Stats(
