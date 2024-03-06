@@ -322,7 +322,7 @@ process failedQCReport  {
         // If we do not provide that, then the interval will be considered as 0>BP, where BP is the highest value in the bed 
         // file for each chromosome. This will display the intervals not in the context of the chromosome (so showing a peak in
         // a small region, and flat everywhere else) but only for the regions selected.
-        def genome_wide_depth = params.bed ? "" : "--reference_fai ${fai}"
+        def genome_wide_depth = params.bed ? "" : "--reference_fai ref.fasta.fai"
         def report_name = "${params.sample_name}.wf-human-alignment-report.html"
         """
         workflow-glue report_al \\

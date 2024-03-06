@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - N50 and mean coverage added to alignment report.
 
 ### Fixed
-- EPI2ME Desktop incorrectly allowed selection of directory for `tr_bed`
+- EPI2ME Desktop incorrectly allowed selection of directory for `tr_bed`.
+- `failedQCReport` failing to generate a report.
 
 ## [v1.11.0]
 ### Changed
