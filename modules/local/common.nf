@@ -64,6 +64,7 @@ process mosdepth {
         tuple path(xam), path(xam_idx), val(xam_meta)
         file target_bed
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH) 
+        val (window_size)
     output:
         tuple \
             path("${params.sample_name}.regions.bed.gz"),
@@ -82,7 +83,7 @@ process mosdepth {
         # preventing crash in downstream tools [CW-2247]
         sort -k 1,1 -k2,2n ${target_bed} | \
             bedtools merge -i - | \
-            bedtools makewindows -b - -w ${params.depth_window_size} > cut.bed
+            bedtools makewindows -b - -w ${window_size} > cut.bed
         # Run mosdepth
         mosdepth \
         -x \
@@ -183,15 +184,17 @@ process getGenome {
     output:
         env genome_build, emit: genome_build optional true
      script:
-        def workflow_arg = params.str ? "-w str" : ""
+        // set flags for subworkflows that have genome build restrictions
+        def str_arg = params.str ? "--str" : ""
+        def cnv_arg = params.cnv ? "--cnv" : ""
+        def qdnaseq_arg = params.use_qdnaseq ? "--use_qdnaseq" : ""
         """
         # use view -H rather than idxstats, as idxstats will still cause a scan of the whole CRAM (https://github.com/samtools/samtools/issues/303)
         samtools view -H ${xam} --no-PG | grep '^@SQ' | sed -nE 's,.*SN:([^[:space:]]*).*LN:([^[:space:]]*).*,\\1\\t\\2,p' > ${xam}_genome.txt
-        get_genome.py --chr_counts ${xam}_genome.txt -o output.txt ${workflow_arg}
+        get_genome.py --chr_counts ${xam}_genome.txt -o output.txt ${str_arg} ${cnv_arg} ${qdnaseq_arg}
         genome_build=`cat output.txt`
         """
 }
-
 
 process eval_downsampling {
     cpus 1
@@ -544,4 +547,20 @@ process sanitise_bed {
         """
         sanitise_bed.py --ref ${ref} --bed ${bed} --bed_out ${bed.baseName}.sanitised.bed
         """
+}
+
+// CNV output
+// See https://github.com/nextflow-io/nextflow/issues/1636
+// This is the only way to publish files from a workflow whilst
+// decoupling the publish from the process steps.
+process output_cnv {
+    // publish inputs to output directory
+    publishDir "${params.out_dir}", mode: 'copy', pattern: "*"
+    input:
+        path fname
+    output:
+        path fname
+    """
+    echo "Writing output files"
+    """
 }

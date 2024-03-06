@@ -50,10 +50,13 @@ The default behaviour of the workflow is to run modkit with the `--cpg --combine
 The modkit run can be fully customized by providing `--modkit_args`. This will override any preset, and allow full control over the run of modkit.
 Haplotype-resolved aggregated counts of modified bases can be obtained with the `--phased` option. This will generate three distinct BEDMethyl files with the naming pattern `{{ alias }}_{{ haplotype }}.wf_mods.bedmethyl.gz`, where `haplotype` can be `1`, `2` or `ungrouped`.
 
-### 6. Copy number variants (CNV) calling with QDNASeq
+### 6a. Copy number variants (CNV) calling with Spectre
 
-CNV calling is performed using [QDNAseq](https://github.com/ccagc/QDNAseq). This workflow is compatible with genome builds hg19/GRCh37 or hg38/GRCh38.
-In addition to the VCF of CNV calls, the workflow emits QDNAseq-generated plots and BED files of both raw read counts per bin and corrected, normalised, and smoothed read counts per bin.
+CNV calling is performed using a fork of [Spectre](https://github.com/fritzsedlazeck/Spectre/tree/ont-dev), using the `--cnv` flag. Spectre is the default CNV caller in the workflow, and is compatible with hg38/GRCh38. The output of this workflow is a VCF of CNV calls.
+
+### 6b. Copy number variants (CNV) calling with QDNASeq
+
+CNV calling may alternatively be performed using [QDNAseq](https://github.com/ccagc/QDNAseq), using `--cnv --use_qdnaseq`. This workflow is compatible with genome builds hg19/GRCh37 or hg38/GRCh38, and is recommended for shallow WGS or adaptive sampling data. In addition to the VCF of CNV calls, the workflow emits QDNAseq-generated plots and BED files of both raw read counts per bin and corrected, normalised, and smoothed read counts per bin. Please note that QDNAseq was the default CNV caller until version 1.11.0 of the workflow, and the additional `--use_qdnaseq` flag is now required to use it.
 
 ### 7. Short tandem repeat (STR) genotyping with Straglr
 
@@ -84,4 +87,16 @@ Running the phasing is a compute intensive process. Running the workflow in phas
 ### 9. Variant annotation
 Annotation will be performed automatically by the SNP and SV subworkflows, and can be disabled by the user with `--annotation false`. The workflow will annotate the variants using [SnpEff](https://pcingola.github.io/SnpEff/), and currently only support the human hg19 and hg38 genomes. Additionally, the workflow will add the [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) annotations for the SNP variants.
 
-Running the workflow on non-human samples will require this option to be disabled.
+Running the workflow on non-human samples will require this option to be disabled. For more detail, see Section 10 below.
+
+### 10. Genome compatibility and running the workflow on non-human genomes
+Some of the sub-workflows in wf-human-variation are restricted to certain genome builds, which means they will not be executable on non-human genomes or human genome builds outside hg19/GRCh37 and hg38/GRCh38. The following table summarises which subworkflows and options are available (or required) for a desired input genome:
+
+|    Genome    | `--snp`  | `--sv`  | `--mod` | `--cnv` | `--cnv --use_qdnaseq` | `--str` | `--annotation false` | `--include_all_ctgs` |
+|--------------|----------|---------|---------|---------|-----------------------|---------|----------------------|----------------------|
+| hg19/GRCh37  | &check;  | &check; | &check; |         |        &check;        |         |         \*           |                      |
+| hg38/GRCh38  | &check;  | &check; | &check; | &check; |        &check;        | &check; |         \*           |                      |
+| Other human  | &check;  | &check; | &check; |         |                       |         |       &check;        |                      |
+| Non human    | &check;  | &check; | &check; |         |                       |         |       &check;        |       &check;        |
+
+\* As noted above, annotation is performed by default but can be switched off for hg19/GRCh37 and hg38/GRCh38.

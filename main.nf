@@ -8,12 +8,14 @@ include { lookup_clair3_model } from './modules/local/wf-human-snp'
 include { bam as sv } from './workflows/wf-human-sv'
 include { output_sv } from './modules/local/wf-human-sv'
 
-include { cnv } from './workflows/wf-human-cnv'
-include { output_cnv } from './modules/local/wf-human-cnv'
-
+include { str } from './workflows/wf-human-str'
 include { output_str } from './modules/local/wf-human-str'
 
 include { phasing } from './workflows/phasing'
+
+include { cnv as cnv_spectre } from './workflows/wf-human-cnv'
+
+include { cnv as cnv_qdnaseq } from './workflows/wf-human-cnv-qdnaseq'
 
 include {
     index_ref_gzi;
@@ -39,7 +41,8 @@ include {
     concat_vcfs as concat_snp_vcfs;
     sift_clinvar_vcf as sift_clinvar_snp_vcf;
     bed_filter;
-    sanitise_bed
+    sanitise_bed;
+    output_cnv
     } from './modules/local/common'
 
 include {
@@ -55,7 +58,7 @@ include {
 
 include { mod; validate_modbam} from './workflows/methyl'
 
-include { str } from './workflows/wf-human-str'
+
 
 // entrypoint workflow
 WorkflowMain.initialise(workflow, params, log)
@@ -109,8 +112,8 @@ workflow {
     // switch workflow to BAM if calling CNV
     // CW-3324: Prevent ingress from running the CRAM to BAM conversion if
     //   downsampling is on, as the downsampling step can output BAM instead.
-    if (params.cnv) {
-        log.warn "CNV calling subworkflow does not support CRAM. You don't need to do anything, but we're just letting you know that:"
+    if (params.cnv && params.use_qdnaseq) {
+        log.warn "CNV calling subworkflow using QDNAseq does not support CRAM. You don't need to do anything, but we're just letting you know that:"
         log.warn "- If your input file is CRAM, it will be converted to a temporary BAM inside the workflow automatically."
         log.warn "- If your input requires alignment, the outputs will be saved to your output directory as BAM instead of CRAM."
         output_bam = params.downsample_coverage ? false : true
@@ -128,7 +131,10 @@ workflow {
     }
 
     // Trigger haplotagging
-    def run_haplotagging = params.str || params.phased ? true : false
+    def run_haplotagging = params.str || params.phased
+
+    // Trigger the SNP workflow based on a range of different conditions:
+    def run_snp = params.snp || run_haplotagging || (params.cnv && !params.use_qdnaseq)
 
     // Check ref and decompress if needed
     ref = null
@@ -221,7 +227,8 @@ workflow {
     }
 
     // mosdepth for depth traces -- passed into wf-snp :/
-    mosdepth_input(bam_channel, bed, ref_channel)
+
+    mosdepth_input(bam_channel, bed, ref_channel, params.depth_window_size)
     mosdepth_stats = mosdepth_input.out.mosdepth_tuple
     mosdepth_summary = mosdepth_input.out.summary
     if (params.depth_intervals){
@@ -229,7 +236,7 @@ workflow {
     } else {
         mosdepth_perbase = Channel.from("$projectDir/data/OPTIONAL_FILE")
     }
-    
+
     // Determine if the coverage threshold is met to perform analysis.
     // If too low, it creates an empty input channel, 
     // avoiding the subsequent processes to do anything
@@ -344,7 +351,7 @@ workflow {
         // Prepare the output files for mosdepth.
         // First, we compute the depth for the downsampled files, if it
         // exists 
-        mosdepth_downsampled(downsampling.out, bed, ref_channel)
+        mosdepth_downsampled(downsampling.out, bed, ref_channel, params.depth_window_size)
         // Then, choose which output will be used in the report. 
         // If it needs to be subset, then the combined output exists, whereas 
         // the original mosdepth file is merged with the empty ready channel, leaving 
@@ -421,10 +428,10 @@ workflow {
                 .combine(workflow_params)
                 .flatten()
                 .collect() | failedQCReport
-    
+
     // Set up BED for wf-human-snp, wf-human-str or run_haplotagging
     // CW-2383: we first call the SNPs to generate an haplotagged bam file for downstream analyses
-    if (params.snp || run_haplotagging) {
+    if (run_snp) {
         if(using_user_bed) {
             snp_bed = bed
         }
@@ -492,7 +499,7 @@ workflow {
 
     // Then, we finish working on the SNPs by refining with SVs and annotating them. This is needed to
     // maximise the interaction between Clair3 and Sniffles.
-    if (params.snp || run_haplotagging){
+    if (run_snp){
         // Channel of results.
         // We drop the raw .vcf(.tbi) file from Clair3 in it to then add back the files in the 
         // final_vcf channel, allowing for the latest file to be emitted.
@@ -600,18 +607,30 @@ workflow {
         mod_stats = Channel.empty()
     }
 
-    //wf-human-cnv
+    // wf-human-cnv
     if (params.cnv) {
-        results_cnv = cnv(
-            pass_bam_channel,
-            bam_stats,
-            genome_build
-        )
+        // cnv calling with qdnaseq
+        if (params.use_qdnaseq) {
+            results_cnv = cnv_qdnaseq(
+                pass_bam_channel,
+                bam_stats,
+                genome_build
+            )
+        // cnv calling with spectre
+        } else {
+            results_cnv = cnv_spectre(
+                pass_bam_channel,
+                ref_channel,
+                clair_vcf.vcf_files,
+                bed,
+                chromosome_codes
+            )
+        }
         output_cnv(results_cnv)
     }
-    
+
     // wf-human-str
-    if(params.str) {
+    if (params.str) {
         // use haplotagged bam from snp() as input to str()
         bam_channel_str = clair_vcf.str_bams
 

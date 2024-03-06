@@ -4,8 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [v2.0.0]
 ### Changed
+- CNV calling with `--cnv` is now performed using Spectre, which is optimised for long reads.
+    - Legacy CNV calling using QDNAseq may still be carried out with `--cnv --use_qdnaseq`.
+    - The bin size parameter has been renamed from `--bin_size` to `--qdnaseq_bin_size`.
 - Skip CNV CRAM to BAM conversion if downsampling is required, to avoid creating an unnecessary intermediate file.
 - The output of `--depth_intervals` now has `.bedgraph.gz` extension.
 - SV workflow outputs SVs in the autosomes, sex chromosomes and MT; use `--include_all_ctgs` to output calls on all the sequences.
