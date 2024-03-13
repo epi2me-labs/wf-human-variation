@@ -20,35 +20,65 @@
                     "type": "boolean",
                     "description": "Call for structural variants.",
                     "help_text": "If this option is selected, structural variant calling will be carried out using Sniffles2.",
-                    "default": false
+                    "default": false,
+                    "overrides": {
+                        "minknow": {
+                            "default": true,
+                            "title": "Structural variants"
+                        }
+                    }
                 },
                 "snp": {
                     "title": "SNP: Small variants",
                     "type": "boolean",
                     "description": "Call for small variants",
                     "help_text": "If this option is selected, small variant calling will be carried out using Clair3.",
-                    "default": false
+                    "default": false,
+                    "overrides": {
+                        "minknow": {
+                            "default": true,
+                            "title": "Single nucleotide polymorphisms"
+                        }
+                    }
                 },
                 "cnv": {
                     "title": "CNV: Copy number variants",
                     "type": "boolean",
                     "description": "Call for copy number variants.",
                     "help_text": "If this option is selected, copy number variant calling will be carried out with either Spectre (default) or QDNAseq. To use QDNAseq instead of Spectre, use the option `--use_qdnaseq`. Spectre is only compatible with genome build hg38, and if QDNAseq is used, it is only compatible with genome builds hg37 and hg38.",
-                    "default": false
+                    "default": false,
+                    "overrides": {
+                        "minknow": {
+                            "default": true,
+                            "title": "Copy number variants"
+                        }
+                    }
                 },
                 "str": {
                     "title": "STR: Short tandem repeat expansions",
                     "type": "boolean",
                     "description": "Enable Straglr to genotype STR expansions.",
                     "help_text": "If this option is selected, genotyping of STR expansions will be carried out using Straglr. This sub-workflow is only compatible with genome build hg38.",
-                    "default": false
+                    "default": false,
+                    "overrides": {
+                        "minknow": {
+                            "title": "Short tandem repeats",
+                            "default": true
+                        }
+                    }
                 },
                 "mod": {
                     "title": "MOD: Modified bases aggregation",
                     "type": "boolean",
                     "description": "Enable output of modified calls to a bedMethyl file [requires input BAM with Ml and Mm tags]",
                     "help_text": "This option is automatically selected and aggregation of modified calls with be carried out using modkit if Ml and Mm tags are found. Disable this option to prevent output of a bedMethyl file.",
-                    "default": false
+                    "default": false,
+                    "overrides": {
+                        "minknow": {
+                            "default": true,
+                            "hidden": true
+                        }
+                    }
                 }
             },
             "anyOf": [
@@ -89,28 +119,51 @@
                     "type": "string",
                     "default": "SAMPLE",
                     "description": "Sample name to be displayed in workflow outputs.",
-                    "help_text": ""
+                    "help_text": "",
+                    "overrides": {
+                        "minknow": {
+                            "hint": "sampleId",
+                            "hidden": true
+                        }
+                    }
                 },
                 "bam": {
                     "title": "Input: BAM or CRAM file",
                     "type": "string",
                     "format": "file-path",
                     "description": "Path to a BAM (or CRAM) containing aligned or unaligned reads.",
-                    "help_text": "The workflow currently accepts a single BAM or CRAM file."
+                    "help_text": "The workflow currently accepts a single BAM or CRAM file.",
+                    "overrides": {
+                        "minknow": {
+                            "hint": "bamOutputDirectory",
+                            "hidden": true
+                        }
+                    }
                 },
                 "ref": {
                     "title": "Reference file",
                     "type": "string",
                     "format": "file-path",
                     "description": "Path to a reference FASTA file.",
-                    "help_text": "Reference against which to compare reads for variant calling."
+                    "help_text": "Reference against which to compare reads for variant calling.",
+                    "overrides": {
+                        "minknow": {
+                            "hint": "alignmentRefFile",
+                            "title": "Reference file for alignment"
+                        }
+                    }
                 },
                 "old_ref": {
                     "title": "CRAM reference file for realignment",
                     "type": "string",
                     "format": "file-path",
                     "description": "Reference FASTA file for CRAM input (only required if the CRAM requires realignment)",
-                    "help_text": "You do not need to provide this unless the workflow specifically asks you to. If your input CRAM headers do not match the metadata of the input reference, the workflow will assume you want to realign your reads to the new input reference. CRAM files are compressed using the reference, so the read sequences cannot be realigned without the old reference."
+                    "help_text": "You do not need to provide this unless the workflow specifically asks you to. If your input CRAM headers do not match the metadata of the input reference, the workflow will assume you want to realign your reads to the new input reference. CRAM files are compressed using the reference, so the read sequences cannot be realigned without the old reference.",
+                    "overrides": {
+                        "minknow": {
+                            "hidden": true
+                        }
+                    }
                 },
                 "basecaller_cfg": {
                     "title": "Basecaller configuration",
@@ -146,33 +199,60 @@
                         "dna_r10.4.1_e8.2_400bps_sup@v4.2.0",
                         "dna_r9.4.1_450bps_hac",
                         "dna_r9.4.1_450bps_hac_prom"
-                    ]
+                    ],
+                    "overrides": {
+                        "minknow": {
+                            "hint": "basecallModel",
+                            "hidden": true
+                        }
+                    }
                 },
                 "bam_min_coverage": {
                     "type": "number",
                     "default": 20,
                     "description": "Minimum read coverage required to run analysis.",
-                    "hidden": false
+                    "hidden": false,
+                    "overrides": {
+                        "minknow": {
+                            "hidden": true
+                        }
+                    }
                 },
                 "depth_window_size": {
                     "type": "number",
                     "default": 25000,
                     "description": "Coverage window size in bp.",
                     "help_text": "This options specify the window size to use when computing the coverage along the genome.",
-                    "hidden": true
+                    "hidden": true,
+                    "overrides": {
+                        "minknow": {
+                            "hidden": true
+                        }
+                    }
                 },
                 "bed": {
                     "title": "Target region BED file",
                     "type": "string",
                     "format": "file-path",
                     "description": "An optional BED file enumerating regions to process for variant calling.",
-                    "help_text": ""
+                    "help_text": "",
+                    "overrides": {
+                        "minknow": {
+                            "hint": "alignmentBedFile",
+                            "title": "Optional .bed file for enumerating regions to process for variant calling"
+                        }
+                    }
                 },
                 "annotation": {
                     "type": "boolean",
                     "description": "SnpEff annotation.",
                     "help_text": "If this option is unselected, VCFs will not be annotated with SnpEff.",
-                    "default": true
+                    "default": true,
+                    "overrides": {
+                        "minknow": {
+                            "hidden": true
+                        }
+                    }
                 },
                 "phased": {
                     "type": "boolean",
@@ -191,18 +271,32 @@
                     "type": "string",
                     "default": "output",
                     "format": "directory-path",
-                    "description": "Directory for output of all workflow results."
+                    "description": "Directory for output of all workflow results.",
+                    "overrides": {
+                        "minknow": {
+                            "hidden": true
+                        }
+                    }
                 }
             },
             "required": [
                 "ref",
                 "bam"
-            ]
+            ],
+            "overrides": {
+                "title": "Human genome reference",
+                "description": ""
+            }
         },
         "sv_options": {
             "title": "Structural variant calling options",
             "type": "object",
             "description": "Options specific to the SV calling subworkflow.",
+            "overrides": {
+                "minknow": {
+                    "hidden": true
+                }
+            },
             "properties": {
                 "tr_bed": {
                     "title": "Tandem repeat BED file",
@@ -236,6 +330,11 @@
             "title": "Structural variant benchmarking options",
             "type": "object",
             "description": "Options specific to automated benchmarking of the SV calling subworkflow.",
+            "overrides": {
+                "minknow": {
+                    "hidden": true
+                }
+            },
             "properties": {
                 "sv_benchmark": {
                     "type": "boolean",
@@ -268,6 +367,11 @@
             "title": "Small variant calling options",
             "type": "object",
             "description": "Options specific to the small variant calling subworkflow.",
+            "overrides": {
+                "minknow": {
+                    "hidden": true
+                }
+            },
             "properties": {
                 "use_longphase": {
                     "type": "boolean",
@@ -355,6 +459,11 @@
             "title": "Copy number variant calling options",
             "type": "object",
             "description": "Options related to the copy number variant subworkflow.",
+            "overrides": {
+                "minknow": {
+                    "hidden": true
+                }
+            },
             "properties": {
                 "use_qdnaseq": {
                     "type": "boolean",
@@ -385,13 +494,18 @@
             "title": "Modified base calling options",
             "type": "object",
             "description": "Options related to the modified bases aggregation subworkflow.",
+            "overrides": {
+                "minknow": {
+                    "hidden": true
+                }
+            },
             "properties": {
                 "force_strand": {
                     "title": "Force strand",
                     "type": "boolean",
                     "default": false,
                     "description": "Require modkit to call strand-aware modifications.",
-                    "help_test": "By default strand calls are collapsed (strand reported as '.'). Enabling this will force stranding to be considered when calling modifications, creating one output per modification per strand and the report will be tabulated by both modification and strand."
+                    "help_text": "By default strand calls are collapsed (strand reported as '.'). Enabling this will force stranding to be considered when calling modifications, creating one output per modification per strand and the report will be tabulated by both modification and strand."
                 },
                 "modkit_args": {
                     "title": "Modkit additional arguments",
@@ -406,6 +520,12 @@
             "title": "Short tandem repeat expansion genotyping options",
             "type": "object",
             "description": "Options related to the STR subworkflow.",
+            "overrides": {
+                "minknow": {
+                    "title": "Short tandem repeat calling options",
+                    "description": ""
+                }
+            },
             "properties": {
                 "sex": {
                     "title": "Sample sex",
@@ -416,7 +536,12 @@
                     "enum": [
                         "male",
                         "female"
-                    ]
+                    ],
+                    "overrides": {
+                        "minknow": {
+                            "title": "Sex (male or female) to be passed to Straglr-genotype."
+                        }
+                    }
                 }
             }
         },
@@ -426,6 +551,11 @@
             "fa_icon": "far fa-question-circle",
             "description": "Advanced options for configuring processes inside the workflow.",
             "help_text": "These advanced options do not need to be changed for typical use, but allow fine tuning of workflows for users who want more control over the workflow.",
+            "overrides": {
+                "minknow": {
+                    "hidden": true
+                }
+            },
             "properties": {
                 "depth_intervals": {
                     "type": "boolean",
@@ -473,6 +603,11 @@
             "fa_icon": "far fa-gauge-high",
             "description": "Options for configuring the common processes across the different subworkflows.",
             "help_text": "These options do not need to be changed for typical use, but allow fine tuning of workflows for users who want more control over the workflow.",
+            "overrides": {
+                "minknow": {
+                    "hidden": true
+                }
+            },
             "properties": {
                 "threads": {
                     "type": "integer",
@@ -511,6 +646,11 @@
             "type": "object",
             "description": "Everything else.",
             "default": "",
+            "overrides": {
+                "minknow": {
+                    "hidden": true
+                }
+            },
             "properties": {
                 "disable_ping": {
                     "type": "boolean",
