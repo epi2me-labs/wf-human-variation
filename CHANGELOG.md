@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Changed
 - ClinVar version in SnpEff container updated to version 20240307.
+- Convert to BAM only when `--cnv --use_qdnaseq` is selected.
 
 ## [v2.0.0]
 ### Changed

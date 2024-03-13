@@ -133,6 +133,9 @@ workflow {
     // Trigger haplotagging
     def run_haplotagging = params.str || params.phased
 
+    // Trigger CRAM to BAM conversion
+    def convert_cram_to_bam = params.cnv && params.use_qdnaseq 
+
     // Trigger the SNP workflow based on a range of different conditions:
     def run_snp = params.snp || run_haplotagging || (params.cnv && !params.use_qdnaseq)
 
@@ -308,7 +311,7 @@ workflow {
         // use BAM, otherwise CRAM.
         downsampling_ext = pass_bam_channel.map{
             xam, xai, meta -> 
-            params.cnv ? ['bam', 'bai'] : ['cram', 'crai']
+            convert_cram_to_bam ? ['bam', 'bai'] : ['cram', 'crai']
         }
         downsampling(pass_bam_channel, ref_channel, ratio.subset, downsampling_ext)
 
@@ -320,7 +323,7 @@ workflow {
         
         // If downsampling && cnv > no conversion was done in advance.
         // If it doesn't pass the downsampling threshold, it needs to be done here.
-        if (params.cnv){
+        if (convert_cram_to_bam){
             ready_bam_channel = cram_to_bam(
                 ready_bam_channel.map{xam, xai, meta -> [xam, xai]}, 
                 ref_channel.map{[it[0], it[1]]}
