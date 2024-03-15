@@ -24,7 +24,8 @@ def is_target_file(Path file, List extensions) {
 
 
 /**
- * Take a channel of the shape `[meta, reads, path-to-stats-dir | null]` and extract the
+ * Take a channel of the shape `[meta, reads, path-to-stats-dir | null]` (or
+ * `[meta, [reads, index], path-to-stats-dir | null]` in the case of XAM) and extract the
  * run IDs from the `run_ids` file in the stats directory into the metamap. If the path
  * to the stats dir is `null`, add an empty list.
  *
@@ -59,6 +60,53 @@ def add_run_IDs_to_meta(ch) {
 
 
 /**
+ * Take a channel of the shape `[meta, reads, path-to-stats-dir | null]` and do the
+ * following:
+ *  - For `fastcat`, extract the number of reads from the `n_seqs` file.
+ *  - For `bamstats`, extract the number of primary alignments and unmapped reads from
+ *    the `bamstats.flagstat.tsv` file.
+ * Then, add add these metrics to the meta map. If the path to the stats dir is `null`,
+ * set the values to 0 when adding them.
+ *
+ * @param ch: input channel of shape `[meta, reads, path-to-stats-dir | null]`
+ * @return: channel with a list of number of reads added to the metamap
+ */
+def add_number_of_reads_to_meta(ch, String input_type_format) {
+    // extract reads from fastcat stats / bamstats results and add to metadata
+    ch = ch | map { meta, reads, stats ->
+        // Check that stats directory is present.
+        if (stats) {
+            if (input_type_format == "fastq") {
+                // Stats from fastcat
+                Integer n_seqs = stats.resolve("n_seqs").splitText()[0] as Integer
+                // `meta + [...]` returns a new map which is handy to avoid any
+                // modifying-maps-in-closures weirdness
+                // See https://github.com/nextflow-io/nextflow/issues/2660
+                [meta + [n_seqs: n_seqs], reads, stats]
+            } else {
+                // or bamstats
+                ArrayList stats_csv = stats.resolve("bamstats.flagstat.tsv").splitCsv(header: true, sep:'\t')
+                // get primary alignments and unmapped and sum them
+                Integer n_primary = stats_csv["primary"].collect{it as Integer}.sum()
+                Integer n_unmapped = stats_csv["unmapped"].collect{it as Integer}.sum()
+                // `meta + [...]` returns a new map which is handy to avoid any
+                // modifying-maps-in-closures weirdness
+                // See https://github.com/nextflow-io/nextflow/issues/2660
+                [meta + [n_primary: n_primary, n_unmapped: n_unmapped], reads, stats]
+            }
+         } else {
+            // return defaults if stats is not there
+            if (input_type_format == "fastq") {
+                [meta + [n_seqs: null], reads, stats]
+            } else {
+                [meta + [n_primary: null, n_unmapped: null], reads, stats]
+            }
+        }
+    }
+    return ch
+}
+
+/**
  * Take a map of input arguments, find valid FASTQ inputs, and return a channel
  * with elements of `[metamap, seqs.fastq.gz | null, path-to-fastcat-stats | null]`.
  * The second item is `null` for sample sheet entries without a matching barcode
@@ -86,7 +134,7 @@ def add_run_IDs_to_meta(ch) {
 def fastq_ingress(Map arguments)
 {
     // check arguments
-    Map margs = parse_arguments(arguments, ["fastcat_extra_args": ""])
+    Map margs = parse_arguments("fastq_ingress", arguments, ["fastcat_extra_args": ""])
 
     ArrayList fq_extensions = [".fastq", ".fastq.gz", ".fq", ".fq.gz"]
 
@@ -109,7 +157,9 @@ def fastq_ingress(Map arguments)
     // add sample sheet entries without barcode dirs to the results channel and extract
     // the run IDs into the metamaps before returning
     ch_result = ch_result.mix(input.missing.map { [*it, null] })
-    return add_run_IDs_to_meta(ch_result)
+    ch_result_run_IDs = add_run_IDs_to_meta(ch_result)
+    // add number of reads after potential filtering under the field n_seqs
+    return add_number_of_reads_to_meta(ch_result_run_IDs, "fastq")
 }
 
 
@@ -118,7 +168,8 @@ def fastq_ingress(Map arguments)
  * with elements of `[metamap, reads.bam | null, path-to-bamstats-results | null]`.
  * The second item is `null` for sample sheet entries without a matching barcode
  * directory or samples containing only uBAM files when `keep_unaligned` is `false`.
- * The last item is `null` if `bamstats` was not run (it is only run when `stats: true`).
+ * The last item is `null` if `bamstats` was not run (it is only run when `stats:
+ * true`).
  *
  * @param arguments: map with arguments containing
  *  - "input": path to either: (i) input (u)BAM file, (ii) top-level directory
@@ -129,6 +180,9 @@ def fastq_ingress(Map arguments)
  *  - "analyse_unclassified": boolean whether to keep unclassified reads
  *  - "stats": boolean whether to run `bamstats`
  *  - "keep_unaligned": boolean whether to include uBAM files
+ *  - "return_fastq": boolean whether to convert to FASTQ (this will always run
+ *    `fastcat`)
+ *  - "fastcat_extra_args": string with extra arguments to pass to `fastcat`
  *  - "required_sample_types": list of required sample types in the sample sheet
  *  - "watch_path": boolean whether to use `watchPath` and run in streaming mode
  * @return: channel of `[Map(alias, barcode, type, ...), Path|null, Path|null]`.
@@ -142,7 +196,11 @@ def fastq_ingress(Map arguments)
 def xam_ingress(Map arguments)
 {
     // check arguments
-    Map margs = parse_arguments(arguments, ["keep_unaligned": false])
+    Map margs = parse_arguments(
+        "xam_ingress",
+        arguments,
+        ["keep_unaligned": false, "return_fastq": false, "fastcat_extra_args": ""]
+    )
 
     // we only accept BAM or uBAM for now (i.e. no SAM or CRAM)
     ArrayList xam_extensions = [".bam", ".ubam"]
@@ -153,11 +211,28 @@ def xam_ingress(Map arguments)
     ch_result = input.dirs
     | map { meta, path -> [meta, get_target_files_in_dir(path, xam_extensions)] }
     | mix(input.files)
+    | map{
+        // If there is more than one BAM in each folder we ignore
+        // the indices. For single BAM we add it as a string to the
+        // metadata for later use. If then the BAM returns as position
+        // sorted, the index will be used.
+        meta, paths -> 
+        boolean is_array = paths instanceof ArrayList
+        String xai_fn
+        if (!is_array){
+            boolean has_xai = file(paths + ".bai").exists()
+            if (has_xai){
+                xai_fn = paths + ".bai"
+            }
+        }
+        [meta + [xai_fn: xai_fn], paths]
+    }
     | checkBamHeaders
-    | map { meta, paths, is_unaligned_env, mixed_headers_env ->
+    | map { meta, paths, is_unaligned_env, mixed_headers_env, is_sorted_env ->
         // convert the env. variables from strings ('0' or '1') into bools
         boolean is_unaligned = is_unaligned_env as int as boolean
         boolean mixed_headers = mixed_headers_env as int as boolean
+        boolean is_sorted = is_sorted_env as int as boolean
         // throw an error if there was a sample with mixed headers
         if (mixed_headers) {
             error "Found mixed headers in (u)BAM files of sample '${meta.alias}'."
@@ -165,7 +240,7 @@ def xam_ingress(Map arguments)
         // add `is_unaligned` to the metamap (note the use of `+` to create a copy of
         // `meta` to avoid modifying every item in the channel;
         // https://github.com/nextflow-io/nextflow/issues/2660)
-        [meta + [is_unaligned: is_unaligned], paths]
+        [meta + [is_unaligned: is_unaligned, is_sorted: is_sorted], paths]
     }
     | branch { meta, paths ->
         // set `paths` to `null` for uBAM samples if unallowed (they will be added to
@@ -176,13 +251,12 @@ def xam_ingress(Map arguments)
         }
         // get the number of files (`paths` can be a list, a single path, or `null`)
         int n_files = paths instanceof List ? paths.size() : (paths ? 1 : 0)
-        // Preparations finished; we can do the branching now. There will be 3 branches
+        // Preparations finished; we can do the branching now. There will be 5 branches
         // depending on the number of files per sample and whether the reads are already
         // aligned:
-        // * no_op_needed: no need to do anything; just add to the final results channel
-        //   downstream
-        //   - no files
-        //   - a single unaligned file
+        // * no files: no need to do anything
+        // * indexed: a single sorted and indexed BAM file. Index will be validated.
+        // * to_index: a single sorted, but not indexed, BAM file
         // * to_catsort: `samtools cat` into `samtools sort`
         //  - a single aligned file
         //  - more than one unaligned file
@@ -191,10 +265,34 @@ def xam_ingress(Map arguments)
         //    open file descriptors)
         // * to_merge: flatMap > sort > group > merge
         //  - between 1 and `N_OPEN_FILES_LIMIT` aligned files
-        no_op_needed: (n_files == 0) || (n_files == 1 && meta["is_unaligned"])
+        no_files: n_files == 0
+        indexed: \
+            n_files == 1 && (meta["is_unaligned"] || meta["is_sorted"]) && meta["xai_fn"]
+        to_index: 
+            n_files == 1 && (meta["is_unaligned"] || meta["is_sorted"]) && !meta["xai_fn"]
         to_catsort: \
             (n_files == 1) || (n_files > N_OPEN_FILES_LIMIT) || meta["is_unaligned"]
         to_merge: true
+    }
+
+    if (margs["return_fastq"]) {
+        // only run samtools fastq on samples with at least one file
+        ch_to_fastq = ch_result.indexed.mix(
+            ch_result.to_index,
+            ch_result.to_merge,
+            ch_result.to_catsort
+        )
+    
+        // input.missing: sample sheet entries without barcode dirs
+        ch_result = input.missing
+        | mix(ch_result.no_files)
+        | map { [*it, null] }
+        | mix(bamToFastq(ch_to_fastq, margs["fastcat_extra_args"]))
+        | map{
+            meta, path, stats ->
+            [meta.findAll { it.key !in ['xai_fn', 'is_sorted'] }, path, stats]
+        }
+        return add_number_of_reads_to_meta(add_run_IDs_to_meta(ch_result), "fastq")
     }
 
     // deal with samples with few-enough files for `samtools merge` first
@@ -208,9 +306,59 @@ def xam_ingress(Map arguments)
     ch_catsorted = ch_result.to_catsort
     | catSortBams
 
-    ch_result = input.missing
+    // Validate the index of the input BAM.
+    // If the input BAM index is invalid, regenerate it.
+    // First separate the BAM from the null input channels.
+    ch_to_validate = ch_result.indexed
+    | map{
+        meta, paths ->
+        bai = paths && meta.xai_fn ? file(meta.xai_fn) : null
+        [meta, paths, bai]
+    }
+    | branch {
+        meta, paths, bai ->
+        to_validate: paths && bai
+        no_op_needed: true
+    }
+
+    // Validate non-null files with index
+    ch_validated = ch_to_validate.to_validate
+    | validateIndex
+    | branch {
+        meta, bam, bai, has_valid_index_env -> 
+        boolean has_valid_index = has_valid_index_env as int as boolean
+        // Split if it is a valid index
+        valid_idx: has_valid_index
+            return [meta, bam, bai]
+        invalid_idx: true
+            return [meta, bam]
+    }
+
+    // Create channel for no_op needed (null channels and valid indexes)
+    ch_no_op = ch_validated.valid_idx
+    | mix(ch_to_validate.no_op_needed)
+
+    // Re-index sorted-not-indexed BAM file
+    ch_indexed = ch_result.to_index
+    | mix( ch_validated.invalid_idx )
+    | samtools_index
+
+    // Add extra null for the missing index to input.missing
+    // as well as the missing metadata.
+    // input.missing: sample sheet entries without barcode dirs
+    ch_missing = input.missing
     | mix(
-        ch_result.no_op_needed,
+        ch_result.no_files,
+    )
+    | map{
+        meta, paths ->
+        [meta + [xai_fn: null, is_sorted: false], paths, null]
+    }
+
+    // Combine all possible inputs
+    ch_result = ch_missing | mix(
+        ch_no_op,
+        ch_indexed,
         ch_merged,
         ch_catsorted,
     )
@@ -218,19 +366,97 @@ def xam_ingress(Map arguments)
     // run `bamstats` if requested
     if (margs["stats"]) {
         // branch and run `bamstats` only on the non-`null` paths
-        ch_result = ch_result.branch { meta, path ->
+        ch_result = ch_result.branch { meta, path, index ->
             has_reads: path
             is_null: true
         }
         ch_bamstats = bamstats(ch_result.has_reads)
-        ch_result = add_run_IDs_to_meta(ch_bamstats) | mix(ch_result.is_null)
+
+        // the channel comes from xam_ingress also have the BAM index in it.
+        // Handle this by placing them in a nested array, maintaining the structure 
+        // from fastq_ingress. We do not use variable name as assigning variable
+        // name with a tuple not matching (e.g. meta, bam, bai, stats <- [meta, bam, stats] )
+        // causes the workflow to crash.
+        ch_result = ch_bamstats
+        | map{
+            it[3] ? [it[0], [it[1], it[2]], it[3]] : it
+        }
+        | add_run_IDs_to_meta
+        | map{
+            it.flatten()
+        }
+        | mix(
+            ch_result.is_null.map{it + [null]}
+        )
     } else {
         // add `null` instead of path to `bamstats` results dir
-        ch_result = ch_result | map { meta, bam -> [meta, bam, null] }
+        ch_result = ch_result | map { meta, bam, bai -> [meta, bam, bai, null] }
     }
+
+    // Remove metadata that are unnecessary downstream:
+    // meta.xai_fn: not needed, as it will be part of the channel as a file
+    // meta.is_sorted: if data are aligned, they will also be sorted/indexed
+    //
+    // The output meta can contain the following flags:
+    // [
+    //     barcode: always present
+    //     type: always present
+    //     run_id: always present, but can be empty (i.e. `[]`)
+    //     alias: always present
+    //     n_primary: always present, but can be `null`
+    //     n_unmapped: always present, but can be `null`
+    //     is_unaligned: present if there is a (u)BAM file
+    // ]
+    ch_result = add_number_of_reads_to_meta(
+        ch_result
+            | map{
+                meta, bam, bai, stats ->
+                [meta.findAll { it.key !in ['xai_fn', 'is_sorted'] }, [bam, bai], stats]
+            }, 
+        "xam"
+    )
+    | map{
+        it.flatten()
+    }
+
     return ch_result
 }
 
+process bamToFastq {
+    label "ingress"
+    label "wf_common"
+    cpus 4
+    memory "2 GB"
+    input:
+        tuple val(meta), path(bams, stageAs: "input_dir/reads*.bam")
+        val extra_args
+    output: tuple val(meta), path("seqs.fastq.gz"), path("fastcat_stats")
+    script:
+    """
+    mkdir fastcat_stats
+
+    # Save file as compressed fastq
+    fastcat \
+        -s ${meta["alias"]} \
+        -r >(bgzip -c > fastcat_stats/per-read-stats.tsv.gz) \
+        -f fastcat_stats/per-file-stats.tsv \
+        --histograms histograms \
+        $extra_args \
+        <( 
+            samtools cat -b <(find input_dir -name 'reads*.bam') | \
+            samtools fastq - -n -T '*' -o - -0 - 
+        ) \
+    | bgzip -c > seqs.fastq.gz
+
+    mv histograms/* fastcat_stats
+
+    # extract the run IDs and number of sequences (n_seqs) from the per-read stats
+    csvtk freq -tf runid fastcat_stats/per-read-stats.tsv.gz \
+    | csvtk del-header \
+    | tee >(cut -f 1 | sort > "fastcat_stats/run_ids") \
+    | awk 'BEGIN{n=0}; {n+=\$2}; END{print n}' > "fastcat_stats/n_seqs"
+    """
+}
 
 process checkBamHeaders {
     label "ingress"
@@ -246,10 +472,34 @@ process checkBamHeaders {
             path("input_dir/reads*.bam", includeInputs: true),
             env(IS_UNALIGNED),
             env(MIXED_HEADERS),
+            env(IS_SORTED),
         )
     script:
     """
     workflow-glue check_bam_headers_in_dir input_dir > env.vars
+    source env.vars
+    """
+}
+
+
+process validateIndex {
+    label "ingress"
+    label "wf_common"
+    cpus 1
+    memory "2 GB"
+    input: tuple val(meta), path("reads.bam"), path("reads.bam.bai")
+    output:
+        // set the two env variables by `eval`-ing the output of the python script
+        // checking the XAM headers
+        tuple(
+            val(meta),
+            path("reads.bam", includeInputs: true),
+            path("reads.bam.bai", includeInputs: true),
+            env(HAS_VALID_INDEX)
+        )
+    script:
+    """
+    workflow-glue check_xam_index reads.bam > env.vars
     source env.vars
     """
 }
@@ -260,12 +510,13 @@ process mergeBams {
     label "wf_common"
     cpus 3
     memory "4 GB"
-    input: tuple val(meta), path("input_bams/reads*.bam")
-    output: tuple val(meta), path("reads.bam")
-    shell:
+    input: tuple val(meta), path("input_bams/reads*.bam"), path("input_bams/reads*.bam.bai")
+    output: tuple val(meta), path("reads.bam"), path("reads.bam.bai")
+    script:
+    def merge_threads = Math.max(1, task.cpus - 1)
     """
-    samtools merge -@ ${task.cpus - 1} \
-        -b <(find input_bams -name 'reads*.bam') -o reads.bam
+    samtools merge -@ ${merge_threads} \
+        -b <(find input_bams -name 'reads*.bam') --write-index -o reads.bam##idx##reads.bam.bai
     """
 }
 
@@ -276,11 +527,12 @@ process catSortBams {
     cpus 4
     memory "4 GB"
     input: tuple val(meta), path("input_bams/reads*.bam")
-    output: tuple val(meta), path("reads.bam")
+    output: tuple val(meta), path("reads.bam"), path("reads.bam.bai")
     script:
+    def sort_threads = Math.max(1, task.cpus - 2)
     """
     samtools cat -b <(find input_bams -name 'reads*.bam') \
-    | samtools sort - -@ ${task.cpus - 2} -o reads.bam
+    | samtools sort - -@ ${sort_threads} --write-index -o reads.bam##idx##reads.bam.bai
     """
 }
 
@@ -291,10 +543,11 @@ process sortBam {
     cpus 3
     memory "4 GB"
     input: tuple val(meta), path("reads.bam")
-    output: tuple val(meta), path("reads.sorted.bam")
+    output: tuple val(meta), path("reads.sorted.bam"), path("reads.sorted.bam.bai")
     script:
+    def sort_threads = Math.max(1, task.cpus - 1)
     """
-    samtools sort -@ ${task.cpus - 1} reads.bam -o reads.sorted.bam
+    samtools sort --write-index -@ ${sort_threads} reads.bam -o reads.sorted.bam##idx##reads.sorted.bam.bai
     """
 }
 
@@ -305,10 +558,11 @@ process bamstats {
     cpus 3
     memory "4 GB"
     input:
-        tuple val(meta), path("reads.bam")
+        tuple val(meta), path("reads.bam"), path("reads.bam.bai")
     output:
         tuple val(meta),
               path("reads.bam"),
+              path("reads.bam.bai"),
               path("bamstats_results")
     script:
         def bamstats_threads = Math.max(1, task.cpus - 1)
@@ -325,8 +579,6 @@ process bamstats {
     | csvtk del-header | sort | uniq > bamstats_results/run_ids
     """
 }
-
-
 /**
  * Run `watchPath` on the input directory and return a channel of shape [metamap,
  * path-to-target-file]. The meta data is taken from the sample sheet in case one was
@@ -473,9 +725,11 @@ process fastcat {
             | bgzip > $out
 
         mv histograms/* $fastcat_stats_outdir
-        # extract the run IDs from the per-read stats
-        csvtk cut -tf runid $fastcat_stats_outdir/per-read-stats.tsv.gz \
-        | csvtk del-header | sort | uniq > $fastcat_stats_outdir/run_ids
+        # extract the run IDs and number of sequences (n_seqs) from the per-read stats
+        csvtk freq -tf runid $fastcat_stats_outdir/per-read-stats.tsv.gz \
+        | csvtk del-header \
+        | tee >(cut -f 1 | sort > "$fastcat_stats_outdir/run_ids") \
+        | awk 'BEGIN{n=0}; {n+=\$2}; END{print n}' > "$fastcat_stats_outdir/n_seqs"
         """
 }
 
@@ -489,7 +743,7 @@ process fastcat {
  *  the argument-parsing to be tailored to a particular ingress function)
  * @return: map of parsed arguments
  */
-Map parse_arguments(Map arguments, Map extra_kwargs=[:]) {
+Map parse_arguments(String func_name, Map arguments, Map extra_kwargs=[:]) {
     ArrayList required_args = ["input"]
     Map default_kwargs = [
         "sample": null,
@@ -502,7 +756,7 @@ Map parse_arguments(Map arguments, Map extra_kwargs=[:]) {
     ArgumentParser parser = new ArgumentParser(
         args: required_args,
         kwargs: default_kwargs + extra_kwargs,
-        name: "fastq_ingress")
+        name: func_name)
     return parser.parse_args(arguments)
 }
 
@@ -726,10 +980,10 @@ def get_sample_sheet(Path sample_sheet, ArrayList required_sample_types) {
     // in STDOUT. Thus, we use the somewhat clunky construct with `concat` and `last`
     // below. This lets the CSV channel only start to emit once the error checking is
     // done.
-    ch_err = validate_sample_sheet(sample_sheet, required_sample_types).map {
+    ch_err = validate_sample_sheet(sample_sheet, required_sample_types).map { stdoutput, sample_sheet_file ->
         // check if there was an error message
-        if (it) error "Invalid sample sheet: ${it}."
-        it
+        if (stdoutput) error "Invalid sample sheet: ${stdoutput}."
+        stdoutput
     }
     // concat the channel holding the path to the sample sheet to `ch_err` and call
     // `.last()` to make sure that the error-checking closure above executes before
@@ -743,13 +997,14 @@ def get_sample_sheet(Path sample_sheet, ArrayList required_sample_types) {
 /**
  * Python script for validating a sample sheet. The script will write messages
  * to STDOUT if the sample sheet is invalid. In case there are no issues, no
- * message is emitted.
+ * message is emitted. The sample sheet will be published to the output dir.
  *
  * @param: path to sample sheet CSV
  * @param: list of required sample types (optional)
  * @return: string (optional)
  */
 process validate_sample_sheet {
+    publishDir params.out_dir, mode: 'copy', overwrite: true
     cpus 1
     label "ingress"
     label "wf_common"
@@ -757,10 +1012,27 @@ process validate_sample_sheet {
     input:
         path "sample_sheet.csv"
         val required_sample_types
-    output: stdout
+    output: 
+        tuple stdout, path("sample_sheet.csv")
     script:
     String req_types_arg = required_sample_types ? "--required_sample_types "+required_sample_types.join(" ") : ""
     """
     workflow-glue check_sample_sheet sample_sheet.csv $req_types_arg
+    """
+}
+
+// Generate an index for an input XAM file
+process samtools_index {
+    cpus 4
+    label "ingress"
+    label "wf_common"
+    memory 4.GB
+    input:
+        tuple val(meta), path("reads.bam")
+    output:
+        tuple val(meta), path("reads.bam"), path("reads.bam.bai")
+    script:
+    """
+    samtools index -@ $task.cpus reads.bam
     """
 }

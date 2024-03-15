@@ -55,6 +55,13 @@
 | force_strand | boolean | Require modkit to call strand-aware modifications. | By default strand calls are collapsed (strand reported as '.'). Enabling this will force stranding to be considered when calling modifications, creating one output per modification per strand and the report will be tabulated by both modification and strand. | False |
 
 
+### Short tandem repeat expansion genotyping options
+
+| Nextflow parameter name  | Type | Description | Help | Default |
+|--------------------------|------|-------------|------|---------|
+| sex | string | Sex (male or female) to be passed to Straglr-genotype. | The sex determines how many calls will be obtained for all repeats on chrX. Defaults to female if not specified. | female |
+
+
 ### Advanced Options
 
 | Nextflow parameter name  | Type | Description | Help | Default |
@@ -75,12 +82,5 @@
 | ubam_bam2fq_threads | integer | Set max number of threads to use for uncompressing uBAM and generating FASTQ for alignment (limited by config executor cpus) |  | 1 |
 | merge_threads | integer | Set max number of threads to use for merging alignment files (limited by config executor cpus) |  | 4 |
 | modkit_threads | integer | Total number of threads to use in modkit modified base calling (limited by config executor cpus) |  | 4 |
-
-
-### Miscellaneous Options
-
-| Nextflow parameter name  | Type | Description | Help | Default |
-|--------------------------|------|-------------|------|---------|
-| disable_ping | boolean | Enable to prevent sending a workflow ping. |  | False |
 
 
