@@ -49,6 +49,21 @@ def main(args):
     try:
         encoding = determine_codec(args.sample_sheet)
         with open(args.sample_sheet, "r", encoding=encoding) as f:
+            try:
+                # Excel files don't throw any error until here
+                csv.Sniffer().sniff(f.read(100))
+                f.seek(0)  # return to initial position again
+            except Exception as e:
+                # Excel fails with UniCode error
+                sys.stdout.write(
+                    "The sample sheet doesn't seem to be a CSV file.\n"
+                    "The sample sheet has to be a CSV file.\n"
+                    "Please verify that the sample sheet is a CSV file.\n"
+                    f"Parsing error: {e}"
+                 )
+
+                sys.exit()
+
             csv_reader = csv.DictReader(f)
             n_row = 0
             for row in csv_reader:

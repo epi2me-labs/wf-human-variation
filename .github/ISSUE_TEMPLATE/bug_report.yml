@@ -45,13 +45,19 @@ body:
       label: Workflow Execution
       description: Where are you running the workflow?
       options:
-        - EPI2ME Desktop application
-        - Command line
-        - EPI2ME cloud agent
+        - EPI2ME Desktop (Local)
+        - EPI2ME Desktop (Cloud)
+        - Command line (Local)
+        - Command line (Cluster)
         - Other (please describe)
     validations:
       required: true
-
+  - type: input
+    id: other-workflow-execution
+    attributes:
+      label: Other workflow execution
+      description: If "Other", please describe
+      placeholder: Tell us where / how you are running the workflow.
 
   - type: markdown
     attributes:
