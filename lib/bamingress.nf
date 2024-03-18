@@ -51,8 +51,8 @@ process cram_to_bam {
 
 process minimap2_alignment {
     cpus {params.ubam_map_threads + params.ubam_sort_threads + params.ubam_bam2fq_threads}
-    memory { 16.GB * task.attempt }
-    maxRetries 2
+    memory { (32.GB * task.attempt) - 1.GB }
+    maxRetries 1
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     input:
         path reference
@@ -63,8 +63,12 @@ process minimap2_alignment {
     script:
     def bam2fq_ref = old_reference.name != "OPTIONAL_FILE" ? "--reference ${old_reference}" : ''
     """
-    samtools bam2fq -@ ${params.ubam_bam2fq_threads} -T 1 ${bam2fq_ref} ${reads} | minimap2 -y -t ${params.ubam_map_threads} -ax map-ont ${reference} - \
-    | samtools sort -@ ${params.ubam_sort_threads} --write-index -o ${params.sample_name}.${align_ext}##idx##${params.sample_name}.${align_ext}.${index_ext} -O ${align_ext} --reference ${reference} -
+    samtools bam2fq -@ ${params.ubam_bam2fq_threads} -T 1 ${bam2fq_ref} ${reads} \
+        | minimap2 -y -t ${params.ubam_map_threads} -ax map-ont --cap-kalloc 100m --cap-sw-mem 50m \
+            ${reference} - \
+        | samtools sort -@ ${params.ubam_sort_threads} \
+            --write-index -o ${params.sample_name}.${align_ext}##idx##${params.sample_name}.${align_ext}.${index_ext} \
+            -O ${align_ext} --reference ${reference} -
     """
 }
 
