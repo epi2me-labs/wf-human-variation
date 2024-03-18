@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - ClinVar version in SnpEff container updated to version 20240307.
 - Convert to BAM only when `--cnv --use_qdnaseq` is selected.
+### Fixed
+- Force minimap2 to clean up memory more aggressively. Empirically this reduces peak-memory use over the course of execution.
 
 ## [v2.0.0]
 ### Changed
