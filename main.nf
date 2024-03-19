@@ -104,6 +104,14 @@ workflow {
         }
     }
 
+    // Check if it is in genotyping mode
+    if (params.snp && params.vcf_fn) {
+        if (params.bed){
+            throw new Exception(colors.red + "Clair3 cannot run with both --vcf_fn and --bed." + colors.reset)
+        }
+        log.warn ("Running Clair3 in genotyping mode with --vcf_fn will override --snp_min_af and --indel_min_af to 0.0.")
+    }
+
     // check SV calling will be done when benchmarking SV calls
     if(params.sv_benchmark && !params.sv) {
         throw new Exception(colors.red + "Cannot benchmark SV subworkflow without running SV subworkflow! Enable the SV subworkflow with --sv." + colors.reset)

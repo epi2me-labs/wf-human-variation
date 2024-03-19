@@ -3,6 +3,10 @@ import groovy.json.JsonBuilder
 def phaser_memory = params.use_longphase ? [8.GB, 32.GB, 56.GB] : [4.GB, 8.GB, 12.GB]
 def haptag_memory = [4.GB, 8.GB, 12.GB]
 
+// As of Clair3 v1.0.6, set `--min_snp_af` and `--min_indel_af` to 0 with `--vcf_fn`.
+def snp_min_af = params.vcf_fn ? "--snp_min_af 0.0": "--snp_min_af ${params.snp_min_af}"
+def indel_min_af = params.vcf_fn ? "--indel_min_af 0.0" : "--indel_min_af ${params.indel_min_af}"
+
 process make_chunks {
     // Do some preliminaries. Ordinarily this would setup a working directory
     // that all other commands would make use off, but all we need here are the
@@ -16,16 +20,20 @@ process make_chunks {
         path bed
         path model_path
         val chromosome_codes
+        path genotyping_vcf, stageAs: "genotyping_vcf/"
     output:
         path "clair_output/tmp/CONTIGS", emit: contigs_file
         path "clair_output/tmp/CHUNK_LIST", emit: chunks_file
         path "clair_output/tmp/CMD", emit: cmd_file
         path "clair_output/tmp/split_beds", emit: split_beds, optional: true
     script:
+        // Prepare input BED and genotyping VCF arguments (mutually exclusive, checked in workflow)
         def bedargs = bed.name != 'OPTIONAL_FILE' ? "--bed_fn ${bed}" : ''
         def bedprnt = bed.name != 'OPTIONAL_FILE' ? "--bed_fn=${bed}" : ''
-        String ctgs = chromosome_codes.join(',')
+        def vcfargs = genotyping_vcf.baseName != "OPTIONAL_FILE" ? "--vcf_fn ${genotyping_vcf}" : ""
+        def vcfprnt = genotyping_vcf.baseName != "OPTIONAL_FILE" ? "--vcf_fn=${genotyping_vcf}" : ""
         // Define contigs in order to enforce the mitochondrial genome calling, which is otherwise skipped.
+        String ctgs = chromosome_codes.join(',')
         def ctg_name = "--ctg_name ${ctgs}"
         // If a single contig is required, then set it as option
         if (params.ctg_name){
@@ -38,14 +46,14 @@ process make_chunks {
         """
         # CW-2456: save command line to add to VCF file (very long command...)
         mkdir -p clair_output/tmp
-        echo "run_clair3.sh --bam_fn=${xam} ${bedprnt} --ref_fn=${ref} --vcf_fn=${params.vcf_fn} --output=clair_output --platform=ont --sample_name=${params.sample_name} --model_path=${model_path.simpleName} --ctg_name=${params.ctg_name} ${ctg_name} --include_all_ctgs=${params.include_all_ctgs} --chunk_num=0 --chunk_size=5000000 --qual=${params.min_qual} --var_pct_full=${params.var_pct_full} --ref_pct_full=${params.ref_pct_full} --snp_min_af=${params.snp_min_af} --indel_min_af=${params.indel_min_af} --min_contig_size=${params.min_contig_size}" > clair_output/tmp/CMD
+        echo "run_clair3.sh --bam_fn=${xam} ${bedprnt} --ref_fn=${ref} ${vcfprnt} --output=clair_output --platform=ont --sample_name=${params.sample_name} --model_path=${model_path.simpleName} --ctg_name=${params.ctg_name} ${ctg_name} --include_all_ctgs=${params.include_all_ctgs} --chunk_num=0 --chunk_size=5000000 --qual=${params.min_qual} --var_pct_full=${params.var_pct_full} --ref_pct_full=${params.ref_pct_full} ${snp_min_af} ${indel_min_af} --min_contig_size=${params.min_contig_size}" > clair_output/tmp/CMD
         # CW-2456: prepare other inputs normally
         python \$(which clair3.py) CheckEnvs \
             --bam_fn ${xam} \
             ${bedargs} \
             --output_fn_prefix clair_output \
             --ref_fn ${ref} \
-            --vcf_fn ${params.vcf_fn} \
+            ${vcfargs} \
             ${ctg_name} \
             --chunk_num 0 \
             --chunk_size 5000000 \
@@ -55,8 +63,8 @@ process make_chunks {
             --sampleName ${params.sample_name} \
             --var_pct_full ${params.var_pct_full} \
             --ref_pct_full ${params.ref_pct_full} \
-            --snp_min_af ${params.snp_min_af} \
-            --indel_min_af ${params.indel_min_af} \
+            ${snp_min_af} \
+            ${indel_min_af} \
             --min_contig_size ${params.min_contig_size} \
             --cmd_fn clair_output/tmp/CMD
         """
@@ -98,12 +106,14 @@ process pileup_variants {
             --chunk_num ${region.total_chunks} \
             --platform ont \
             --fast_mode False \
-            --snp_min_af ${params.snp_min_af} \
-            --indel_min_af ${params.indel_min_af} \
+            ${snp_min_af} \
+            ${indel_min_af} \
             --minMQ ${params.min_mq} \
             --minCoverage ${params.min_cov} \
             --call_snp_only False \
             --gvcf ${params.GVCF} \
+            --base_err ${params.base_err} \
+            --gq_bin_size ${params.gq_bin_size} \
             --temp_file_dir gvcf_tmp_path \
             --cmd_fn ${command} \
             --pileup \
@@ -352,8 +362,8 @@ process evaluate_candidates {
             --gvcf ${params.GVCF} \
             --minMQ ${params.min_mq} \
             --minCoverage ${params.min_cov} \
-            --snp_min_af ${params.snp_min_af} \
-            --indel_min_af ${params.indel_min_af} \
+            ${snp_min_af} \
+            ${indel_min_af} \
             --platform ont \
             --cmd_fn ${command} \
             --phased_vcf_fn ${phased_vcf}
