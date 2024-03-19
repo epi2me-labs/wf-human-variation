@@ -38,13 +38,20 @@ workflow snp {
         chromosome_codes
     main:
 
+        // Create channel for the genotyping VCF, if provided
+        if (params.vcf_fn){
+            genotyping_ch = Channel.fromPath(params.vcf_fn, checkIfExists: true)
+        } else {
+            genotyping_ch = Channel.fromPath("$projectDir/data/OPTIONAL_FILE", checkIfExists: true)
+        }
+
         // truncate bam channel to remove meta to keep compat with snp pipe
         bam = bam_channel.map{ it -> tuple(it[0], it[1]) }
 
         // Run preliminaries to find contigs and generate regions to process in
         // parallel.
         // > Step 0
-        make_chunks(bam, ref, bed, model, chromosome_codes)
+        make_chunks(bam, ref, bed, model, chromosome_codes, genotyping_ch)
         chunks = make_chunks.out.chunks_file
             .splitText(){ 
                 cols = (it =~ /(.+)\s(.+)\s(.+)/)[0]

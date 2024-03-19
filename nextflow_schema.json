@@ -413,7 +413,7 @@
                 },
                 "vcf_fn": {
                     "type": "string",
-                    "default": "EMPTY",
+                    "format": "file-path",
                     "description": "Candidate sites VCF file input, variants will only be called at the sites in the VCF file if provided.",
                     "hidden": true
                 },
@@ -568,6 +568,20 @@
                     "default": false,
                     "description": "Enable to output a gVCF file in addition to the VCF outputs (experimental).",
                     "help_text": "By default the the workflow outputs a VCF file containing only records where a variant has been detected. Enabling this option will output additionally a gVCF with records spanning all reference positions regardless of whether a variant was detected in the sample."
+                },
+                "base_err": {
+                    "type": "number",
+                    "default": 0.001,
+                    "hidden": true,
+                    "description": "Estimated base error rate when enabling GVCF option (experimental).",
+                    "help_text": "Relevant only if running Clair3 in GVCF mode."
+                },
+                "gq_bin_size": {
+                    "type": "number",
+                    "default": 5,
+                    "hidden": true,
+                    "description": "Default gq bin size for merge non-variant block when enabling GVCF option (experimental).",
+                    "help_text": "Relevant only if running Clair3 in GVCF mode."
                 },
                 "downsample_coverage": {
                     "type": "boolean",
