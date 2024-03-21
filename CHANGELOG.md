@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ClinVar version in SnpEff container updated to version 20240307.
 - Convert to BAM only when `--cnv --use_qdnaseq` is selected.
 - Update to Clair3 v1.0.6.
+- Update Spectre to fix an error when parsing Clair3 VCFs with multiple AFs.
 
 ### Fixed
 - Force minimap2 to clean up memory more aggressively. Empirically this reduces peak-memory use over the course of execution.
