@@ -14,9 +14,8 @@
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
 | sample_name | string | Sample name to be displayed in workflow outputs. |  | SAMPLE |
-| bam | string | Path to a BAM (or CRAM) containing aligned or unaligned reads. | The workflow currently accepts a single BAM or CRAM file. |  |
+| bam | string | BAM or unaligned BAM (uBAM) files for the sample to use in the analysis. | This accepts one of two cases: (i) the path to a single BAM file; (ii) the path to a top-level directory containing BAM files. A sample name can be supplied with `--sample`. |  |
 | ref | string | Path to a reference FASTA file. | Reference against which to compare reads for variant calling. |  |
-| old_ref | string | Reference FASTA file for CRAM input (only required if the CRAM requires realignment) | You do not need to provide this unless the workflow specifically asks you to. If your input CRAM headers do not match the metadata of the input reference, the workflow will assume you want to realign your reads to the new input reference. CRAM files are compressed using the reference, so the read sequences cannot be realigned without the old reference. |  |
 | basecaller_cfg | string | Name of the model to use for selecting a small variant calling model. | Required for small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. You should select 'custom' to override the basecaller_cfg with clair3_model_path. | dna_r10.4.1_e8.2_400bps_sup@v4.1.0 |
 | bam_min_coverage | number | Minimum read coverage required to run analysis. |  | 20 |
 | bed | string | An optional BED file enumerating regions to process for variant calling. |  |  |

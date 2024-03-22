@@ -10,10 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Convert to BAM only when `--cnv --use_qdnaseq` is selected.
 - Update to Clair3 v1.0.6.
 - Update Spectre to fix an error when parsing Clair3 VCFs with multiple AFs.
+- Support for an input folder of multiple BAM files per sample with `--bam` (instead of only allowing a single BAM per sample).
 
 ### Fixed
 - Force minimap2 to clean up memory more aggressively. Empirically this reduces peak-memory use over the course of execution.
 - Handling of input VCF files with `--vcf_fn`.
+
+### Removed
+- CRAM as supported input format.
+- `old_ref` parameter as providing the reference of an existing CRAM is no longer needed.
 
 ## [v2.0.0]
 ### Changed
