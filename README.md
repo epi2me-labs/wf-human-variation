@@ -93,7 +93,14 @@ Find related protocols in the [Nanopore community](https://community.nanoporetec
 ## Input example
 
 <!---Example of input directory structure, delete and edit as appropriate per workflow.--->
-This workflow accepts a path to a single BAM file (aligned or unaligned) as input.
+The `--bam` input parameter for this workflow accepts a path to a single BAM file, or a folder containing multiple BAM files for the sample. A sample name can be supplied with `--sample`.
+
+```
+(i)                     (ii)    
+input_reads.bam     ─── input_directory
+                        ├── reads0.bam
+                        └── reads1.bam
+```
 
 
 
@@ -115,9 +122,8 @@ This workflow accepts a path to a single BAM file (aligned or unaligned) as inpu
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
 | sample_name | string | Sample name to be displayed in workflow outputs. |  | SAMPLE |
-| bam | string | Path to a BAM (or CRAM) containing aligned or unaligned reads. | The workflow currently accepts a single BAM or CRAM file. |  |
+| bam | string | BAM or unaligned BAM (uBAM) files for the sample to use in the analysis. | This accepts one of two cases: (i) the path to a single BAM file; (ii) the path to a top-level directory containing BAM files. A sample name can be supplied with `--sample`. |  |
 | ref | string | Path to a reference FASTA file. | Reference against which to compare reads for variant calling. |  |
-| old_ref | string | Reference FASTA file for CRAM input (only required if the CRAM requires realignment) | You do not need to provide this unless the workflow specifically asks you to. If your input CRAM headers do not match the metadata of the input reference, the workflow will assume you want to realign your reads to the new input reference. CRAM files are compressed using the reference, so the read sequences cannot be realigned without the old reference. |  |
 | basecaller_cfg | string | Name of the model to use for selecting a small variant calling model. | Required for small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. You should select 'custom' to override the basecaller_cfg with clair3_model_path. | dna_r10.4.1_e8.2_400bps_sup@v4.1.0 |
 | bam_min_coverage | number | Minimum read coverage required to run analysis. |  | 20 |
 | bed | string | An optional BED file enumerating regions to process for variant calling. |  |  |
@@ -235,7 +241,7 @@ Subworkflows where the relevant option is omitted will not be run.
 
 The workflow relies on two primary input files:
 1. A reference genome in [FASTA format](https://www.ncbi.nlm.nih.gov/genbank/fastaformat/)
-2. Sequencing data for the sample in the form of a single [BAM or CRAM file](https://samtools.github.io/hts-specs/SAMv1.pdf), either aligned or unaligned.
+2. Sequencing data for the sample in the form of a single [BAM file](https://samtools.github.io/hts-specs/SAMv1.pdf) or a folder of BAM files, either aligned or unaligned.
 
 When analysing human data, we recommend using [human_g1k_v37.fasta.gz (FTP link)](ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz) or [GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz (FTP link)](ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz). For more information see [this blog post](https://lh3.github.io/2017/11/13/which-human-reference-genome-to-use) which outlines potential pitfalls with the various flavours of human references.
 

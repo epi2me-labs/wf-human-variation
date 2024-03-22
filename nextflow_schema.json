@@ -128,11 +128,11 @@
                     }
                 },
                 "bam": {
-                    "title": "Input: BAM or CRAM file",
+                    "title": "Input: BAM file",
                     "type": "string",
                     "format": "file-path",
-                    "description": "Path to a BAM (or CRAM) containing aligned or unaligned reads.",
-                    "help_text": "The workflow currently accepts a single BAM or CRAM file.",
+                    "description": "BAM or unaligned BAM (uBAM) files for the sample to use in the analysis.",
+                    "help_text": "This accepts one of two cases: (i) the path to a single BAM file; (ii) the path to a top-level directory containing BAM files. A sample name can be supplied with `--sample`.",
                     "overrides": {
                         "minknow": {
                             "hint": "bamOutputDirectory",
@@ -150,18 +150,6 @@
                         "minknow": {
                             "hint": "alignmentRefFile",
                             "title": "Reference file for alignment"
-                        }
-                    }
-                },
-                "old_ref": {
-                    "title": "CRAM reference file for realignment",
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "Reference FASTA file for CRAM input (only required if the CRAM requires realignment)",
-                    "help_text": "You do not need to provide this unless the workflow specifically asks you to. If your input CRAM headers do not match the metadata of the input reference, the workflow will assume you want to realign your reads to the new input reference. CRAM files are compressed using the reference, so the read sequences cannot be realigned without the old reference.",
-                    "overrides": {
-                        "minknow": {
-                            "hidden": true
                         }
                     }
                 },

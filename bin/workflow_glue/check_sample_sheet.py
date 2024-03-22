@@ -51,7 +51,7 @@ def main(args):
         with open(args.sample_sheet, "r", encoding=encoding) as f:
             try:
                 # Excel files don't throw any error until here
-                csv.Sniffer().sniff(f.read(100))
+                csv.Sniffer().sniff(f.readline())
                 f.seek(0)  # return to initial position again
             except Exception as e:
                 # Excel fails with UniCode error

@@ -46,9 +46,9 @@ include {
     } from './modules/local/common'
 
 include {
-    bam_ingress;
+    ingress;
     cram_to_bam
-} from './lib/bamingress'
+} from './lib/_ingress.nf'
 
 include {
     refine_with_sv;
@@ -142,7 +142,7 @@ workflow {
     def run_haplotagging = params.str || params.phased
 
     // Trigger CRAM to BAM conversion
-    def convert_cram_to_bam = params.cnv && params.use_qdnaseq 
+    def convert_cram_to_bam = params.cnv && params.use_qdnaseq
 
     // Trigger the SNP workflow based on a range of different conditions:
     def run_snp = params.snp || run_haplotagging || (params.cnv && !params.use_qdnaseq)
@@ -188,12 +188,16 @@ workflow {
 
     Pinguscript.ping_start(nextflow, workflow, params)
 
+    // Define extension based on presence/absence of downsampling.
+    // This is only relevant when reads are remapped.
+    def ingress_ext = convert_cram_to_bam && !params.downsample_coverage ? ['bam', 'bai'] : ['cram', 'crai']
+
     // Determine if (re)alignment is required for input BAM
-    bam_channel = bam_ingress(
+    bam_channel = ingress(
         ref,
         ref_index,
         params.bam,
-        [output_bam: output_bam],
+        ingress_ext,
     )
     
     // Check if the genome build in the BAM is suitable for any workflows that have restrictions
@@ -327,18 +331,22 @@ workflow {
         ratio.ready
             .combine(pass_bam_channel)
             .map{ready, ratio, xam, xai, meta -> [xam, xai, meta]}
-            .set{ready_bam_channel}
-        
-        // If downsampling && cnv > no conversion was done in advance.
-        // If it doesn't pass the downsampling threshold, it needs to be done here.
-        if (convert_cram_to_bam){
-            ready_bam_channel = cram_to_bam(
-                ready_bam_channel.map{xam, xai, meta -> [xam, xai]}, 
-                ref_channel.map{[it[0], it[1]]}
-            ) | map{
-                xam, xai -> [xam, xai, [output: false, is_cram: false]] 
+            .branch{
+                xam, xai, meta ->
+                cram: xam.name.endsWith('.cram')
+                bam: xam.name.endsWith('.bam')
             }
-        }
+            .set{branched_bam_channel}
+
+        // Convert aligned CRAMs that could not be downsampled to BAM if needed and mix with other ingested BAMs
+        // Avoid issues with BAM being passed to `cram_to_bam`.
+        ready_bam_channel = cram_to_bam(
+            branched_bam_channel.cram,
+            ref_channel.map { ref, index, cache, path -> [ref, index] }
+        )
+        | map { xam, xai, meta -> [xam, xai, meta + [output: false, is_cram: false]] }
+        | mix(branched_bam_channel.bam)
+
 
         // Join allowing a remainder, so that only one for each is retained.
         // we drop all null, and due to the structure the joined channel can only be:
