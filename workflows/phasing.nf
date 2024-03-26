@@ -29,10 +29,6 @@ process phase_all {
     output:
         tuple path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"), emit: phased_vcf
     script:
-        // Define option for longphase
-        def sv_option = is_sv_vcf ? "--sv-file sv.vcf" : ""
-        def sv_preparation = is_sv_vcf ? "bcftools view --threads ${task.cpus} -r ${contig} -O v ${sv_vcf} > sv.vcf" : ""
-        // Longphase requires SNPs to perform joint phasing
         """
         echo "Using longphase for phasing"
 
@@ -40,31 +36,31 @@ process phase_all {
         bcftools view --threads ${task.cpus} -r ${contig} -O v ${snp_vcf} > snp.vcf
 
         # Same for the SV if available, otherwise this line will be empty
-        ${sv_preparation}
+        bcftools view --threads ${task.cpus} -r ${contig} -O v ${sv_vcf} > sv.vcf
 
         # Run longphase
         longphase phase \
             --ont \
             -o tmp_${contig} \
             -s snp.vcf \
+            --sv-file sv.vcf \
             -b ${xam} \
             -r ${ref} \
-            -t ${task.cpus} ${sv_option}
+            -t ${task.cpus}
 
-        # Compress all new VCFs.
-        bgzip tmp_${contig}.vcf && tabix -p vcf tmp_${contig}.vcf.gz
-        if [ -e tmp_${contig}_SV.vcf ]; then
-            bgzip tmp_${contig}_SV.vcf && tabix -p vcf tmp_${contig}_SV.vcf.gz
-        fi
+        # Longphase adds a longphaseVersion header whenever a `#` is found in the input file
+        # See https://github.com/twolinin/longphase/issues/30
+        # Remove these spurious lines, then compress and index the files.
+        awk 'BEGIN{isheader=1}; \$0~"##" && isheader==1 {print}; \$1=="#CHROM" {isheader=0; print}; \$1!~"#" {print}' tmp_${contig}.vcf \
+        | bgzip -c > tmp_${contig}.vcf.gz && tabix -p vcf tmp_${contig}.vcf.gz
 
-        # Combine with the SV, if present.
-        if [ -e tmp_${contig}_SV.vcf.gz ]; then
-            bcftools concat --threads ${task.cpus} -a -O u tmp_${contig}.vcf.gz tmp_${contig}_SV.vcf.gz | bcftools sort -O z - > phased_${contig}.vcf.gz
-            tabix -f -p vcf phased_${contig}.vcf.gz
-        else
-            mv tmp_${contig}.vcf.gz phased_${contig}.vcf.gz
-            mv tmp_${contig}.vcf.gz.tbi phased_${contig}.vcf.gz.tbi
-        fi
+        # Repeat the same, but for the SVs.
+        awk 'BEGIN{isheader=1}; \$0~"##" && isheader==1 {print}; \$1=="#CHROM" {isheader=0; print}; \$1!~"#" {print}' tmp_${contig}_SV.vcf \
+        | bgzip -c > tmp_${contig}_SV.vcf.gz && tabix -p vcf tmp_${contig}_SV.vcf.gz
+        
+        # Combine with the SV.
+        bcftools concat --threads ${task.cpus} -a -O u tmp_${contig}.vcf.gz tmp_${contig}_SV.vcf.gz | bcftools sort -O z - > phased_${contig}.vcf.gz
+        tabix -f -p vcf phased_${contig}.vcf.gz
         """
 }
 

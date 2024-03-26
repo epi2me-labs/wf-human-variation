@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Force minimap2 to clean up memory more aggressively. Empirically this reduces peak-memory use over the course of execution.
 - Handling of input VCF files with `--vcf_fn`.
+- `--phased --sv --snp` generates a truncated VCF file when `#` appears in the VCF `INFO` field
 
 ### Removed
 - CRAM as supported input format.
