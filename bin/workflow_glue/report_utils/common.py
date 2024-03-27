@@ -86,5 +86,5 @@ def compute_n50(lengths):
     # Generate cumsum
     cumsum = np.cumsum(sorted_l)
     # Get lowest cumulative value >= (total_length/2)
-    n50 = sorted_l[cumsum >= cumsum[-1]/2][0]
+    n50 = sorted_l[np.searchsorted(cumsum, cumsum[-1]/2)]
     return n50

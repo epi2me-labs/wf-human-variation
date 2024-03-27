@@ -11,11 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update to Clair3 v1.0.6.
 - Update Spectre to fix an error when parsing Clair3 VCFs with multiple AFs.
 - Support for an input folder of multiple BAM files per sample with `--bam` (instead of only allowing a single BAM per sample).
+- `refine_with_sv` to be run by chromosome in order to reduce memory footprint.
 
 ### Fixed
 - Force minimap2 to clean up memory more aggressively. Empirically this reduces peak-memory use over the course of execution.
 - Handling of input VCF files with `--vcf_fn`.
 - `--phased --sv --snp` generates a truncated VCF file when `#` appears in the VCF `INFO` field
+- Some reporting scripts using too much memory.
 
 ### Removed
 - CRAM as supported input format.

@@ -2,7 +2,7 @@
 """Report using ezcharts."""
 from dominate.tags import p
 from ezcharts.components.common import fasta_idx
-from ezcharts.components.fastcat import load_bamstats_flagstat, load_stats
+from ezcharts.components.fastcat import load_bamstats_flagstat
 from ezcharts.components.fastcat import SeqSummary
 from ezcharts.components.mosdepth import load_mosdepth_regions, load_mosdepth_summary
 from ezcharts.components.reports import labs
@@ -27,7 +27,18 @@ def main(args):
             raise pd.errors.EmptyDataError(f'{args.reference_fai}')
 
     # read input stats data
-    stats_df = load_stats(args.stats_dir, format='bamstats')
+    stats_df = pd.read_csv(
+        args.stats_fn,
+        sep="\t",
+        usecols=['sample_name', 'ref', 'read_length', 'acc', 'coverage'],
+        dtype={
+            "sample_name": common.CATEGORICAL,
+            "ref": common.CATEGORICAL,
+            "read_length": int,
+            "acc": float,
+            "coverage": float,
+        }
+    )
     read_number_str = str(len(stats_df.index))
 
     # get read n50
@@ -51,11 +62,20 @@ def main(args):
         raise ValueError('Sample names in the two stats file do not match')
 
     # Import depth files when provided, otherwise make an empty df
-    if args.reference_fai:
-        depth_df = load_mosdepth_regions(
-            args.depths_dir, faidx=faidx, winsize=args.window_size)
-    else:
-        depth_df = load_mosdepth_regions(args.depths_dir)
+    # If the dataframe has no columns, it will return a KeyError when
+    # subsetting the dataframe. Catch the error and return an empty dataframe.
+    try:
+        if args.reference_fai:
+            depth_df = load_mosdepth_regions(
+                args.depths_dir, faidx=faidx, winsize=args.window_size)[[
+                    'chrom', 'total_mean_pos', 'depth'
+                ]]
+        else:
+            depth_df = load_mosdepth_regions(args.depths_dir)[[
+                'chrom', 'total_mean_pos', 'depth'
+            ]]
+    except KeyError:
+        depth_df = pd.DataFrame()
 
     # create the report
     if args.low_cov:
@@ -90,7 +110,7 @@ def main(args):
 
     # Combine multiple input files
     with report.add_section("Read statistics", "Stats"):
-        SeqSummary(f"{args.stats_dir}/")
+        SeqSummary(f"{args.stats_fn}")
 
     # extract the mapped reads and some other metrics used in the report sections
     stats_df_mapped = stats_df.query('ref != "*"')
@@ -98,8 +118,7 @@ def main(args):
 
     # Add depth plots
     if not depth_df.empty:
-        depth_df['sample_name'] = depth_df.filename.str.split('.').str[0]
-        sections.depths(report, depth_df)
+        sections.depths(report, depth_df, args.sample_name)
 
     # write the report to the output file
     report.write(f"{args.name}")
@@ -115,8 +134,8 @@ def argparser():
         help="report name",
     )
     parser.add_argument(
-        "--stats_dir",
-        help="Directory with `bamstats` per-read stats for the sample",
+        "--stats_fn",
+        help="`bamstats` per-read stats for the sample",
     )
     parser.add_argument(
         "--flagstat_dir",
@@ -144,6 +163,11 @@ def argparser():
         "--low_cov",
         type=int,
         help="Define if the QC report should be for low-coverage BAM"
+    )
+    parser.add_argument(
+        "--sample_name",
+        type=str,
+        help="Name of the sample"
     )
     parser.add_argument(
         "--params",

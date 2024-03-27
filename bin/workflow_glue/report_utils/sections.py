@@ -217,7 +217,7 @@ def mapping(report, stats_df_mapped):
                 )
 
 
-def depths(report, depth_df):
+def depths(report, depth_df, sample_name):
     """Create depth section.
 
     This section contains a plot with depth coverage vs. genome position on the left and
@@ -246,21 +246,20 @@ def depths(report, depth_df):
         # Otherwise, plot the coverage
         else:
             tabs = Tabs()
-            for sample_name, df_samp_file in depth_df.groupby("sample_name"):
-                # prepare data for cumulative depth plot
-                with tabs.add_tab(sample_name):
-                    plt = ezc.lineplot(
-                        data=depth_df.round(2),
-                        x="total_mean_pos",
-                        y="depth",
-                        hue="chrom",
-                    )
-                    plt.title = {"text": "Coverage along reference"}
-                    plt.xAxis.name = "Position along reference"
-                    plt.yAxis.name = "Sequencing depth"
-                    for s in plt.series:
-                        s.showSymbol = False
-                    EZChart(plt, theme=THEME)
+            # prepare data for cumulative depth plot
+            with tabs.add_tab(sample_name):
+                plt = ezc.lineplot(
+                    data=depth_df.round(2),
+                    x="total_mean_pos",
+                    y="depth",
+                    hue="chrom",
+                )
+                plt.title = {"text": "Coverage along reference"}
+                plt.xAxis.name = "Position along reference"
+                plt.yAxis.name = "Sequencing depth"
+                for s in plt.series:
+                    s.showSymbol = False
+                EZChart(plt, theme=THEME)
 
 
 def at_a_glance(report, sample_names, values):

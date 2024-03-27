@@ -153,10 +153,13 @@ def parse_vcf(fname, info_cols=None, nrows=None):
 
 def process_bamstats(bamstats_file):
     """Load bamstats results into dataframe."""
-    d = pd.read_csv(
-        bamstats_file, sep="\t", header=0)
+    # Return only the read lengths to save memory
+    base_stats = pd.read_csv(
+        bamstats_file,
+        sep="\t",
+        usecols=['read_length', 'mean_quality'])
 
-    return d
+    return base_stats
 
 
 def histogram_with_mean_and_median(
