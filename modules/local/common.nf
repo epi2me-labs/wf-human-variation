@@ -303,7 +303,7 @@ process failedQCReport  {
         tuple path(xam),
             path(xam_idx),
             val(xam_meta),
-            path("readstats/*"),
+            path("readstats/readstats.tsv.gz"),
             path("flagstats/*"),
             path("depths/*"),
             path("summary/*"),
@@ -327,7 +327,8 @@ process failedQCReport  {
         """
         workflow-glue report_al \\
             --name ${report_name} \\
-            --stats_dir readstats/ \\
+            --sample_name ${params.sample_name} \\
+            --stats_fn readstats/readstats.tsv.gz \\
             --summary_dir summary/ \\
             --flagstat_dir flagstats/ \\
             --depths_dir depths/ \\
@@ -347,7 +348,7 @@ process makeAlignmentReport {
         tuple path(xam),
             path(xam_idx),
             val(xam_meta),
-            path("readstats/*"),
+            path("readstats/readstats.tsv.gz"),
             path("flagstats/*"),
             path("depths/*"),
             path("summary/*"),
@@ -366,7 +367,8 @@ process makeAlignmentReport {
         """
         workflow-glue report_al \\
             --name ${report_name} \\
-            --stats_dir readstats/ \\
+            --sample_name ${params.sample_name} \\
+            --stats_fn readstats/readstats.tsv.gz \\
             --summary_dir summary/ \\
             --reference_fai ref.fasta.fai \\
             --flagstat_dir flagstats/ \\

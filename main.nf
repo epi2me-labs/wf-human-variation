@@ -39,6 +39,7 @@ include {
     downsampling;
     annotate_vcf as annotate_snp_vcf;
     concat_vcfs as concat_snp_vcfs;
+    concat_vcfs as concat_refined_snp;
     sift_clinvar_vcf as sift_clinvar_snp_vcf;
     bed_filter;
     sanitise_bed;
@@ -546,7 +547,19 @@ workflow {
 
         // Refine the SNP phase using SVs from Sniffles
         if (params.refine_snp_with_sv && params.sv){
-            final_snp_vcf = refine_with_sv(ref_channel, clair_vcf.vcf_files, snp_bam, sniffles_vcf)
+            // Run by chromosome to reduce memory usage
+            // Use collect on the reference, the SNP VCF
+            // and the SV VCFs to ensure running on each contig. 
+            refined_snps = refine_with_sv(
+                ref_channel.collect(),
+                clair_vcf.vcf_files.combine(clair_vcf.contigs),
+                snp_bam.collect(),
+                sniffles_vcf.collect()
+            )
+            final_snp_vcf = concat_refined_snp(
+                refined_snps.collect(),
+                "${params.sample_name}.wf_snp"
+            )
         } else {
             // If refine_with_sv not requested, passthrough
             final_snp_vcf = clair_vcf.vcf_files

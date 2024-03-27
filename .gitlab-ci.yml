@@ -5,7 +5,7 @@ include:
 
 # conda, mac, simg
 variables:
-    NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz"
+    NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
     NF_PROCESS_FILES: "modules/local/wf-human-snp.nf modules/local/wf-human-sv.nf"
     NF_IGNORE_PROCESSES: "hap,lookup_clair3_model,phase_contig_haplotag,cat_haplotagged_contigs,makeAlignmentReport.\
                         get_genome,aggregate_all_variants,aggregate_full_align_variants,aggregate_pileup_variants,create_candidates,\

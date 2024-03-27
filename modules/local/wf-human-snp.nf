@@ -601,25 +601,26 @@ process aggregate_all_variants{
 process refine_with_sv {
     label "wf_human_snp"
     cpus 4
-    memory { 8.GB * task.attempt }
-    maxRetries 2
+    memory { 8.GB * task.attempt - 1.GB }
+    maxRetries 1
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
     input:
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH) 
-        tuple path(clair_vcf, stageAs: 'clair.vcf.gz'), path(clair_tbi, stageAs: 'clair.vcf.gz.tbi')
+        tuple path(clair_vcf, stageAs: 'clair.vcf.gz'), path(clair_tbi, stageAs: 'clair.vcf.gz.tbi'), val(contig)
         tuple path(xam), path(xam_idx), val(meta) // this may be a haplotagged_bam or input CRAM 
         path sniffles_vcf
     output:
-        tuple path("${params.sample_name}.wf_snp.vcf.gz"), path("${params.sample_name}.wf_snp.vcf.gz.tbi"), emit: final_vcf
+        tuple path("${params.sample_name}.${contig}.wf_snp.vcf.gz"), path("${params.sample_name}.${contig}.wf_snp.vcf.gz.tbi"), emit: final_vcf
     shell:
         '''
         pypy $(which clair3.py) SwitchZygosityBasedOnSVCalls \\
             --bam_fn !{xam} \\
             --clair3_vcf_input clair.vcf.gz \\
             --sv_vcf_input !{sniffles_vcf} \\
-            --vcf_output ./!{params.sample_name}.wf_snp.vcf \\
-            --threads !{task.cpus}
+            --vcf_output '!{params.sample_name}.!{contig}.wf_snp.vcf' \\
+            --threads !{task.cpus} \\
+            --ctg_name '!{contig}'
         '''
 }
 
