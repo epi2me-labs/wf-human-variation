@@ -554,8 +554,8 @@ process aggregate_all_variants{
         path contigs
         path command
     output:
-        tuple path("${params.sample_name}.wf_snp.vcf.gz"), path("${params.sample_name}.wf_snp.vcf.gz.tbi"), emit: final_vcf
-        tuple path("${params.sample_name}.wf_snp.gvcf.gz"), path("${params.sample_name}.wf_snp.gvcf.gz.tbi"), emit: final_gvcf, optional: true
+        tuple path("${params.sample_name}.wf_snp.vcf.gz"), path("${params.sample_name}.wf_snp.vcf.gz.tbi"), emit: vcf
+        tuple path("${params.sample_name}.wf_snp.gvcf.gz"), path("${params.sample_name}.wf_snp.gvcf.gz.tbi"), emit: gvcf, optional: true
     script:
         def prefix = params.phased || params.str ? "phased" : "merge"
         """
@@ -611,7 +611,7 @@ process refine_with_sv {
         tuple path(xam), path(xam_idx), val(meta) // this may be a haplotagged_bam or input CRAM 
         path sniffles_vcf
     output:
-        tuple path("${params.sample_name}.${contig}.wf_snp.vcf.gz"), path("${params.sample_name}.${contig}.wf_snp.vcf.gz.tbi"), emit: final_vcf
+        tuple path("${params.sample_name}.${contig}.wf_snp.vcf.gz"), path("${params.sample_name}.${contig}.wf_snp.vcf.gz.tbi"), emit: vcf
     shell:
         '''
         pypy $(which clair3.py) SwitchZygosityBasedOnSVCalls \\
@@ -622,6 +622,30 @@ process refine_with_sv {
             --threads !{task.cpus} \\
             --ctg_name '!{contig}'
         '''
+}
+
+/*
+ * Add missing phasing tags from a given VCF file to a target gVCF file
+ */
+process phase_gvcf {
+    label "wf_human_snp"
+    cpus 2
+    memory 4.GB
+    input:
+        tuple path('clair3.vcf.gz'), path('clair3.vcf.gz.tbi')
+        tuple path('clair3.gvcf.gz'), path('clair3.gvcf.gz.tbi')
+            
+    output:
+        tuple path("${params.sample_name}.wf_snp.gvcf.gz"),
+            path("${params.sample_name}.wf_snp.gvcf.gz.tbi"),
+            emit: phased_gvcf
+            
+    script:
+        """
+        # Transfer annotation.
+        bcftools annotate --threads ${task.cpus - 1} -O z --annotations clair3.vcf.gz -c FORMAT/GT,FORMAT/PS clair3.gvcf.gz > ${params.sample_name}.wf_snp.gvcf.gz \
+        && tabix -p vcf ${params.sample_name}.wf_snp.gvcf.gz
+        """
 }
 
 process hap {

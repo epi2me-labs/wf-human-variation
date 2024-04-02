@@ -80,6 +80,8 @@ The behaviour of the phasing is summarised in the below table:
 
 The joint physical phasing of SNP and SVs can only be performed with [longphase](https://github.com/twolinin/longphase) by selecting the options: `--phased --snp --sv`. Setting `--use_longphase false` will not disable the final joint phasing with longphase.
 
+Using `--GVCF` together with `--phased` will generate a phased GVCF, created by reflecting the phased genotype and the phase set annotation in the VCF file. This operation is performed using `bcftools annotate`, targeting the `GT` and `PS` fields.
+
 In some circumstances, users may wish to keep the separate VCF files before joint phasing. This can be done with `--output_separate_phased`.
 
 Running the phasing is a compute intensive process. Running the workflow in phasing mode doubles the runtime, and significantly increases the storage requirements to the order of terabytes.

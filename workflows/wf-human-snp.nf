@@ -14,6 +14,7 @@ include {
     post_clair_phase_contig;
     post_clair_contig_haplotag;
     aggregate_all_variants;
+    phase_gvcf;
     hap;
     getParams;
     getVersions;
@@ -205,22 +206,31 @@ workflow snp {
             cmd_file)
 
         if (params.phased && (!params.sv || params.output_separate_phased)){
-            hp_snp_blocks = haploblocks_snp(clair_final.final_vcf, 'snp')
+            hp_snp_blocks = haploblocks_snp(clair_final.vcf, 'snp')
         } else {
             hp_snp_blocks = Channel.empty()
         }
 
-        // Define clair3 results, adding GVCF if needed
-        if (params.GVCF){
-            clair3_results = haplotagged_cat_xam.concat(clair_final.final_vcf).concat(clair_final.final_gvcf).concat(hp_snp_blocks)
-        } else {
-            clair3_results = haplotagged_cat_xam.concat(clair_final.final_vcf).concat(hp_snp_blocks)
+        // Phase GVCF if requested
+        if (params.GVCF && params.phased){
+            final_gvcf = phase_gvcf(
+                clair_final.vcf,
+                clair_final.gvcf
+            )
+        } else if (params.GVCF) {
+            final_gvcf = clair_final.gvcf
         }
+        else {
+            final_gvcf = Channel.empty()
+        }
+
+        // Define clair3 results, adding GVCF if needed
+        clair3_results = haplotagged_cat_xam.concat(clair_final.vcf).concat(final_gvcf).concat(hp_snp_blocks)
 
     emit:
         clair3_results = clair3_results
         str_bams = haplotagged_ctg_bams // intermediate haplotagged contigs used for STR
-        vcf_files = clair_final.final_vcf
+        vcf_files = clair_final.vcf
         haplotagged_xam = haplotagged_cat_xam.combine(bam_channel.map{it[2]}) // haplotagged XAM with meta appended
         contigs = contigs
 }
