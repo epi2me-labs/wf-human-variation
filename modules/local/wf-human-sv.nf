@@ -18,7 +18,7 @@ process sniffles2 {
         def sniffles_args = params.sniffles_args ?: ''
         def min_sv_len = params.min_sv_length ? "--minsvlen ${params.min_sv_length}" : ""
         // Perform internal phasing only if snp not requested; otherwise, use joint phasing.
-        def phase = params.phased && (!params.snp || params.output_separate_phased) ? "--phase" : ""
+        def phase = params.phased ? "--phase" : ""
     """
     sniffles \
         --threads $task.cpus \

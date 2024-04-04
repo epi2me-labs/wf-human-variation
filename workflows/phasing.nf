@@ -4,14 +4,14 @@ include {
     concat_vcfs as concat_phased_vcfs;
 } from '../modules/local/common.nf'
 
-def phaser_memory = params.use_longphase ? [8.GB, 32.GB, 56.GB] : [4.GB, 8.GB, 12.GB]
+def phaser_memory = [8.GB, 32.GB, 56.GB]
 
 process phase_all {
     // Phase VCF for a contig
     cpus 4
     // Define memory from phasing tool and number of attempt
     memory { phaser_memory[task.attempt - 1] }
-    maxRetries 3
+    maxRetries 2
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     input:
         tuple val(contig),

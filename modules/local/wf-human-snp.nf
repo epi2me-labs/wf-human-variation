@@ -1,6 +1,7 @@
 import groovy.json.JsonBuilder
 
-def phaser_memory = params.use_longphase ? [8.GB, 32.GB, 56.GB] : [4.GB, 8.GB, 12.GB]
+def longphase_memory = [8.GB, 32.GB, 56.GB]
+def whatshap_memory = [4.GB, 8.GB, 12.GB]
 def haptag_memory = [4.GB, 8.GB, 12.GB]
 
 // As of Clair3 v1.0.6, set `--min_snp_af` and `--min_indel_af` to 0 with `--vcf_fn`.
@@ -192,8 +193,8 @@ process phase_contig {
     //   but adds the VCF as it is now tagged with phasing information
     //   used later in the full-alignment model
     cpus 4
-    memory { phaser_memory[task.attempt - 1] }
-    maxRetries 3
+    memory { longphase_memory[task.attempt - 1] }
+    maxRetries 2
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
     input:
@@ -201,26 +202,12 @@ process phase_contig {
     output:
         tuple val(contig), path(xam), path(xam_idx), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
     script:
-        if (params.use_longphase)
+        // Intermediate phasing is performed with longphase.
         """
         echo "Using longphase for phasing"
         longphase phase --ont -o phased_${contig} \
             -s ${het_snps} -b ${xam} -r ${ref} -t ${task.cpus}
         bgzip phased_${contig}.vcf
-        tabix -f -p vcf phased_${contig}.vcf.gz
-        """
-        else
-        """
-        echo "Using whatshap for phasing"
-        whatshap phase \
-            --output phased_${contig}.vcf.gz \
-            --reference ${ref} \
-            --chromosome ${contig} \
-            --distrust-genotypes \
-            --ignore-read-groups \
-            ${het_snps} \
-            ${xam}
-
         tabix -f -p vcf phased_${contig}.vcf.gz
         """
 }
@@ -463,8 +450,8 @@ process post_clair_phase_contig {
     // CW-2383: now uses base image to allow phasing of both snps and indels
     cpus 4
     // Define memory from phasing tool and number of attempt
-    memory { phaser_memory[task.attempt - 1] }
-    maxRetries 3
+    memory { params.use_longphase ? longphase_memory[task.attempt - 1] : whatshap_memory[task.attempt - 1] }
+    maxRetries 2
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
     input:
@@ -516,7 +503,7 @@ process post_clair_contig_haplotag {
     cpus 4
     // Define memory from phasing tool and number of attempt
     memory { haptag_memory[task.attempt - 1] }
-    maxRetries 3
+    maxRetries 2
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
     input:

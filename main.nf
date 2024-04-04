@@ -595,20 +595,12 @@ workflow {
         // Prepare the report
         snp_report = report_snp(vcf_stats[0], clinvar_vcf)
 
-        // If both sv and snp are reqeuested, then emit only joint phased VCF.
-        if (params.phased && params.sv && !params.output_separate_phased){
-            snp_report
-                .concat(clair3_results)
-                .concat(clinvar_vcf)
-                .flatten() | output_snp
-        // Otherwise emit the internally phased only.
-        } else {
-            snp_report
-                .concat(clair3_results)
-                .concat(final_vcf)
-                .concat(clinvar_vcf)
-                .flatten() | output_snp
-        }
+        // Output for SNP
+        snp_report
+            .concat(clair3_results)
+            .concat(final_vcf)
+            .concat(clinvar_vcf)
+            .flatten() | output_snp
     }
 
     // wf-human-mod
