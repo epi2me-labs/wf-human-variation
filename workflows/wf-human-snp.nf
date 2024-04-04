@@ -205,7 +205,7 @@ workflow snp {
             make_chunks.out.contigs_file,
             cmd_file)
 
-        if (params.phased && (!params.sv || params.output_separate_phased)){
+        if (params.phased){
             hp_snp_blocks = haploblocks_snp(clair_final.vcf, 'snp')
         } else {
             hp_snp_blocks = Channel.empty()

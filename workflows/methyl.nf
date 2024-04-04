@@ -47,14 +47,17 @@ process modkit_phase {
         ${params.sample_name} \\
         --ref ${ref} \\
         --partition-tag HP \\
-        --prefix ${params.sample_name} \\
+        --prefix ${params.sample_name}.wf_mods \\
         --threads ${task.cpus} ${options}
     
     # Compress all
     for i in `ls ${params.sample_name}/`; do
         root_name=\$( basename \$i '.bed' )
-        mv ${params.sample_name}/\${root_name}.bed ${params.sample_name}/\${root_name}.wf_mods.bedmethyl
-        bgzip ${params.sample_name}/\${root_name}.wf_mods.bedmethyl
+        # modkit saves the file as params.sample_name.wf_mods_haplotype.bed
+        # create a new name with the patter params.sample_name.wf_mods.haplotype.bedmethyl
+        new_name=\$( echo \${root_name} | sed 's/wf_mods_/wf_mods\\./' )
+        mv ${params.sample_name}/\${root_name}.bed ${params.sample_name}/\${new_name}.bedmethyl
+        bgzip ${params.sample_name}/\${new_name}.bedmethyl
     done
     """
 }

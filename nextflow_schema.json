@@ -363,10 +363,10 @@
             "properties": {
                 "use_longphase": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Use longphase for final phasing of output variants (experimental).",
                     "hidden": true,
-                    "help_text": "The default behaviour of the workflow is to use longphase for the variant phasing. If set to false, the workflow will execute [whatshap](https://whatshap.readthedocs.io/) instead."
+                    "help_text": "The default behaviour of the workflow is to use [whatshap](https://whatshap.readthedocs.io/) for the variant phasing. If set to true, the workflow will execute [longphase](https://github.com/twolinin/longphase) instead."
                 },
                 "clair3_model_path": {
                     "type": "string",
@@ -589,13 +589,6 @@
                     "description": "Downsample if the bam effective coverage / target coverage if greater than this value.",
                     "help_text": "By default, if the coverage of the input alignments is within 1.1x the target coverage, downsampling will not be performed even if it was enabled. This is to avoid triggering the downsampling of alignments when coverage is already close to the target coverage.",
                     "hidden": true
-                },
-                "output_separate_phased": {
-                    "type": "boolean",
-                    "default": false,
-                    "hidden": true,
-                    "description": "Keep separate phasing files.",
-                    "help_text": "This option enables to save individually phased SV and SNP VCF files even when `--phased --sv --snv` are provided."
                 }
             }
         },

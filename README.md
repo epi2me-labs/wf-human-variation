@@ -211,6 +211,9 @@ Output files may be aggregated including information for all samples or provided
 | SNP and SV phased VCF | {{ alias }}.wf_human_variation.phased.vcf.gz | VCF file with the jointly phased SNPs and SVs for the sample. | per-sample |
 | Copy number variants VCF | {{ alias }}.wf_cnv.vcf.gz | VCF file with the CNV for the sample. | per-sample |
 | Modified bases BEDMethyl | {{ alias }}.wf_mods.bedmethyl.gz | BED file with the aggregated modification counts for the sample. | per-sample |
+| Modified bases BEDMethyl (haplotype 1) | {{ alias }}.wf_mods.1.bedmethyl.gz | BED file with the aggregated modification counts for haplotype 1 of the sample. | per-sample |
+| Modified bases BEDMethyl (haplotype 2) | {{ alias }}.wf_mods.2.bedmethyl.gz | BED file with the aggregated modification counts for haplotype 2 of the sample. | per-sample |
+| Modified bases BEDMethyl (ungrouped) | {{ alias }}.wf_mods.ungrouped.bedmethyl.gz | BED file with the aggregated modification counts of non-haplotagged reads for the sample. | per-sample |
 | Short tandem repeat VCF | {{ alias }}.wf_str.vcf.gz | VCF file with the STR sites for the sample. | per-sample |
 | Alignment file | {{ alias }}.cram | CRAM or BAM file with the aligned reads for the sample, generated when the input file is unaligned. | per-sample |
 | Alignment file index | {{ alias }}.cram.crai | The index of the resulting CRAM or BAM file with the reads for the sample, generated when the input file is unaligned. | per-sample |
@@ -261,7 +264,7 @@ Some components work better withing certain ranges of coverage, and the user mig
 The workflow implements a deconstructed version of [Clair3](https://github.com/HKU-BAL/Clair3) (v1.0.4) to call germline variants. The appropriate model can be provided with the `--basecaller_cfg` option. To decide on the appropriate model you can check out the Dorado documentation for a list of available basecalling models.
 This workflow takes advantage of the parallel nature of Nextflow, providing optimal efficiency in high-performance, distributed systems. The workflow will automatically call small variants (SNPs and indels), collect statistics, annotate them with [SnpEff](https://pcingola.github.io/SnpEff/) (and additionally for SNPs, ClinVar details), and create a report summarising the findings.
 
-If desired, the workflow can perform phasing of structural variants by using the `--phased` option. This will lead the workflow to use [longphase](https://github.com/twolinin/longphase) to perform phasing of the variants, with the option to use [whatshap](https://whatshap.readthedocs.io/) instead by setting `--use_longphase false`. Deactivating the longphase phasing will not disable the final joint phasing with longphase, and if you want the individually phased VCFs you should provide the `--output_separate_phased` option. The phasing will also generate a GFF file with the annotation of the phase blocks, facilitating the detection of these within genome visualizers.
+If desired, the workflow can perform phasing of structural variants by using the `--phased` option. This will lead the workflow to use [whatshap](https://whatshap.readthedocs.io/) to perform phasing of the variants, with the option to use [longphase](https://github.com/twolinin/longphase) instead by setting `--use_longphase true`. The phasing will also generate a GFF file with the annotation of the phase blocks, enabling the visualisation of these blocks in genome browsers.
 
 ### 4. Structural variant (SV) calling with Sniffles2
 
@@ -277,7 +280,7 @@ Modified base calling can be performed by specifying `--mod`. The workflow will 
 The workflow will automatically check whether the files contain the appropriate `MM`/`ML` tags, required for running [modkit pileup](https://nanoporetech.github.io/modkit/intro_bedmethyl.html). If the tags are not found, the workflow will not run the individual analysis, but will still run the other subworkflows requested by the user.
 The default behaviour of the workflow is to run modkit with the `--cpg --combine-strands` options set. It is possible to report strand-aware modifications by providing `--force_strand`, which will trigger modkit to run in default mode. The resulting bedMethyl will include modifications for each site on each strand separately.
 The modkit run can be fully customized by providing `--modkit_args`. This will override any preset, and allow full control over the run of modkit.
-Haplotype-resolved aggregated counts of modified bases can be obtained with the `--phased` option. This will generate three distinct BEDMethyl files with the naming pattern `{{ alias }}_{{ haplotype }}.wf_mods.bedmethyl.gz`, where `haplotype` can be `1`, `2` or `ungrouped`.
+Haplotype-resolved aggregated counts of modified bases can be obtained with the `--phased` option. This will generate three distinct BEDMethyl files with the naming pattern `{{ alias }}.wf_mods.{{ haplotype }}.bedmethyl.gz`, where `haplotype` can be `1`, `2` or `ungrouped`.
 
 ### 6a. Copy number variants (CNV) calling with Spectre
 
@@ -295,14 +298,14 @@ In addition to a gzipped VCF file containing STRs found in the dataset, the work
 
 ### 8. Phasing variants
 Variant phasing is switched on simply using the `--phased` option.
-By default, the workflow uses [longphase](https://github.com/twolinin/longphase) to perform phasing of the variants, with the option to use [whatshap](https://whatshap.readthedocs.io/) instead by setting `--use_longphase false`.
+By default, the workflow uses [whatshap](https://whatshap.readthedocs.io/) to perform phasing of the variants, with the option to use [longphase](https://github.com/twolinin/longphase) instead by setting `--use_longphase true`.
 The workflow will automatically turn on the necessary phasing processes based on the selected subworkflows.
 The behaviour of the phasing is summarised in the below table:
 
 |         |        |         |            | Phased SNP VCF | Phased SV VCF | Joint SV+SNP phased VCF | Phased bedMethyl |
 |---------|--------|---------|------------|----------------|---------------|-------------------------|------------------|
-| `--snp` | `--sv` | `--mod` | `--phased` |                |               |          &check;        |       &check;    |
-| `--snp` | `--sv` |         | `--phased` |                |               |          &check;        |                  |
+| `--snp` | `--sv` | `--mod` | `--phased` |     &check;    |     &check;   |          &check;        |       &check;    |
+| `--snp` | `--sv` |         | `--phased` |     &check;    |     &check;   |          &check;        |                  |
 | `--snp` |        |         | `--phased` |     &check;    |               |                         |                  |
 |         | `--sv` |         | `--phased` |                |     &check;   |                         |                  |
 |         |        | `--mod` | `--phased` |                |               |                         |       &check;    |
@@ -310,8 +313,6 @@ The behaviour of the phasing is summarised in the below table:
 The joint physical phasing of SNP and SVs can only be performed with [longphase](https://github.com/twolinin/longphase) by selecting the options: `--phased --snp --sv`. Setting `--use_longphase false` will not disable the final joint phasing with longphase.
 
 Using `--GVCF` together with `--phased` will generate a phased GVCF, created by reflecting the phased genotype and the phase set annotation in the VCF file. This operation is performed using `bcftools annotate`, targeting the `GT` and `PS` fields.
-
-In some circumstances, users may wish to keep the separate VCF files before joint phasing. This can be done with `--output_separate_phased`.
 
 Running the phasing is a compute intensive process. Running the workflow in phasing mode doubles the runtime, and significantly increases the storage requirements to the order of terabytes.
 

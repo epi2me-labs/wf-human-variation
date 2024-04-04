@@ -80,6 +80,30 @@
       "optional": true,
       "type": "per-sample"
     },
+    "mod-bedmethyl-hap1": {
+      "filepath": "{{ alias }}.wf_mods.1.bedmethyl.gz",
+      "title": "Modified bases BEDMethyl (haplotype 1)",
+      "description": "BED file with the aggregated modification counts for haplotype 1 of the sample.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "mod-bedmethyl-hap2": {
+      "filepath": "{{ alias }}.wf_mods.2.bedmethyl.gz",
+      "title": "Modified bases BEDMethyl (haplotype 2)",
+      "description": "BED file with the aggregated modification counts for haplotype 2 of the sample.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "mod-bedmethyl-ungroup": {
+      "filepath": "{{ alias }}.wf_mods.ungrouped.bedmethyl.gz",
+      "title": "Modified bases BEDMethyl (ungrouped)",
+      "description": "BED file with the aggregated modification counts of non-haplotagged reads for the sample.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
     "str-vcf": {
       "filepath": "{{ alias }}.wf_str.vcf.gz",
       "title": "Short tandem repeat VCF",
