@@ -114,6 +114,12 @@
             "type": "object",
             "fa_icon": "fas fa-arrow-right",
             "description": "Primary parameters for the data analysis.",
+            "overrides": {
+                "minknow": {
+                    "title": "Human genome reference",
+                    "description": ""
+                }
+            },
             "properties": {
                 "sample_name": {
                     "type": "string",
@@ -270,11 +276,7 @@
             "required": [
                 "ref",
                 "bam"
-            ],
-            "overrides": {
-                "title": "Human genome reference",
-                "description": ""
-            }
+            ]
         },
         "sv_options": {
             "title": "Structural variant calling options",
@@ -282,7 +284,9 @@
             "description": "Options specific to the SV calling subworkflow.",
             "overrides": {
                 "minknow": {
-                    "hidden": true
+                    "parameters": {
+                        "hidden": true
+                    }
                 }
             },
             "properties": {
@@ -320,7 +324,9 @@
             "description": "Options specific to automated benchmarking of the SV calling subworkflow.",
             "overrides": {
                 "minknow": {
-                    "hidden": true
+                    "parameters": {
+                        "hidden": true
+                    }
                 }
             },
             "properties": {
@@ -357,7 +363,9 @@
             "description": "Options specific to the small variant calling subworkflow.",
             "overrides": {
                 "minknow": {
-                    "hidden": true
+                    "parameters": {
+                        "hidden": true
+                    }
                 }
             },
             "properties": {
@@ -449,7 +457,9 @@
             "description": "Options related to the copy number variant subworkflow.",
             "overrides": {
                 "minknow": {
-                    "hidden": true
+                    "parameters": {
+                        "hidden": true
+                    }
                 }
             },
             "properties": {
@@ -484,7 +494,9 @@
             "description": "Options related to the modified bases aggregation subworkflow.",
             "overrides": {
                 "minknow": {
-                    "hidden": true
+                    "parameters": {
+                        "hidden": true
+                    }
                 }
             },
             "properties": {
@@ -541,7 +553,9 @@
             "help_text": "These advanced options do not need to be changed for typical use, but allow fine tuning of workflows for users who want more control over the workflow.",
             "overrides": {
                 "minknow": {
-                    "hidden": true
+                    "parameters": {
+                        "hidden": true
+                    }
                 }
             },
             "properties": {
@@ -600,7 +614,9 @@
             "help_text": "These options do not need to be changed for typical use, but allow fine tuning of workflows for users who want more control over the workflow.",
             "overrides": {
                 "minknow": {
-                    "hidden": true
+                    "parameters": {
+                        "hidden": true
+                    }
                 }
             },
             "properties": {
@@ -643,7 +659,9 @@
             "default": "",
             "overrides": {
                 "minknow": {
-                    "hidden": true
+                    "parameters": {
+                        "hidden": true
+                    }
                 }
             },
             "properties": {
