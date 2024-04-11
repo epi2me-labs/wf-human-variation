@@ -56,14 +56,6 @@
       "optional": true,
       "type": "per-sample"
     },
-    "phased-vcf": {
-      "filepath": "{{ alias }}.wf_human_variation.phased.vcf.gz",
-      "title": "SNP and SV phased VCF",
-      "description": "VCF file with the jointly phased SNPs and SVs for the sample.",
-      "mime-type": "application/gzip",
-      "optional": true,
-      "type": "per-sample"
-    },
     "cnv-vcf": {
       "filepath": "{{ alias }}.wf_cnv.vcf.gz",
       "title": "Copy number variants VCF",

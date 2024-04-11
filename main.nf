@@ -11,8 +11,6 @@ include { output_sv } from './modules/local/wf-human-sv'
 include { str } from './workflows/wf-human-str'
 include { output_str } from './modules/local/wf-human-str'
 
-include { phasing } from './workflows/phasing'
-
 include { cnv as cnv_spectre } from './workflows/wf-human-cnv'
 
 include { cnv as cnv_qdnaseq } from './workflows/wf-human-cnv-qdnaseq'
@@ -510,11 +508,9 @@ workflow {
         )
         artifacts = results.report.flatten()
         sniffles_vcf = results.sniffles_vcf
-        sniffles_phasing_vcf = results.for_phasing
         output_sv(artifacts)
     } else {
         sniffles_vcf = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
-        sniffles_phasing_vcf = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE")
     }
 
     // Then, we finish working on the SNPs by refining with SVs and annotating them. This is needed to
@@ -666,13 +662,6 @@ workflow {
         output_str(results_str)
     }
 
-    // Perform joint phasing only if params.sv and params.snp are requested.
-    if (params.phased && params.snp && params.sv){
-        joint_phasing = phasing(final_vcf, sniffles_phasing_vcf, ref_channel, clair_vcf.str_bams)
-    } else {
-        joint_phasing = Channel.empty()
-    }
-
     jb_conf = configure_jbrowse(
         ref_channel,
         bam_channel,
@@ -691,8 +680,7 @@ workflow {
             mod_stats.flatten(),
             jb_conf.flatten(),
             report_pass.flatten(),
-            report_fail.flatten(),
-            joint_phasing.flatten()
+            report_fail.flatten()
         )
     )
 

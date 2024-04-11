@@ -70,15 +70,13 @@ By default, the workflow uses [whatshap](https://whatshap.readthedocs.io/) to pe
 The workflow will automatically turn on the necessary phasing processes based on the selected subworkflows.
 The behaviour of the phasing is summarised in the below table:
 
-|         |        |         |            | Phased SNP VCF | Phased SV VCF | Joint SV+SNP phased VCF | Phased bedMethyl |
-|---------|--------|---------|------------|----------------|---------------|-------------------------|------------------|
-| `--snp` | `--sv` | `--mod` | `--phased` |     &check;    |     &check;   |          &check;        |       &check;    |
-| `--snp` | `--sv` |         | `--phased` |     &check;    |     &check;   |          &check;        |                  |
-| `--snp` |        |         | `--phased` |     &check;    |               |                         |                  |
-|         | `--sv` |         | `--phased` |                |     &check;   |                         |                  |
-|         |        | `--mod` | `--phased` |                |               |                         |       &check;    |
-
-The joint physical phasing of SNP and SVs can only be performed with [longphase](https://github.com/twolinin/longphase) by selecting the options: `--phased --snp --sv`. Setting `--use_longphase false` will not disable the final joint phasing with longphase.
+|         |        |         |            | Phased SNP VCF | Phased SV VCF | Phased bedMethyl |
+|---------|--------|---------|------------|----------------|---------------|------------------|
+| `--snp` | `--sv` | `--mod` | `--phased` |     &check;    |     &check;   |       &check;    |
+| `--snp` | `--sv` |         | `--phased` |     &check;    |     &check;   |                  |
+| `--snp` |        |         | `--phased` |     &check;    |               |                  |
+|         | `--sv` |         | `--phased` |                |     &check;   |                  |
+|         |        | `--mod` | `--phased` |                |               |       &check;    |
 
 Using `--GVCF` together with `--phased` will generate a phased GVCF, created by reflecting the phased genotype and the phase set annotation in the VCF file. This operation is performed using `bcftools annotate`, targeting the `GT` and `PS` fields.
 

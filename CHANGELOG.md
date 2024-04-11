@@ -9,9 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--GVCF --phased` will produce a phased GVCF.
 - Changed default phasing algorithm to `whatshap`, with the possibility to change the phasing to `longphase` with `--use_longphase true`.
     - The intermediate phasing is still performed using `longphase`.
-- Setting `--snp --sv --phased` will perform and emit both the joint and individual phasing of SNPs and SVs.
-- Deprecated `--output_separate_phased` as the workflow will emit both individually and jointly phased VCF.
+- Setting `--snp --sv --phased` will emit individually phased SNPs and SVs.
 - Phased bedMethyl files now follow the pattern `{{ alias }}.wf_mods.{{ haplotype }}.bedmethyl.gz`.
+
+### Removed
+- Single-step joint phasing of SV and SNP.
+- `--output_separate_phased` as the workflow emits only individually phased VCFs.
 
 ## [v2.1.0]
 ### Changed

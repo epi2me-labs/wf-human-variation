@@ -173,14 +173,14 @@ docker-run:
         - if: $MATRIX_NAME == "wf-human-phase_all"
           variables:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
-              NF_PROCESS_FILES: "modules/local/wf-human-sv.nf modules/local/wf-human-snp.nf workflows/phasing.nf"
+              NF_PROCESS_FILES: "modules/local/wf-human-sv.nf modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,hap,phase_contig,post_clair_phase_contig,bed_filter,phase_gvcf"
               NF_WORKFLOW_OPTS: "--mod false --cnv false --str false --sv --snp --phased --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --sample_name demo --sex female --bam_min_coverage 0.00001 --annotation false"
 
         - if: $MATRIX_NAME == "wf-human-phase_all_lp"
           variables:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
-              NF_PROCESS_FILES: "modules/local/wf-human-sv.nf modules/local/wf-human-snp.nf workflows/phasing.nf"
+              NF_PROCESS_FILES: "modules/local/wf-human-sv.nf modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,hap,phase_contig,post_clair_phase_contig,bed_filter,phase_gvcf"
               NF_WORKFLOW_OPTS: "--mod false --cnv false --str false --sv --snp --phased --use_longphase true --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --sample_name demo --sex female --bam_min_coverage 0.00001 --annotation false"
 
