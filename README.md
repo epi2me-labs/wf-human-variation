@@ -208,7 +208,6 @@ Output files may be aggregated including information for all samples or provided
 | Report of the STR workflow | {{ alias }}.wf-human-str-report.html | Report summarising the results of the short tandem repeat subworkflow for the sample. | per-sample |
 | Short variant VCF | {{ alias }}.wf_snp.vcf.gz | VCF file with the SNPs for the sample. | per-sample |
 | Structural variant VCF | {{ alias }}.wf_sv.vcf.gz | VCF file with the SVs for the sample. | per-sample |
-| SNP and SV phased VCF | {{ alias }}.wf_human_variation.phased.vcf.gz | VCF file with the jointly phased SNPs and SVs for the sample. | per-sample |
 | Copy number variants VCF | {{ alias }}.wf_cnv.vcf.gz | VCF file with the CNV for the sample. | per-sample |
 | Modified bases BEDMethyl | {{ alias }}.wf_mods.bedmethyl.gz | BED file with the aggregated modification counts for the sample. | per-sample |
 | Modified bases BEDMethyl (haplotype 1) | {{ alias }}.wf_mods.1.bedmethyl.gz | BED file with the aggregated modification counts for haplotype 1 of the sample. | per-sample |
@@ -302,15 +301,13 @@ By default, the workflow uses [whatshap](https://whatshap.readthedocs.io/) to pe
 The workflow will automatically turn on the necessary phasing processes based on the selected subworkflows.
 The behaviour of the phasing is summarised in the below table:
 
-|         |        |         |            | Phased SNP VCF | Phased SV VCF | Joint SV+SNP phased VCF | Phased bedMethyl |
-|---------|--------|---------|------------|----------------|---------------|-------------------------|------------------|
-| `--snp` | `--sv` | `--mod` | `--phased` |     &check;    |     &check;   |          &check;        |       &check;    |
-| `--snp` | `--sv` |         | `--phased` |     &check;    |     &check;   |          &check;        |                  |
-| `--snp` |        |         | `--phased` |     &check;    |               |                         |                  |
-|         | `--sv` |         | `--phased` |                |     &check;   |                         |                  |
-|         |        | `--mod` | `--phased` |                |               |                         |       &check;    |
-
-The joint physical phasing of SNP and SVs can only be performed with [longphase](https://github.com/twolinin/longphase) by selecting the options: `--phased --snp --sv`. Setting `--use_longphase false` will not disable the final joint phasing with longphase.
+|         |        |         |            | Phased SNP VCF | Phased SV VCF | Phased bedMethyl |
+|---------|--------|---------|------------|----------------|---------------|------------------|
+| `--snp` | `--sv` | `--mod` | `--phased` |     &check;    |     &check;   |       &check;    |
+| `--snp` | `--sv` |         | `--phased` |     &check;    |     &check;   |                  |
+| `--snp` |        |         | `--phased` |     &check;    |               |                  |
+|         | `--sv` |         | `--phased` |                |     &check;   |                  |
+|         |        | `--mod` | `--phased` |                |               |       &check;    |
 
 Using `--GVCF` together with `--phased` will generate a phased GVCF, created by reflecting the phased genotype and the phase set annotation in the VCF file. This operation is performed using `bcftools annotate`, targeting the `GT` and `PS` fields.
 
