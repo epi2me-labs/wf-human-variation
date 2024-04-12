@@ -136,7 +136,7 @@
                 "bam": {
                     "title": "Input: BAM file",
                     "type": "string",
-                    "format": "file-path",
+                    "format": "path",
                     "description": "BAM or unaligned BAM (uBAM) files for the sample to use in the analysis.",
                     "help_text": "This accepts one of two cases: (i) the path to a single BAM file; (ii) the path to a top-level directory containing BAM files. A sample name can be supplied with `--sample`.",
                     "overrides": {
