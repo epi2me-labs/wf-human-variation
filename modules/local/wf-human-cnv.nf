@@ -87,19 +87,16 @@ process makeReport {
         path "versions/*"
         path "params.json"
         path cnv_bed
-        val chromosome_codes
     output:
         path("*wf-human-cnv-report.html")
     script:
         def report_name = "${params.sample_name}.wf-human-cnv-report.html"
-        String ctgs = chromosome_codes.join(',')
         """
         workflow-glue report_cnv_spectre \
             --sample_id ${params.sample_name} \
             --params params.json \
             --versions versions \
             --cnv_bed ${cnv_bed} \
-            --chr_codes ${ctgs} \
             -o $report_name
         """
 

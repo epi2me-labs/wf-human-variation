@@ -20,7 +20,6 @@ workflow cnv {
         ref
         clair3_vcf
         bed
-        chromosome_codes
     main:
         // get mosdepth results for window size 1000
         mosdepth(bam, bed, ref, "1000")
@@ -47,7 +46,7 @@ workflow cnv {
         software_versions = add_snp_tools_to_versions(software_versions_tmp)
         workflow_params = getParams()
 
-        report = makeReport(software_versions.collect(), workflow_params, spectre_bed, chromosome_codes)
+        report = makeReport(software_versions.collect(), workflow_params, spectre_bed)
 
     emit:
         spectre_final_vcf.concat(report)

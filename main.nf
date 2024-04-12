@@ -646,8 +646,7 @@ workflow {
                 pass_bam_channel,
                 ref_channel,
                 clair_vcf.vcf_files,
-                bed,
-                chromosome_codes
+                bed
             )
         }
         output_cnv(results_cnv)
