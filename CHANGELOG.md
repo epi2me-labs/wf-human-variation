@@ -11,8 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - The intermediate phasing is still performed using `longphase`.
 - Setting `--snp --sv --phased` will emit individually phased SNPs and SVs.
 - Phased bedMethyl files now follow the pattern `{{ alias }}.wf_mods.{{ haplotype }}.bedmethyl.gz`.
+- Update `modkit` to v0.2.6.
+- Improved modkit runtime by increasing default threads and increasing the default interval size.
+- Increased minimum CPU requirement for the workflow to 16.
+
 ### Fixed
 - Update schema to allow selection of multiple BAM files per sample in EPI2ME.
+
 ### Removed
 - Single-step joint phasing of SV and SNP.
 - `--output_separate_phased` as the workflow emits only individually phased VCFs.
