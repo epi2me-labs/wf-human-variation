@@ -17,6 +17,8 @@ process modkit {
         ${alignment} \\
         ${params.sample_name}.wf_mods.bedmethyl \\
         --ref ${ref} \\
+        --interval-size 1000000 \\
+        --log-filepath modkit.log \\
         --threads ${task.cpus} ${options}
     
     # Compress all
@@ -47,7 +49,9 @@ process modkit_phase {
         ${params.sample_name} \\
         --ref ${ref} \\
         --partition-tag HP \\
+        --interval-size 1000000 \\
         --prefix ${params.sample_name}.wf_mods \\
+        --log-filepath modkit.log \\
         --threads ${task.cpus} ${options}
     
     # Compress all

@@ -32,7 +32,7 @@ Recommended requirements:
 
 Minimum requirements:
 
-+ CPUs = 12
++ CPUs = 16
 + Memory = 32GB
 
 Approximate run time: Variable depending on whether it is targeted sequencing or whole genome sequencing, as well as coverage and the individual analyses requested. For instance, a 90X human sample run (options: `--snp --sv --mod --str --cnv --phased --sex male`) takes less than 8h with recommended resources.
@@ -188,7 +188,7 @@ input_reads.bam     ─── input_directory
 | ubam_sort_threads | integer | Set max number of threads to use for sorting and indexing aligned reads from uBAM (limited by config executor cpus) |  | 3 |
 | ubam_bam2fq_threads | integer | Set max number of threads to use for uncompressing uBAM and generating FASTQ for alignment (limited by config executor cpus) |  | 1 |
 | merge_threads | integer | Set max number of threads to use for merging alignment files (limited by config executor cpus) |  | 4 |
-| modkit_threads | integer | Total number of threads to use in modkit modified base calling (limited by config executor cpus) |  | 4 |
+| modkit_threads | integer | Total number of threads to use in modkit modified base calling (limited by config executor cpus) |  | 16 |
 
 
 
