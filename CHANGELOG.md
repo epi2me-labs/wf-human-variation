@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Update schema to allow selection of multiple BAM files per sample in EPI2ME.
+- Spectre CNV report not handling cases when no CNVs detected.
+- Lines denoting normal maximum and pathogenic minimum thresholds now correctly displayed on STR repeat content plots.
 
 ### Removed
 - Single-step joint phasing of SV and SNP.
@@ -34,7 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Force minimap2 to clean up memory more aggressively. Empirically this reduces peak-memory use over the course of execution.
 - Handling of input VCF files with `--vcf_fn`.
-- Spectre CNV report not handling cases when no CNVs detected.
 - `--phased --sv --snp` generates a truncated VCF file when `#` appears in the VCF `INFO` field
 - Some reporting scripts using too much memory.
 

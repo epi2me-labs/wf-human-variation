@@ -142,7 +142,7 @@ docker-run:
               wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-reference/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "minimap2_ubam,index_ref_gzi,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf,eval_downsampling,downsampling,modkit"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod --cnv false --str false --bed ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo.bed --bam ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo_normal.bam --ref ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 --bam_min_coverage 0.00001 --phased --annotation false"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod --cnv false --str false --bed ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo.bed --bam ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo_normal.bam --ref ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 --bam_min_coverage 0.00001 --phased --annotation false --modkit_threads 4"
 
         - if: $MATRIX_NAME == "gzref-bam-mod"
           variables:
@@ -151,7 +151,7 @@ docker-run:
               wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-reference/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "minimap2_ubam,index_ref_gzi,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf,eval_downsampling,downsampling,modkit_phase"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod --cnv false --str false --bed ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo.bed --bam ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo_normal.bam --ref ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 --bam_min_coverage 0.00001 --annotation false"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod --cnv false --str false --bed ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo.bed --bam ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo_normal.bam --ref ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 --bam_min_coverage 0.00001 --annotation false --modkit_threads 4"
 
         - if: $MATRIX_NAME == "downsample"
           variables:
@@ -161,7 +161,7 @@ docker-run:
               NF_WORKFLOW_OPTS: "--snp false --sv false --mod --annotation false --bam ${CI_PROJECT_NAME}/data/demo_data/demo.bam --ref ${CI_PROJECT_NAME}/data/demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz \
               --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 \
               --ubam_bam2fq_threads 1 --bam_min_coverage 0 --skip_annotation \
-              --downsample_coverage --downsample_coverage_target 10"
+              --downsample_coverage --downsample_coverage_target 10 --modkit_threads 4"
 
         - if: $MATRIX_NAME == "wf-human-str"
           variables:

@@ -263,13 +263,7 @@ def create_repeat_content_plot(all_data, haplotype_data, repeat_unit):
 
     # normal_max and pathologic_min are repeat numbers, so get the repeat unit
     # size and use this to convert to length for plotting
-    # make a copy of the dataframe to avoid SettingWithCopyWarning
     ru_size = len(repeat_unit)
-    new_haplotype_data = haplotype_data.copy()
-    new_haplotype_data['str_normal_max'] = new_haplotype_data[
-        'str_normal_max'] * ru_size
-    new_haplotype_data['str_pathologic_min'] = new_haplotype_data[
-        'str_pathologic_min'] * ru_size
 
     colours = [
         "#1f78b4", "#fdbf6f", "#b2df8a", "#33a02c", "#bbbb88",
@@ -302,8 +296,8 @@ def create_repeat_content_plot(all_data, haplotype_data, repeat_unit):
     source = ColumnDataSource(
         data=dict(
             read=haplotype_data['read_id'],
-            normal_max=haplotype_data['str_normal_max'],
-            pathologic_min=haplotype_data['str_pathologic_min'],
+            normal_max=haplotype_data['str_normal_max'] * ru_size,
+            pathologic_min=haplotype_data['str_pathologic_min'] * ru_size,
             seq=haplotype_data['sequence'],
             truncated_seq=haplotype_data['truncated_seq'],
             seq_length=haplotype_data['length'],
