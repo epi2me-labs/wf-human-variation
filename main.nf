@@ -26,7 +26,6 @@ include {
     getAllChromosomesBed;
     publish_artifact;
     configure_jbrowse;
-    get_coverage; 
     get_region_coverage;
     failedQCReport; 
     makeAlignmentReport; 
@@ -41,6 +40,7 @@ include {
     sift_clinvar_vcf as sift_clinvar_snp_vcf;
     bed_filter;
     sanitise_bed;
+    combine_json;
     output_cnv
     } from './modules/local/common'
 
@@ -114,6 +114,14 @@ workflow {
     // check SV calling will be done when benchmarking SV calls
     if(params.sv_benchmark && !params.sv) {
         throw new Exception(colors.red + "Cannot benchmark SV subworkflow without running SV subworkflow! Enable the SV subworkflow with --sv." + colors.reset)
+    }
+
+    // If downsampling is required, check that the requested coverage is above the min threshold
+    if(params.downsample_coverage) {
+        if (params.downsample_coverage_target < params.bam_min_coverage){
+            log.error (colors.red + "Downsampling target ${params.downsample_coverage_target} is lower than the minimum BAM coverage requested of ${params.bam_min_coverage}" + colors.reset)
+            can_start = false
+        }
     }
 
     // switch workflow to BAM if calling CNV
@@ -262,40 +270,11 @@ workflow {
             coverage_check = get_region_coverage(bed, mosdepth_stats)
             bed = coverage_check.filt_bed
             mosdepth_stats = coverage_check.mosdepth_tuple
-        } else {
-            // Define if a dataset passes or not the filtering
-            coverage_check = get_coverage(mosdepth_input.out.summary)
         }
-        // Combine with the bam and branch by passing the depth filter
-        coverage_check.pass
-            .combine(bam_channel)
-            .branch{ 
-                pass: it[0] == "true" 
-                not_pass: it[0] == "false" 
-                }
-            .set{bamdepth_filter}
-        // Create the pass_bam_channel  channel when they pass
-        bamdepth_filter.pass
-            .map{it ->
-                it.size > 0 ? [it[2], it[3], it[4]] : it
-            }
-            .set{pass_bam_channel}
-        // If it doesn't pass the minimum depth required, 
-        // emit a bam channel of discarded bam files.
-        bamdepth_filter.not_pass
-            .subscribe {
-                log.error "ERROR: File ${it[2].getName()} will not be processed by the workflow as the detected coverage of ${it[1]}x is below the minimum coverage threshold of ${params.bam_min_coverage}x required for analysis."
-            }
-        bamdepth_filter.not_pass
-            .map{it ->
-                it.size > 0 ? [it[2], it[3], it[4]] : it
-            }
-            .set{discarded_bams}
-    } else {
-        // If the bam_min_depth is 0, then create alignment report for everything.
-        bam_channel.set{pass_bam_channel}
-        discarded_bams = Channel.empty()
-    }
+    } 
+    bam_channel.set{pass_bam_channel}
+    discarded_bams = Channel.empty()
+
     // Set extensions for downstream analyses based on the input type
     // This will affect only the haplotagging.
     extensions = pass_bam_channel.map{
@@ -422,6 +401,84 @@ workflow {
     }
     bam_stats = readStats.out.read_stats
     bam_flag = readStats.out.flagstat
+    
+    // Define depth_pass channel
+    if (params.bed){
+        // Count the number of lines in the file to ensure that
+        // there are intervals with enough coverage for downstream
+        // analyses.
+        n_lines = mosdepth_stats
+        | map{ it[0] }
+        | countLines()
+
+        // Ensure that the data have enough region coverage
+        // and intervals in the output coverage BED file.
+        // First, load and split the summary file, keeping only
+        // the `total_region` value (`total_region` and `total`
+        // are identical in absence of a BED file).
+        depth_pass = mosdepth_summary
+            | splitCsv(sep: "\t", header: true)
+            | filter{it -> it.chrom == "total_region"}
+            // Extract the mean coverage as floating value
+            | map{
+                it -> 
+                float mean = it.mean as float
+                [mean]}
+            // Add line number in the coverage BED file
+            | combine(n_lines)
+            // Check if the coverage is appropriate
+            | map {
+                mean, n_lines_v -> 
+                int n_lines = n_lines_v as int
+                boolean pass = mean > params.bam_min_coverage && n_lines > 0
+                [pass, mean]
+            }
+
+    // Without a BED, use summary values for the region
+    } else {
+        depth_pass = mosdepth_summary
+            | splitCsv(sep: "\t", header: true)
+            | filter{it -> it.chrom == "total_region"}
+            | map{
+                it -> 
+                float mean = it.mean as float
+                boolean pass = mean > params.bam_min_coverage
+                [pass, mean]}
+    }
+
+    // Implement the BAM stats barrier after the pre-processing.
+    // This will use the reads after the downsampling when requested.
+    // Currently, it works using only the BAM coverage, but in the
+    // future will allow to easily implement additional thresholds.
+    filter = depth_pass
+        .combine(pass_bam_channel)
+        .branch{
+            dp_pass, dp_val_env, bam, bai, meta ->
+            pass: dp_pass
+            not_pass: true
+            }
+    // Create the pass_bam_channel  channel when they pass
+    filter.pass
+        .map{it ->
+            it.size > 0 ? [it[-3], it[-2], it[-1]] : it
+        }
+        .set{pass_bam_channel}
+
+    // If it doesn't pass the minimum depth required, 
+    // emit a bam channel of discarded bam files.
+    filter.not_pass
+        .subscribe {
+            dp_pass, dp, bam, bai, meta ->
+            // check where it failed
+            def fail_depth = dp < params.bam_min_coverage ? "Depth: ${dp} < ${params.bam_min_coverage}" : "Depth: ${dp} > ${params.bam_min_coverage}"
+            // Log where it failed
+            log.error "ERROR: File ${bam.getName()} will not be processed by the workflow due:\n - ${fail_depth}\n"
+        }
+    filter.not_pass
+        .map{it ->
+            it.size > 0 ? [it[-3], it[-2], it[-1]] : it
+        }
+        .set{discarded_bams}
 
     // Create reports for pass and fail channels
     // Create passing bam report
@@ -446,7 +503,7 @@ workflow {
                 .combine(workflow_params)
                 .flatten()
                 .collect() | failedQCReport
-
+    
     // Set up BED for wf-human-snp, wf-human-str or run_haplotagging
     // CW-2383: we first call the SNPs to generate an haplotagged bam file for downstream analyses
     if (run_snp) {
@@ -497,7 +554,7 @@ workflow {
         } else {
             sv_bam = pass_bam_channel
         }
-        results = sv(
+        results_sv = sv(
             sv_bam,
             ref_channel,
             bed,
@@ -506,10 +563,12 @@ workflow {
             genome_build,
             chromosome_codes
         )
-        artifacts = results.report.flatten()
-        sniffles_vcf = results.sniffles_vcf
+        artifacts = results_sv.report.flatten()
+        sniffles_vcf = results_sv.sniffles_vcf
+        json_sv = results_sv.sv_stats_json
         output_sv(artifacts)
     } else {
+        json_sv = Channel.empty()
         sniffles_vcf = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
     }
 
@@ -589,7 +648,9 @@ workflow {
         vcf_stats = vcfStats(final_vcf)
 
         // Prepare the report
-        snp_report = report_snp(vcf_stats[0], clinvar_vcf)
+        snp_reporting = report_snp(vcf_stats[0], clinvar_vcf)
+        snp_report = snp_reporting.report
+        json_snp = snp_reporting.snp_stats_json
 
         // Output for SNP
         snp_report
@@ -597,6 +658,8 @@ workflow {
             .concat(final_vcf)
             .concat(clinvar_vcf)
             .flatten() | output_snp
+    } else {
+        json_snp = Channel.empty()
     }
 
     // wf-human-mod
@@ -666,6 +729,23 @@ workflow {
         bam_channel,
     )
 
+    // Combine into a final JSON of analyses stats
+    analyses_jsons = Channel.empty()
+        | mix(
+            json_snp,
+            json_sv
+        )
+        | collect
+        | ifEmpty(OPTIONAL)
+
+    final_json = combine_json(
+        analyses_jsons,
+        bam_stats,
+        bam_flag,
+        mosdepth_stats,
+        mosdepth_summary    
+    )
+
     publish_artifact(
         // CW-1033: remove environment variable from output
         ref_channel.map{it[0..2]}.flatten().mix(
@@ -679,7 +759,8 @@ workflow {
             mod_stats.flatten(),
             jb_conf.flatten(),
             report_pass.flatten(),
-            report_fail.flatten()
+            report_fail.flatten(),
+            final_json.flatten()
         )
     )
 

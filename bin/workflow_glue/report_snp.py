@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Create SNV report."""
 
+import json
 import os
 
 from dominate.tags import a, h6, p
@@ -207,6 +208,15 @@ def main(args):
     # write report
     report.write(args.report)
     logger.info(f"Written report to '{args.report}'.")
+
+    # Save values to an output JSON
+    with open(f'{args.sample_name}.snvs.json', 'w') as json_file:
+        json.dump(
+            {
+                'SNVs': int(nsnvs),
+                'Indels': int(nindels),
+                'Transition/Transversion rate': titv
+            }, json_file)
 
 
 def argparser():

@@ -60,6 +60,7 @@ workflow bam {
         }
 
         // Prepare stuff to emit
+        sv_stats_json = report.json
         report = report.html.concat(
             final_vcf,
             benchmark_result
@@ -67,6 +68,7 @@ workflow bam {
 
     emit:
         report = report
+        sv_stats_json = sv_stats_json
         sniffles_vcf = called.vcf
         for_phasing = final_vcf
 }
@@ -166,4 +168,5 @@ workflow runReport {
         )
     emit:
         html = report.out.html
+        json = report.out.json
 }

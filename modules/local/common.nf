@@ -89,7 +89,7 @@ process mosdepth {
         -x \
         -t $task.cpus \
         -b cut.bed \
-        --thresholds 1,10,20,30 \
+        --thresholds 1,10,15,20,30 \
         ${perbase_args} \
         ${params.sample_name} \
         $xam
@@ -242,23 +242,6 @@ process downsampling {
 
 
 // Process to get the genome coverage from the mosdepth summary.
-process get_coverage {
-    cpus 1
-    memory 4.GB
-    input:
-        path mosdepth_summary
-
-    output:
-        tuple env(passes), env(value), emit: pass
-    shell:
-        '''
-        passes=$( awk 'BEGIN{v="false"}; NR>1 && $1=="total_region" && $4>=!{params.bam_min_coverage} {v="true"}; END {print v}' !{mosdepth_summary} )
-        value=$( awk 'BEGIN{v=0}; NR>1 && $1=="total_region" {v=$4}; END {print v}' !{mosdepth_summary} )
-        '''
-}
-
-
-// Process to get the genome coverage from the mosdepth summary.
 process get_region_coverage {
     cpus 1
     memory 4.GB
@@ -269,7 +252,6 @@ process get_region_coverage {
             path(thresholds)
 
     output:
-        tuple env(passes), env(value), emit: pass
         path "${bed.baseName}.filt.bed", emit: filt_bed
         tuple \
             path("${params.sample_name}.regions.filt.bed.gz"),
@@ -286,11 +268,6 @@ process get_region_coverage {
         sort -k1,1 -k2,2n | \
         bedtools merge -i - | \
         sort -k1,1 -k2,2n > !{bed.baseName}.filt.bed
-
-    # Return true if there are filtered intervals, otherwise false
-    passes=$( zcat !{params.sample_name}.regions.filt.bed.gz | wc -l | awk 'BEGIN{v="false"}; $1>0 {v="true"}; END {print v}' )
-    # If there are intervals, return average coverage, otherwise return 0
-    value=$( zcat !{params.sample_name}.regions.filt.bed.gz | awk 'BEGIN{v=0; n=0}; {v+=$4; n+=1}; END {print v, n}' | awk '$2>0 {print $1/$2}; $2==0 {print 0}' )
     '''
 }
 
@@ -303,7 +280,7 @@ process failedQCReport  {
         tuple path(xam),
             path(xam_idx),
             val(xam_meta),
-            path("readstats/readstats.tsv.gz"),
+            path("readstats.tsv.gz"),
             path("flagstats/*"),
             path("depths/*"),
             path("summary/*"),
@@ -328,7 +305,7 @@ process failedQCReport  {
         workflow-glue report_al \\
             --name ${report_name} \\
             --sample_name ${params.sample_name} \\
-            --stats_fn readstats/readstats.tsv.gz \\
+            --stats_fn readstats.tsv.gz \\
             --summary_dir summary/ \\
             --flagstat_dir flagstats/ \\
             --depths_dir depths/ \\
@@ -348,7 +325,7 @@ process makeAlignmentReport {
         tuple path(xam),
             path(xam_idx),
             val(xam_meta),
-            path("readstats/readstats.tsv.gz"),
+            path("readstats.tsv.gz"),
             path("flagstats/*"),
             path("depths/*"),
             path("summary/*"),
@@ -367,8 +344,8 @@ process makeAlignmentReport {
         """
         workflow-glue report_al \\
             --name ${report_name} \\
-            --sample_name ${params.sample_name} \\
-            --stats_fn readstats/readstats.tsv.gz \\
+            --sample_name "${params.sample_name}" \\
+            --stats_fn readstats.tsv.gz \\
             --summary_dir summary/ \\
             --reference_fai ref.fasta.fai \\
             --flagstat_dir flagstats/ \\
@@ -494,7 +471,7 @@ process concat_vcfs {
     script:
         def concat_threads = Math.max(task.cpus - 1, 1)
         """
-        bcftools concat --threads ${concat_threads} -O u vcfs/*.vcf.gz | bcftools sort -O z - > ${prefix}.vcf.gz
+        bcftools concat --threads ${concat_threads} -O u vcfs/*.vcf.gz | bcftools sort -O z - > "${prefix}.vcf.gz"
         tabix -p vcf ${prefix}.vcf.gz
         """
 }
@@ -548,6 +525,36 @@ process sanitise_bed {
     script:
         """
         sanitise_bed.py --ref ${ref} --bed ${bed} --bed_out ${bed.baseName}.sanitised.bed
+        """
+}
+
+// Combine the JSON with base metrics for read stats,
+// coverage, SNPs and SVs
+process combine_json {
+    cpus 1
+    memory 4.GB
+    input:
+        path jsons
+        path "readstats.tsv.gz"
+        path "flagstat.tsv"
+        tuple \
+            path("regions.bed.gz"),
+            path("mosdepth.global.dist.txt"),
+            path("thresholds.bed.gz")
+
+        path "mosdepth.summary.txt"
+    output:
+        path "${params.sample_name}.stats.json", emit: json
+    script:
+        def input_js = jsons.name != 'OPTIONAL_FILE' ? "--jsons ${jsons}" : ""
+        """
+        workflow-glue combine_jsons \
+            --bamstats_readstats readstats.tsv.gz \
+            --bamstats_flagstats flagstat.tsv \
+            --mosdepth_summary mosdepth.summary.txt \
+            --mosdepth_thresholds thresholds.bed.gz \
+            ${input_js} \
+            --output ${params.sample_name}.stats.json
         """
 }
 

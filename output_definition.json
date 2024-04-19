@@ -8,6 +8,14 @@
       "optional": false,
       "type": "per-sample"
     },
+    "metrics-json": {
+      "filepath": "{{ alias }}.stats.json",
+      "title": "JSON file of some base statistics",
+      "description": "This JSON file contains base statistics on the reads, mappings, SNPs and SVs for the sample.",
+      "mime-type": "application/json",
+      "optional": false,
+      "type": "per-sample"
+    },
     "workflow-snv-report": {
       "filepath": "{{ alias }}.wf-human-snp-report.html",
       "title": "Report of the SNP workflow",

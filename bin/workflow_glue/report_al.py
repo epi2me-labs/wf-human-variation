@@ -161,7 +161,7 @@ def argparser():
     )
     parser.add_argument(
         "--low_cov",
-        type=int,
+        type=float,
         help="Define if the QC report should be for low-coverage BAM"
     )
     parser.add_argument(

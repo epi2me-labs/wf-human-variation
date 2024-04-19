@@ -605,7 +605,7 @@ process refine_with_sv {
             --bam_fn !{xam} \\
             --clair3_vcf_input clair.vcf.gz \\
             --sv_vcf_input !{sniffles_vcf} \\
-            --vcf_output '!{params.sample_name}.!{contig}.wf_snp.vcf' \\
+            --vcf_output "!{params.sample_name}.!{contig}.wf_snp.vcf" \\
             --threads !{task.cpus} \\
             --ctg_name '!{contig}'
         '''
@@ -725,7 +725,8 @@ process makeReport {
         path "params.json"
         path clinvar_vcf
     output:
-        path "*report.html"
+        path "${params.sample_name}.wf-human-snp-report.html", emit: 'report'
+        path "${params.sample_name}.snvs.json", emit: 'json'
     script:
         def clinvar = clinvar_vcf ?: ""
         def annotation = params.annotation ? "" : "--skip_annotation"
