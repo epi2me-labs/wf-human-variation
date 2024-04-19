@@ -111,6 +111,33 @@ def sv_stats(vcf_data):
                 p('Other SV types are: inversions, duplications and translocations.')
 
 
+def save_json(vcf_data, args):
+    """Create json file."""
+    # Get total numbers of SVs for the json output
+    inserts = 0
+    delets = 0
+    other = 0
+    # For each VCF file, compute the number of INS, DEL and other
+    for (index, sample_name, vcf_df) in vcf_data:
+        if not vcf_df.empty:
+            inserts += vcf_df.loc[vcf_df['SVTYPE'] == 'INS'].shape[0]
+            delets += vcf_df.loc[vcf_df['SVTYPE'] == 'DEL'].shape[0]
+            other += vcf_df\
+                .loc[(vcf_df['SVTYPE'] != 'INS') & (vcf_df['SVTYPE'] != 'DEL')]\
+                .shape[0]
+
+    # Save json
+    with open(args.output_json, 'w') as json_file:
+        json.dump(
+            {
+                'SV insertions': int(inserts),
+                'SV deletions': int(delets),
+                'Other SVs': int(other)
+            },
+            json_file
+        )
+
+
 def centered_bins(dataset, values, binning_mode='sqrt'):
     """Create bins distributed around the zero value."""
     # Compute bins
@@ -225,6 +252,9 @@ def main(args):
         vcf_df = read_vcf(sample_vcf)
         vcf_data.append((index, sample_vcf.split('.')[0], vcf_df))
 
+    # Save Json file for the final stats
+    save_json(vcf_data, args)
+
     # Create report file
     report = LabsReport(
         "Structural variants analysis", "wf-human-variation",
@@ -338,6 +368,11 @@ def argparser():
     parser.add_argument(
         "output",
         help="Report output file."
+    )
+    parser.add_argument(
+        "--output_json",
+        default='svs.json',
+        required=False,
     )
     parser.add_argument(
         "--vcf",

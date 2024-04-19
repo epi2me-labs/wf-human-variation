@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
+### Added
+- Output `{{sample}}.stats.json` file describing some key metrics for the analysis.
+
 ### Changed
 - `--GVCF --phased` will produce a phased GVCF.
 - Changed default phasing algorithm to `whatshap`, with the possibility to change the phasing to `longphase` with `--use_longphase true`.

@@ -249,9 +249,10 @@ workflow report_snp {
         workflow_params = getParams()
 
         // Create report
-        report = makeReport(
+        makeReport(
             vcf_stats, software_versions.collect(), workflow_params, clinvar_vcf)
 
     emit:
-        report = report
+        report = makeReport.out.report
+        snp_stats_json = makeReport.out.json
 }

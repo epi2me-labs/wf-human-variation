@@ -157,7 +157,9 @@ def process_bamstats(bamstats_file):
     base_stats = pd.read_csv(
         bamstats_file,
         sep="\t",
-        usecols=['read_length', 'mean_quality'])
+        usecols=['read_length', 'mean_quality'],
+        dtype={'read_length': int, 'mean_quality': float}
+    )
 
     return base_stats
 
