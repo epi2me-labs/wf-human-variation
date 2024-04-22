@@ -2,35 +2,40 @@ import groovy.json.JsonBuilder
 
 process call_str {
     // first subset the repeats BED file, then use this to do straglr genotyping
+    // sex comes from either params.sex or from inferred_sex
+    //   and is assumed to be a non-null value of either XX or XY
+    //   which will need translating to female or male for straglr
     label "wf_human_str"
     // Occasionally, straglr shows 150% of usage; give two cores to prevent the issue. 
     cpus 2
     memory 4.GB
     input:
-        tuple val(chr), path(xam), path(xam_idx)
+        tuple val(chr), path(xam), path(xam_idx), val(sex)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path(repeat_bed)
     output:
         tuple val(chr), path("*.vcf.gz"), path ("*.tsv"), optional: true, emit: straglr_output
-    shell:
-        '''
-        { grep !{chr} -Fw !{repeat_bed} || true; } > repeats_subset.bed
+    script:
+        // workflow default behaviour is to assume XX, so fall back if sex is not XY
+        String straglr_sex = sex == "XY" ? "male" : "female"
+        """
+        { grep ${chr} -Fw ${repeat_bed} || true; } > repeats_subset.bed
 
         if [[ -s repeats_subset.bed ]]; then
             straglr-genotype --loci repeats_subset.bed \
-                --sample !{params.sample_name} \
-                --tsv !{chr}_straglr.tsv \
-                -v !{chr}_tmp.vcf \
-                --sex !{params.sex} !{xam} !{ref} \
+                --sample ${params.sample_name} \
+                --tsv ${chr}_straglr.tsv \
+                -v ${chr}_tmp.vcf \
+                --sex ${straglr_sex} ${xam} ${ref} \
                 --min_support 1 \
                 --threads 1 \
                 --min_cluster_size 1
-            bgzip -c !{chr}_tmp.vcf > !{chr}_straglr.vcf.gz
-            tabix -p vcf !{chr}_straglr.vcf.gz
+            bgzip -c ${chr}_tmp.vcf > ${chr}_straglr.vcf.gz
+            tabix -p vcf ${chr}_straglr.vcf.gz
         else
             echo "blank subset BED"
         fi
-        '''
+        """
 }
 
 
@@ -149,10 +154,13 @@ process make_report {
         path "versions.txt"
         path "params.json"
         path(bam_stats)
+        val(sex)
     output:
         path "*wf-human-str-report.html", emit: html
     script:
         def report_name = "${params.sample_name}.wf-human-str-report.html"
+        // if params.sex is not provided, assume the workflow inferred it
+        String sex_source = params.sex ? "user-provided" : "workflow-inferred"
         """
         workflow-glue report_str \
             -o $report_name \
@@ -164,7 +172,9 @@ process make_report {
             --stranger ${plot_tsv} \
             --stranger_annotation ${stranger_annotation} \
             --str_content ${str_content} \
-            --read_stats ${bam_stats}
+            --read_stats ${bam_stats} \
+            --sex ${sex} \
+            --sex_source ${sex_source}
         """
 }
 

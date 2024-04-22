@@ -61,8 +61,10 @@ CNV calling may alternatively be performed using [QDNAseq](https://github.com/cc
 ### 7. Short tandem repeat (STR) genotyping with Straglr
 
 STR genotyping is performed using a fork of [straglr](https://github.com/philres/straglr). This workflow is compatible with genome build hg38/GRCh38.
-The STR workflow takes a required `--sex` option which is `male` or `female`. If `--sex` is not specified, the workflow will default to `female`. Please be aware that incorrect sex assignment will result in the wrong number of calls for all repeats on chrX.
-In addition to a gzipped VCF file containing STRs found in the dataset, the workflow emits a TSV straglr output containing reads spanning STRs, and a haplotagged BAM. 
+The number of calls for repeats on chrX is dependent on the sample's genetic sex which should be provided if known with `--sex XX` or `--sex XY`.
+If `--sex` is not specified, the workflow will attempt to infer the genetic sex from coverage of the allosomes, falling back to `XX` if a determination is unclear.
+Please be aware that incorrect sex assignment will result in the wrong number of calls for all repeats on chrX.
+In addition to a gzipped VCF file containing STRs found in the dataset, the workflow emits a TSV straglr output containing reads spanning STRs, and a haplotagged BAM.
 
 ### 8. Phasing variants
 Variant phasing is switched on simply using the `--phased` option.

@@ -530,16 +530,15 @@
                 "sex": {
                     "title": "Sample sex",
                     "type": "string",
-                    "default": "female",
-                    "description": "Sex (male or female) to be passed to Straglr-genotype.",
-                    "help_text": "The sex determines how many calls will be obtained for all repeats on chrX. Defaults to female if not specified.",
+                    "description": "Sex (XX or XY) to be passed to Straglr-genotype.",
+                    "help_text": "The sex determines how many calls will be obtained for all repeats on chrX. If not specified, the workflow will naively attempt to infer whether the sample carries XX or XY based on relative coverage of the allosomes.",
                     "enum": [
-                        "male",
-                        "female"
+                        "XY",
+                        "XX"
                     ],
                     "overrides": {
                         "minknow": {
-                            "title": "Sex (male or female) to be passed to Straglr-genotype."
+                            "title": "Sex (XX or XY) to be passed to Straglr-genotype."
                         }
                     }
                 }

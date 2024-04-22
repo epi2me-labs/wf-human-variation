@@ -19,6 +19,7 @@ workflow str {
     bam_channel
     ref_channel
     read_stats
+    sex
 
   main:
     // turn ref channel into value channel so it can be used more than once
@@ -28,7 +29,7 @@ workflow str {
     variant_catalogue_hg38 = projectDir.resolve("./data/variant_catalog_hg38.json").toString()
 
     // call straglr and get annotations per contig
-    str_vcf_and_tsv = call_str(bam_channel, ref_as_value, str_list)
+    str_vcf_and_tsv = call_str(bam_channel.combine(sex), ref_as_value, str_list)
     annotations = annotate_repeat_expansions(str_vcf_and_tsv.straglr_output, variant_catalogue_hg38)
 
     software_versions = getVersions()
@@ -70,7 +71,17 @@ workflow str {
     merged_stranger = merged_tsvs.map{it -> it[2]}
     merged_str_content = merged_tsvs.map{it -> it[3]}
 
-    report = make_report(merged_vcf, merged_straglr, merged_plot, merged_stranger, merged_str_content, software_versions, workflow_params, read_stats)
+    report = make_report(
+        merged_vcf,
+        merged_straglr,
+        merged_plot,
+        merged_stranger,
+        merged_str_content,
+        software_versions,
+        workflow_params,
+        read_stats,
+        sex
+    )
 
   emit:
     merged_vcf.concat(report).concat(merged_straglr).flatten()
