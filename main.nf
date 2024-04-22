@@ -41,21 +41,25 @@ include {
     bed_filter;
     sanitise_bed;
     combine_json;
-    output_cnv
-    } from './modules/local/common'
+    output_cnv;
+    infer_sex;
+} from './modules/local/common'
 
 include {
     ingress;
-    cram_to_bam
+    cram_to_bam;
 } from './lib/_ingress.nf'
 
 include {
     refine_with_sv;
     vcfStats;
-    output_snp
+    output_snp;
 } from "./modules/local/wf-human-snp.nf"
 
-include { mod; validate_modbam} from './workflows/methyl'
+include {
+    mod;
+    validate_modbam;
+} from './workflows/methyl'
 
 
 
@@ -480,6 +484,24 @@ workflow {
         }
         .set{discarded_bams}
 
+    // Set biological sex as long as genome_build is not null.
+    // Add also to metadata for future use, when meta is properly handled.
+    if (genome_build) {
+        if (params.sex) {
+            sex = Channel.of(params.sex)
+        }
+        else {
+            log.warn "Inferring genetic sex of sample as params.sex was not provided."
+            sex = infer_sex(mosdepth_summary)
+        }
+        pass_bam_channel = pass_bam_channel
+            | combine(sex)
+            | map{
+                xam, xai, meta, sex_v ->
+                [xam, xai, meta + [sex: sex_v]]
+            }
+    }
+
     // Create reports for pass and fail channels
     // Create passing bam report
     report_pass = pass_bam_channel
@@ -719,7 +741,8 @@ workflow {
         results_str = str(
           bam_channel_str,
           ref_channel,
-          bam_stats
+          bam_stats,
+          sex
         )
         output_str(results_str)
     }

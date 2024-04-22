@@ -573,3 +573,33 @@ process output_cnv {
     echo "Writing output files"
     """
 }
+
+process infer_sex {
+    // Use relative coverage of chrX and chrY to infer sex
+    //   inferred sex will be 'XY', 'XX'.
+    // the workflow will err on calling XX if inference cannot be made
+    //   to match the expected behaviour of the workflow before v2.1
+    // The process will check if the coverage of the X chromosome
+    // is substantially higher than the Y chromosome. We set
+    // this value to 4 (i.e. cov of X 4x higer than cov of Y),
+    // to account for the presence of pseudo-X region being covered
+    // in the Y-chromosome.
+    cpus 1
+    input:
+        path "mosdepth.summary.txt"
+    output:
+        env inferred_sex
+    script:
+        """
+        # First, grep the X and Y coverage for the regions; then compute the rate if both are non-0; finally, infer the sex.
+        inferred_sex=\$( 
+            awk '
+                BEGIN{x_cov=0; y_cov=0};
+                \$1=="X_region" || \$1=="chrX_region" {x_cov=\$4};
+                \$1=="Y_region" || \$1=="chrY_region" {y_cov=\$4};
+                END {
+                    if (x_cov > 0 && y_cov > 0) print x_cov/y_cov; else print 0
+                }' mosdepth.summary.txt \
+                | awk '\$1 > 4 {print "XX"}; \$1<=4 && \$1!=0 {print "XY"}; \$1==0 {print "XX"}' )
+        """
+}

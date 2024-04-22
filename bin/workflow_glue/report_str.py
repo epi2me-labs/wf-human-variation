@@ -71,6 +71,18 @@ def argparser():
         required=True,
         help="Read statistics output from bamstats"
     )
+    parser.add_argument(
+        "--sex",
+        required=True,
+        choices=["XX", "XY"],
+        help="Genetic sex provided to straglr-genotype."
+    )
+    parser.add_argument(
+        "--sex_source",
+        required=True,
+        choices=["user-provided", "workflow-inferred"],
+        help="Source of genetic sex determination."
+    )
 
     return parser
 
@@ -601,8 +613,12 @@ def make_report(
     with report.add_section(
             'Summary of STR genotyping results', 'STR summary'):
         p(
-            """
+            f"""
             The table below summarises the repeat expansions genotyped in this sample.
+            The chromosomal sex of the sample is <code>{args.sex}</code>
+            (<b>{args.sex_source}</b>); this information is used by Straglr and will
+            result in two calls for all repeats on chrX for XX samples, or one call for
+            all repeats on chrX for XY samples.
             """
         )
         with table(cls="table"):

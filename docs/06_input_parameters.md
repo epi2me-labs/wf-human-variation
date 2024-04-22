@@ -58,7 +58,7 @@
 
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
-| sex | string | Sex (male or female) to be passed to Straglr-genotype. | The sex determines how many calls will be obtained for all repeats on chrX. Defaults to female if not specified. | female |
+| sex | string | Sex (XX or XY) to be passed to Straglr-genotype. | The sex determines how many calls will be obtained for all repeats on chrX. If not specified, the workflow will naively attempt to infer whether the sample carries XX or XY based on relative coverage of the allosomes. |  |
 
 
 ### Advanced Options

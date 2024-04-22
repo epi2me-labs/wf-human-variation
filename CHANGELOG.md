@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Added
 - Output `{{sample}}.stats.json` file describing some key metrics for the analysis.
+- Automated sex determination using relative coverage of chrX and chrY.
 
 ### Changed
 - `--GVCF --phased` will produce a phased GVCF.
@@ -15,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Setting `--snp --sv --phased` will emit individually phased SNPs and SVs.
 - Phased bedMethyl files now follow the pattern `{{ alias }}.wf_mods.{{ haplotype }}.bedmethyl.gz`.
 - Update `modkit` to v0.2.6.
+- `--sex` parameter uses `XX` and `XY` rather than "female" and "male".
 - Improved modkit runtime by increasing default threads and increasing the default interval size.
 - Increased minimum CPU requirement for the workflow to 16.
 
