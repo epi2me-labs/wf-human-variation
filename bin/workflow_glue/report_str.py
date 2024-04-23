@@ -3,7 +3,7 @@
 
 from bokeh.models import BoxZoomTool, ColumnDataSource, HoverTool
 from bokeh.models import PanTool, Range1d, ResetTool, WheelZoomTool
-from dominate.tags import h3, p, span, table, tbody, td, th, thead, tr
+from dominate.tags import b, code, h3, p, span, table, tbody, td, th, thead, tr
 from ezcharts.components import fastcat
 from ezcharts.components.ezchart import EZChart
 from ezcharts.components.reports.labs import LabsReport
@@ -613,13 +613,14 @@ def make_report(
     with report.add_section(
             'Summary of STR genotyping results', 'STR summary'):
         p(
-            f"""
-            The table below summarises the repeat expansions genotyped in this sample.
-            The chromosomal sex of the sample is <code>{args.sex}</code>
-            (<b>{args.sex_source}</b>); this information is used by Straglr and will
-            result in two calls for all repeats on chrX for XX samples, or one call for
-            all repeats on chrX for XY samples.
-            """
+            "The table below summarises the repeat expansions genotyped in this ",
+            "sample. The chromosomal sex of the sample is ",
+            code(args.sex),
+            " (source:",  # b() inexplicably adds its own whitespace
+            b(args.sex_source),
+            "); this information is used by Straglr and will result in two calls for ",
+            "all repeats on chrX for XX samples, or one call for all repeats on chrX ",
+            "for XY samples.",
         )
         with table(cls="table"):
             with thead():
