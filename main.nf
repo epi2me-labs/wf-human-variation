@@ -56,9 +56,10 @@ include {
     output_snp;
 } from "./modules/local/wf-human-snp.nf"
 
-include {
+include { 
     mod;
     validate_modbam;
+    sample_probs;
 } from './workflows/methyl'
 
 
@@ -141,12 +142,13 @@ workflow {
         output_bam = false
     }
 
-    // Define chromosome codes
-        // Programmatically define chromosome codes.
+    // Programmatically define chromosome codes.
+    // note that we avoid interpolation (eg. "${chr}N") to ensure that values
+    // are Strings and not GStringImpl, ensuring that .contains works.
     ArrayList chromosome_codes = []
     ArrayList chromosomes = [1..22] + ["X", "Y", "M", "MT"]
     for (N in chromosomes.flatten()){
-        chromosome_codes += ["chr${N}", "${N}"]
+        chromosome_codes += ["chr" + N, "" + N]
     }
 
     // Trigger haplotagging
@@ -687,26 +689,41 @@ workflow {
     // wf-human-mod
     // Validate modified bam
     if (params.mod){
-        if (run_haplotagging){
-            validate_modbam(clair_vcf.haplotagged_xam, ref_channel)
-        } else {
-            validate_modbam(pass_bam_channel, ref_channel)
-        }
+        // Perform validation on the initial BAM, to allow running on the
+        // fragmented BAMs when phasing is required
+        validate_modbam(pass_bam_channel, ref_channel)
 
         // Warn of input without modified base tags
         validate_modbam.out.branch{
             stdbam: it[-1] == '65'
             modbam: it[-1] == '0'
-            }.set{validation_results}
+            }.set{validated_modbam}
         // Log warn if it is not modbam
-        validation_results.stdbam.subscribe{
+        validated_modbam.stdbam.subscribe{
             it -> log.warn "Input ${it[0]} does not contain modified base tags. Was a modified basecalling model selected when basecalling this data?"
         }
+        modbam_ch = validated_modbam.modbam
+                .map{cram, crai, meta, code -> [cram, crai, meta]}
+
+        // Compute the probabilities on the valid modbam
+        modkit_probs = sample_probs(modbam_ch)
 
         // Save the other as input, keeping only the necessary elements
-        validated_bam = validation_results.modbam.map{cram, crai, meta, code -> [cram, crai, meta]}
+        if (run_haplotagging){
+            modkit_bam = clair_vcf.str_bams
+        } else {
+            modkit_bam = modbam_ch
+        }
 
-        results = mod(validated_bam, ref_channel)
+        // If the input is not modBAM, the workflow won't process anything because the
+        // filtering probabilities are not calculated, preventing downstream processes.
+        results = mod(
+            modkit_bam,  // Input BAM for modkit
+            bam_flag,  // Flagstats used to define chromosomes to analyse
+            chromosome_codes,  // Accepted chromosome codes for the human genome
+            modkit_probs,  // modkit probabilities for filtering
+            ref_channel
+        )
         mod_stats = results.modkit.flatten()
     } else {
         mod_stats = Channel.empty()

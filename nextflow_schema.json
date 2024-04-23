@@ -646,7 +646,7 @@
                 },
                 "modkit_threads": {
                     "type": "integer",
-                    "default": 16,
+                    "default": 4,
                     "description": "Total number of threads to use in modkit modified base calling (limited by config executor cpus)"
                 }
             }
