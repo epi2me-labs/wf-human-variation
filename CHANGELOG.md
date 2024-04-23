@@ -15,9 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - The intermediate phasing is still performed using `longphase`.
 - Setting `--snp --sv --phased` will emit individually phased SNPs and SVs.
 - Phased bedMethyl files now follow the pattern `{{ alias }}.wf_mods.{{ haplotype }}.bedmethyl.gz`.
-- Update `modkit` to v0.2.6.
 - `--sex` parameter uses `XX` and `XY` rather than "female" and "male".
+- Update `modkit` to v0.2.6.
 - Improved modkit runtime by increasing default threads and increasing the default interval size.
+- Improved modkit runtime by increasing the default interval size and running modkit on individual contigs.
+- `modkit` is now run only on chromosomes 1-22, X, Y and MT, unless `--include_all_ctgs` is provided.
 - Increased minimum CPU requirement for the workflow to 16.
 
 ### Fixed

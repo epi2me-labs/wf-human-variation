@@ -80,6 +80,6 @@
 | ubam_sort_threads | integer | Set max number of threads to use for sorting and indexing aligned reads from uBAM (limited by config executor cpus) |  | 3 |
 | ubam_bam2fq_threads | integer | Set max number of threads to use for uncompressing uBAM and generating FASTQ for alignment (limited by config executor cpus) |  | 1 |
 | merge_threads | integer | Set max number of threads to use for merging alignment files (limited by config executor cpus) |  | 4 |
-| modkit_threads | integer | Total number of threads to use in modkit modified base calling (limited by config executor cpus) |  | 16 |
+| modkit_threads | integer | Total number of threads to use in modkit modified base calling (limited by config executor cpus) |  | 4 |
 
 
