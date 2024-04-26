@@ -8,12 +8,6 @@ import pysam
 from .util import get_named_logger, wf_parser  # noqa: ABS101
 
 
-def get_sq_hd_lines(xam_file):
-    """Extract the `@SQ` and `@HD` lines from the header of a XAM file."""
-    alignments = pysam.AlignmentFile(xam_file, check_sq=False)
-    return alignments.header["SQ"], alignments.header["HD"]
-
-
 def main(args):
     """Run the entry point."""
     logger = get_named_logger("checkBamHdr")
@@ -33,11 +27,14 @@ def main(args):
     mixed_headers = False
     sorted_xam = False
     for xam_file in target_files:
-        sq_lines, hd_lines = get_sq_hd_lines(xam_file)
+        # get the `@SQ` and `@HD` lines in the header
+        with pysam.AlignmentFile(xam_file, check_sq=False) as f:
+            sq_lines = f.header.get("SQ")
+            hd_lines = f.header.get("HD")
         # Check if it is sorted.
         # When there is more than one BAM, merging/sorting
         # will happen regardless of this flag.
-        if hd_lines.get('SO') == 'coordinate':
+        if hd_lines is not None and hd_lines.get('SO') == 'coordinate':
             sorted_xam = True
         if first_sq_lines is None:
             # this is the first file

@@ -276,7 +276,7 @@ def xam_ingress(Map arguments)
         [meta + [xai_fn: xai_fn], paths]
     }
     | checkBamHeaders
-    | map { meta, paths, is_unaligned_env, mixed_headers_env, is_sorted_env ->
+    | map { meta, paths, is_unaligned_env, mixed_headers_env, is_sorted_env, ds_basecaller_env, ds_runids_env ->
         // convert the env. variables from strings ('0' or '1') into bools
         boolean is_unaligned = is_unaligned_env as int as boolean
         boolean mixed_headers = mixed_headers_env as int as boolean
@@ -288,7 +288,15 @@ def xam_ingress(Map arguments)
         // add `is_unaligned` to the metamap (note the use of `+` to create a copy of
         // `meta` to avoid modifying every item in the channel;
         // https://github.com/nextflow-io/nextflow/issues/2660)
-        [meta + [is_unaligned: is_unaligned, is_sorted: is_sorted], paths]
+        [
+            meta + [
+                is_unaligned: is_unaligned,
+                is_sorted: is_sorted,
+                ds_runids: ds_runids_env.tokenize(','),
+                ds_basecall_models: ds_basecaller_env.tokenize(','),
+            ],
+            paths
+        ]
     }
     | branch { meta, paths ->
         // set `paths` to `null` for uBAM samples if unallowed (they will be added to
@@ -550,19 +558,21 @@ process checkBamHeaders {
     memory "2 GB"
     input: tuple val(meta), path("input_dir/reads*.bam")
     output:
-        // set the two env variables by `eval`-ing the output of the python script
-        // checking the XAM headers
         tuple(
             val(meta),
             path("input_dir/reads*.bam", includeInputs: true),
             env(IS_UNALIGNED),
             env(MIXED_HEADERS),
             env(IS_SORTED),
+            env(DS_BASECALL_MODELS),
+            env(DS_RUNIDS),
         )
     script:
     """
     workflow-glue check_bam_headers_in_dir input_dir > env.vars
     source env.vars
+    DS_RUNIDS=\$(workflow-glue get_ds_records --xam input_dir --key runid --cardinality zero-or-more --sep ',')
+    DS_BASECALL_MODELS=\$(workflow-glue get_ds_records --xam input_dir --key basecall_model --cardinality zero-or-one --sep ',' --explode_obviously)
     """
 }
 
