@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved modkit runtime by increasing the default interval size and running modkit on individual contigs.
 - `modkit` is now run only on chromosomes 1-22, X, Y and MT, unless `--include_all_ctgs` is provided.
 - Increased minimum CPU requirement for the workflow to 16.
+- Reconciled workflow with wf-template v5.1.2
 
 ### Fixed
 - Update schema to allow selection of multiple BAM files per sample in EPI2ME.
