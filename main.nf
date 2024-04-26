@@ -787,10 +787,8 @@ workflow {
     )
 
     publish_artifact(
-        // CW-1033: remove environment variable from output
-        ref_channel.map{it[0..2]}.flatten().mix(
-            // emit bams with the "output" meta tag
-            bam_channel.filter( { it[2].output } ),
+        // emit bams with the "output" meta tag
+        bam_channel.filter( { it[2].output } ).mix(
             bam_stats.flatten(),
             bam_flag.flatten(),
             mosdepth_stats.flatten(),

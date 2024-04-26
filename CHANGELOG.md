@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Single-step joint phasing of SV and SNP.
 - `--output_separate_phased` as the workflow emits only individually phased VCFs.
+- A copy of the reference and the generated reference cache is no longer output by the workflow.
+    - The workflow encourages use of readily available standard reference sequences, so re-emitting the input reference as a workflow output is unnecessarily consuming disk space.
 
 ## [v2.1.0]
 ### Changed
