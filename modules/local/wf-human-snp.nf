@@ -725,11 +725,12 @@ process makeReport {
         path "params.json"
         path clinvar_vcf
     output:
-        path "${params.sample_name}.wf-human-snp-report.html", emit: 'report'
+        path "${params.sample_name}.wf-human-snp-report.html", emit: 'report', optional: true
         path "${params.sample_name}.snvs.json", emit: 'json'
     script:
         def clinvar = clinvar_vcf ?: ""
         def annotation = params.annotation ? "" : "--skip_annotation"
+        def generate_html = params.output_report ? "" : "--skip_report"
 
         report_name = "${params.sample_name}.wf-human-snp-report.html"
         wfversion = workflow.manifest.version
@@ -744,7 +745,7 @@ process makeReport {
         --vcf_stats $vcfstats \
         --sample_name $params.sample_name \
         --clinvar_vcf $clinvar \
-        $annotation
+        $annotation $generate_html
         """
 }
 

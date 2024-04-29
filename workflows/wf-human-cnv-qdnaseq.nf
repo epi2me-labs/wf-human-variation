@@ -23,7 +23,12 @@ workflow cnv {
         software_versions = getVersions()
         workflow_params = getParams()
 
-        report = makeReport(read_stats, cnvs.cnv_output, software_versions.collect(), workflow_params, genome_build)
+
+        if (params.output_report){
+            report = makeReport(read_stats, cnvs.cnv_output, software_versions.collect(), workflow_params, genome_build)
+        } else {
+            report = Channel.empty()
+        }
 
     emit:
         cnvs.cnv_vcf.concat(report)

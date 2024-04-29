@@ -45,8 +45,11 @@ workflow cnv {
         software_versions_tmp = getVersions()
         software_versions = add_snp_tools_to_versions(software_versions_tmp)
         workflow_params = getParams()
-
-        report = makeReport(software_versions.collect(), workflow_params, spectre_bed)
+        if (params.output_report){
+            report = makeReport(software_versions.collect(), workflow_params, spectre_bed)
+        } else {
+            report = Channel.empty()
+        }
 
     emit:
         spectre_final_vcf.concat(report)

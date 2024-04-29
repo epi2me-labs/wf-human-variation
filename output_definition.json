@@ -5,7 +5,7 @@
       "title": "Report of the alignment statistics",
       "description": "Report summarising the results of the alignment statistics for the sample.",
       "mime-type": "text/html",
-      "optional": false,
+      "optional": true,
       "type": "per-sample"
     },
     "metrics-json": {

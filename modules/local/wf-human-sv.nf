@@ -134,11 +134,12 @@ process report {
         file versions
         path "params.json"
     output:
-        path "*report.html", emit: html
+        path "*report.html", emit: html, optional: true
         path "${params.sample_name}.svs.json", emit: json
     script:
         def report_name = "${params.sample_name}.wf-human-sv-report.html"
         def evalResults = eval_json.name != 'OPTIONAL_FILE' ? "--eval_results ${eval_json}" : ""
+        def generate_html = params.output_report ? "" : "--skip_report"
     """
     workflow-glue report_sv \
         $report_name \
@@ -149,7 +150,7 @@ process report {
         --revision ${workflow.revision} \
         --commit ${workflow.commitId} \
         --output_json "${params.sample_name}.svs.json" \
-        $evalResults
+        $evalResults $generate_html
     """
 }
 

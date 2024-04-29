@@ -71,17 +71,21 @@ workflow str {
     merged_stranger = merged_tsvs.map{it -> it[2]}
     merged_str_content = merged_tsvs.map{it -> it[3]}
 
-    report = make_report(
-        merged_vcf,
-        merged_straglr,
-        merged_plot,
-        merged_stranger,
-        merged_str_content,
-        software_versions,
-        workflow_params,
-        read_stats,
-        sex
-    )
+    if (params.output_report){
+      report = make_report(
+          merged_vcf,
+          merged_straglr,
+          merged_plot,
+          merged_stranger,
+          merged_str_content,
+          software_versions,
+          workflow_params,
+          read_stats,
+          sex
+      )
+    } else {
+      report = Channel.empty()
+    }
 
   emit:
     merged_vcf.concat(report).concat(merged_straglr).flatten()
