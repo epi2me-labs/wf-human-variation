@@ -505,28 +505,33 @@ workflow {
     }
 
     // Create reports for pass and fail channels
-    // Create passing bam report
-    report_pass = pass_bam_channel
-                .combine(bam_stats)
-                .combine(bam_flag)
-                .combine(mosdepth_stats.map{it[0]})
-                .combine(mosdepth_summary)
-                .combine(ref_channel)
-                .combine(software_versions.collect())
-                .combine(workflow_params)
-                .flatten()
-                .collect() | makeAlignmentReport
-    // Create failing bam report
-    report_fail = discarded_bams
-                .combine(bam_stats)
-                .combine(bam_flag)
-                .combine(mosdepth_stats.map{it[0]})
-                .combine(mosdepth_summary)
-                .combine(ref_channel)
-                .combine(software_versions.collect())
-                .combine(workflow_params)
-                .flatten()
-                .collect() | failedQCReport
+    if (params.output_report){
+        // Create passing bam report
+        report_pass = pass_bam_channel
+            .combine(bam_stats)
+            .combine(bam_flag)
+            .combine(mosdepth_stats.map{it[0]})
+            .combine(mosdepth_summary)
+            .combine(ref_channel)
+            .combine(software_versions.collect())
+            .combine(workflow_params)
+            .flatten()
+            .collect() | makeAlignmentReport
+        // Create failing bam report
+        report_fail = discarded_bams
+            .combine(bam_stats)
+            .combine(bam_flag)
+            .combine(mosdepth_stats.map{it[0]})
+            .combine(mosdepth_summary)
+            .combine(ref_channel)
+            .combine(software_versions.collect())
+            .combine(workflow_params)
+            .flatten()
+            .collect() | failedQCReport
+    } else {
+        report_pass = Channel.empty()
+        report_fail = Channel.empty()
+    }
     
     // Set up BED for wf-human-snp, wf-human-str or run_haplotagging
     // CW-2383: we first call the SNPs to generate an haplotagged bam file for downstream analyses
@@ -673,8 +678,12 @@ workflow {
 
         // Prepare the report
         snp_reporting = report_snp(vcf_stats[0], clinvar_vcf)
-        snp_report = snp_reporting.report
         json_snp = snp_reporting.snp_stats_json
+        if (params.output_report){
+            snp_report = snp_reporting.report
+        } else {
+            snp_report = Channel.empty()
+        }
 
         // Output for SNP
         snp_report

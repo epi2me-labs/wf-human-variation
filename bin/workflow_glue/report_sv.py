@@ -2,6 +2,7 @@
 """Create workflow report."""
 
 import json
+import sys
 
 from dominate.tags import a, h4, p
 from ezcharts.components.ezchart import EZChart
@@ -17,7 +18,7 @@ import pandas as pd
 
 
 from .report_utils.common import CHROMOSOMES  # noqa: ABS101
-from .util import wf_parser  # noqa: ABS101
+from .util import get_named_logger, wf_parser  # noqa: ABS101
 
 vcf_cols = [
     'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER',
@@ -255,6 +256,12 @@ def main(args):
     # Save Json file for the final stats
     save_json(vcf_data, args)
 
+    # If the report is required, save it
+    if args.skip_report:
+        logger = get_named_logger("report_sv")
+        logger.info("Skip report.")
+        sys.exit(0)
+
     # Create report file
     report = LabsReport(
         "Structural variants analysis", "wf-human-variation",
@@ -394,6 +401,12 @@ def argparser():
         "--eval_results",
         nargs='+',
         required=False
+    )
+    parser.add_argument(
+        "--skip_report",
+        action='store_true',
+        required=False,
+        help="Skip generation of HTML report and only output JSON metrics"
     )
     parser.add_argument(
         "--revision", default='unknown',

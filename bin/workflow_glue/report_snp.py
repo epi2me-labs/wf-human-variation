@@ -3,6 +3,7 @@
 
 import json
 import os
+import sys
 
 from dominate.tags import a, h6, p
 from ezcharts.components.bcfstats import load_bcfstats
@@ -96,6 +97,19 @@ def main(args):
             sample_names=[args.sample_name])
     except IndexError:
         bcfstats = {'SN': pd.DataFrame(), 'TSTV': pd.DataFrame()}
+
+    # Save values to an output JSON
+    with open(f'{args.sample_name}.snvs.json', 'w') as json_file:
+        json.dump(
+            {
+                'SNVs': int(bcfstats['SN']['SNPs'].values[0]),
+                'Indels': int(bcfstats['SN']['indels'].values[0]),
+                'Transition/Transversion rate': bcfstats['TSTV']['ts/tv'].values[0]
+            }, json_file)
+
+    if args.skip_report:
+        logger.info('Skip report')
+        sys.exit(0)
     # Instantiate the report
     report = LabsReport(
         "Small variation statistics", "wf-human-variation",
@@ -120,10 +134,12 @@ def main(args):
                 nindels = bcfstats['SN']['indels'].values[0]
                 Stats(
                     columns=4,
-                    items=[(f'{"{:,}".format(int(nsites))}', 'Variants'),
-                           (f'{"{:,}".format(int(nsnvs))}', 'SNVs'),
-                           (f'{"{:,}".format(int(nindels))}', 'Indels'),
-                           (f'{titv}', 'Ti/Tv')])
+                    items=[
+                        (f'{"{:,}".format(int(nsites))}', 'Variants'),
+                        (f'{"{:,}".format(int(nsnvs))}', 'SNVs'),
+                        (f'{"{:,}".format(int(nindels))}', 'Indels'),
+                        (f'{titv}', 'Ti/Tv')
+                    ])
 
     # Base statistics
     with report.add_section('Statistics', 'Stats'):
@@ -209,15 +225,6 @@ def main(args):
     report.write(args.report)
     logger.info(f"Written report to '{args.report}'.")
 
-    # Save values to an output JSON
-    with open(f'{args.sample_name}.snvs.json', 'w') as json_file:
-        json.dump(
-            {
-                'SNVs': int(nsnvs),
-                'Indels': int(nindels),
-                'Transition/Transversion rate': titv
-            }, json_file)
-
 
 def argparser():
     """Create argument parser."""
@@ -239,6 +246,12 @@ def argparser():
     parser.add_argument(
         "--sample_name", default='Sample',
         help="Sample name"
+    )
+    parser.add_argument(
+        "--skip_report",
+        action='store_true',
+        required=False,
+        help="Skip generation of HTML report and only output JSON metrics"
     )
     parser.add_argument(
         "--versions", required=True,

@@ -260,6 +260,13 @@
                     "description": "Call for variants on all sequences in the reference, otherwise small and structural variants will only be called on chr{1..22,X,Y,MT}.",
                     "help_text": "Enabling this option will call for variants on all contigs of the input reference sequence. Typically this option is not required as standard human reference sequences contain decoy and unplaced contigs that are usually omitted for the purpose of variant calling. This option might be useful for non-standard reference sequence databases."
                 },
+                "output_report": {
+                    "type": "boolean",
+                    "default": true,
+                    "hidden": true,
+                    "description": "Emits HTML reports for the individual analyses",
+                    "help_text": "By default, the workflow generates HTML reports summarising the results for each analysis; setting this value to `false` disables the reporting functions and the workflow will not output reports."
+                },
                 "out_dir": {
                     "title": "Output directory",
                     "type": "string",
