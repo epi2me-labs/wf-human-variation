@@ -831,8 +831,9 @@ workflow {
     )
 
     publish_artifact(
-        // emit bams with the "output" meta tag
-        bam_channel.filter( { it[2].output } ).mix(
+        // emit bams with the "to_align" meta tag
+        // but only if haplotagging is not on
+        bam_channel.filter( { it[2].to_align && !run_haplotagging} ).mix(
             bam_stats.flatten(),
             bam_flag.flatten(),
             mosdepth_stats.flatten(),
