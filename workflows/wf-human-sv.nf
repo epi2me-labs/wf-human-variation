@@ -143,7 +143,11 @@ workflow variantCall {
             tr_bed = Channel.fromPath(params.tr_bed, checkIfExists: true)
         }
 
-        sniffles2(bam, tr_bed, reference)
+        if (!genome_build) {
+            genome_build = Channel.of(null)
+        }
+
+        sniffles2(bam, tr_bed, reference, genome_build)
         filterCalls(sniffles2.out.vcf, mosdepth_stats, target_bed, chromosome_codes)
         sortVCF(filterCalls.out.vcf)
 
