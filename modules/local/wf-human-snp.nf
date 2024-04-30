@@ -760,11 +760,11 @@ process lookup_clair3_model {
         val basecall_model
     output:
         tuple env(clair3_model), path("model/")
-    shell:
-    '''
-    clair3_model=$(resolve_clair3_model.py lookup_table '!{basecall_model}')
-    cp -r ${CLAIR_MODELS_PATH}/${clair3_model} model
-    echo "Basecall model: !{basecall_model}"
-    echo "Clair3 model  : ${clair3_model}"
-    '''
+    script:
+    """
+    clair3_model=\$(resolve_clair3_model.py lookup_table '${basecall_model}')
+    cp -r \${CLAIR_MODELS_PATH}/\${clair3_model} model
+    echo "Basecall model: ${basecall_model}"
+    echo "Clair3 model  : \${clair3_model}"
+    """
 }
