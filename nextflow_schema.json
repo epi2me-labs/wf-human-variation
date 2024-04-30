@@ -163,7 +163,7 @@
                     "title": "Basecaller configuration",
                     "type": "string",
                     "description": "Name of the model to use for selecting a small variant calling model.",
-                    "help_text": "Required for small variant calling. The basecaller configuration is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. You should select 'custom' to override the basecaller_cfg with clair3_model_path.",
+                    "help_text": "The workflow will attempt to find the basecaller model from the headers of your input data. If the model cannot be found in the header, it must be provided with this option as the basecaller model is required for small variant calling. The basecaller model is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. You should select 'custom' to override the basecaller_cfg with clair3_model_path.",
                     "default": "dna_r10.4.1_e8.2_400bps_sup@v4.1.0",
                     "enum": [
                         "dna_r10.4.1_e8.2_260bps_fast@v4.1.0",

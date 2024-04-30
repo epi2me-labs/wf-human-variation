@@ -167,17 +167,17 @@ docker-run:
 
         - if: $MATRIX_NAME == "str-usersex"
           variables:
-              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -qO ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-str/demo_data.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -qO ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-str/demo_data.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && wget -qO ${CI_PROJECT_NAME}/data/r1041_e82_400bps_sup_g615.tar.gz https://cdn.oxfordnanoportal.com/software/analysis/models/clair3/r1041_e82_400bps_sup_g615.tar.gz && tar -xvf ${CI_PROJECT_NAME}/data/r1041_e82_400bps_sup_g615.tar.gz -C ${CI_PROJECT_NAME}/data"
               NF_PROCESS_FILES: "modules/local/wf-human-str.nf"
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv false --str --bam ${CI_PROJECT_NAME}/data/demo_data/demo.bam --ref ${CI_PROJECT_NAME}/data/demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name demo --sex XX --bam_min_coverage 0.00001 --annotation false"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv false --str --bam ${CI_PROJECT_NAME}/data/demo_data/demo.bam --ref ${CI_PROJECT_NAME}/data/demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name demo --sex XX --bam_min_coverage 0.00001 --annotation false --clair3_model_path ${CI_PROJECT_NAME}/data/r1041_e82_400bps_sup_g615"
 
         - if: $MATRIX_NAME == "str-infersex"
           variables:
-              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -qO ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-str/demo_data.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -qO ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-str/demo_data.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && wget -qO ${CI_PROJECT_NAME}/data/r1041_e82_400bps_sup_g615.tar.gz https://cdn.oxfordnanoportal.com/software/analysis/models/clair3/r1041_e82_400bps_sup_g615.tar.gz && tar -xvf ${CI_PROJECT_NAME}/data/r1041_e82_400bps_sup_g615.tar.gz -C ${CI_PROJECT_NAME}/data"
               NF_PROCESS_FILES: "modules/local/wf-human-str.nf"
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv false --str --bam ${CI_PROJECT_NAME}/data/demo_data/demo.bam --ref ${CI_PROJECT_NAME}/data/demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name demo --bam_min_coverage 0.00001 --annotation false"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv false --str --bam ${CI_PROJECT_NAME}/data/demo_data/demo.bam --ref ${CI_PROJECT_NAME}/data/demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name demo --bam_min_coverage 0.00001 --annotation false --clair3_model_path ${CI_PROJECT_NAME}/data/r1041_e82_400bps_sup_g615"
 
         - if: $MATRIX_NAME == "run_all_no_report"
           variables:

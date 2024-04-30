@@ -101,13 +101,6 @@ workflow {
         can_start = false
     }
 
-    // check snp has basecaller config for clair3 model lookup
-    if(params.snp || params.phased) {
-        if(!params.basecaller_cfg && !params.clair3_model_path) {
-            throw new Exception(colors.red + "You must provide a basecaller profile with --basecaller_cfg <profile> to ensure the right Clair3 model is chosen!" + colors.reset)
-        }
-    }
-
     // Check if it is in genotyping mode
     if (params.snp && params.vcf_fn) {
         if (params.bed){
@@ -551,8 +544,50 @@ workflow {
         else {
             // map basecalling model to clair3 model
             lookup_table = Channel.fromPath("${projectDir}/data/clair3_models.tsv", checkIfExists: true)
-            // TODO basecaller_model_path
-            clair3_model = lookup_clair3_model(lookup_table, params.basecaller_cfg).map {
+
+            // attempt to pull out basecaller_cfg from metadata
+            metamap_basecaller_cfg = pass_bam_channel
+                | map { xam, bai, meta ->
+                    meta["ds_basecall_models"]
+                }
+                | flatten  // squash lists
+
+            // check returned basecaller list cardinality
+            // note that ingress handles the case of > 1 quite nicely
+            metamap_basecaller_cfg
+                | count
+                | map { int n_models ->
+                    if (n_models == 0){
+                        if (params.basecaller_cfg) {
+                            log.warn "Found zero basecall_model in the input alignment header, falling back to the model provided with --basecaller_cfg: ${params.basecaller_cfg}"
+                        }
+                        else {
+                            String input_data_err_msg = '''\
+                            ################################################################################
+                            # INPUT DATA PROBLEM
+                            Your input alignment does not indicate the basecall model in the header and you
+                            did not provide an alternative with --basecaller_cfg.
+
+                            wf-human-variation requires the basecall model in order to automatically select
+                            an appropriate SNP calling model.
+
+                            ## Next steps
+                            You must re-run the workflow specifying the basecaller model with the
+                            --basecaller_cfg option.
+                            ################################################################################
+                            '''.stripIndent()
+                            error input_data_err_msg
+                        }
+                    }
+                }
+
+            // use params.basecaller_cfg as default if nothing could be inferred
+            // we'll have exploded by now if we have no idea what the config is
+            basecaller_cfg = metamap_basecaller_cfg
+                | ifEmpty(params.basecaller_cfg)
+                | first  // unpack from list
+
+            clair3_model = lookup_clair3_model(lookup_table, basecaller_cfg).map {
                 log.info "Autoselected Clair3 model: ${it[0]}" // use model name for log message
                 it[1] // then just return the path to match the interface above
             }
