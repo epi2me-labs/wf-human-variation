@@ -11,10 +11,20 @@ process sniffles2 {
         tuple path(xam), path(xam_idx)
         file tr_bed
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
+        val genome_build
     output:
         path "*.sniffles.vcf", emit: vcf
     script:
-        def tr_arg = tr_bed.name != 'OPTIONAL_FILE' ? "--tandem-repeats ${tr_bed}" : ''
+        // if tr_arg is not provided and genome_build is set
+        // automatically pick the relevant TR BED from the SV image
+        def tr_arg = ""
+        if (tr_bed.name != 'OPTIONAL_FILE'){
+            tr_arg = "--tandem-repeats ${tr_bed}"
+        }
+        else if (genome_build) {
+            log.warn "Automatically selecting TR BED: ${genome_build}.trf.bed"
+            tr_arg = "--tandem-repeats \${WFSV_TRBED_PATH}/${genome_build}.trf.bed"
+        }
         def sniffles_args = params.sniffles_args ?: ''
         def min_sv_len = params.min_sv_length ? "--minsvlen ${params.min_sv_length}" : ""
         // Perform internal phasing only if snp not requested; otherwise, use joint phasing.
@@ -101,7 +111,6 @@ process getVersions {
     trap '' PIPE # suppress SIGPIPE without interfering with pipefail
     python -c "import pysam; print(f'pysam,{pysam.__version__}')" >> versions.txt
     truvari version | sed 's/ /,/' >> versions.txt
-    fastcat --version | sed 's/^/fastcat,/' >> versions.txt
     sniffles --version | head -n 1 | sed 's/ Version //' >> versions.txt
     bcftools --version | head -n 1 | sed 's/ /,/' >> versions.txt
     samtools --version | head -n 1 | sed 's/ /,/' >> versions.txt
