@@ -75,8 +75,7 @@
                     "default": false,
                     "overrides": {
                         "minknow": {
-                            "default": true,
-                            "hidden": true
+                            "default": true
                         }
                     }
                 }
@@ -258,7 +257,12 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Call for variants on all sequences in the reference, otherwise small and structural variants will only be called on chr{1..22,X,Y,MT}.",
-                    "help_text": "Enabling this option will call for variants on all contigs of the input reference sequence. Typically this option is not required as standard human reference sequences contain decoy and unplaced contigs that are usually omitted for the purpose of variant calling. This option might be useful for non-standard reference sequence databases."
+                    "help_text": "Enabling this option will call for variants on all contigs of the input reference sequence. Typically this option is not required as standard human reference sequences contain decoy and unplaced contigs that are usually omitted for the purpose of variant calling. This option might be useful for non-standard reference sequence databases.",
+                    "overrides": {
+                        "minknow": {
+                            "title": "Include all contigs"
+                        }
+                    }
                 },
                 "output_report": {
                     "type": "boolean",
