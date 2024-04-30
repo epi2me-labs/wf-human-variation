@@ -530,7 +530,7 @@ process sanitise_bed {
 
 // Combine the JSON with base metrics for read stats,
 // coverage, SNPs and SVs
-process combine_json {
+process combine_metrics_json {
     cpus 1
     memory 4.GB
     input:
@@ -541,19 +541,22 @@ process combine_json {
             path("regions.bed.gz"),
             path("mosdepth.global.dist.txt"),
             path("thresholds.bed.gz")
-
         path "mosdepth.summary.txt"
+        val(sex)
     output:
         path "${params.sample_name}.stats.json", emit: json
     script:
-        def input_js = jsons.name != 'OPTIONAL_FILE' ? "--jsons ${jsons}" : ""
+        String input_jsons = jsons.name != 'OPTIONAL_FILE' ? "--jsons ${jsons}" : ""
+        // only emit an inferred sex if sex is defined and params.sex is not
+        String sex_arg = (!params.sex && sex) ? "--inferred_sex ${sex}" : ""
         """
         workflow-glue combine_jsons \
             --bamstats_readstats readstats.tsv.gz \
             --bamstats_flagstats flagstat.tsv \
             --mosdepth_summary mosdepth.summary.txt \
             --mosdepth_thresholds thresholds.bed.gz \
-            ${input_js} \
+            ${sex_arg} \
+            ${input_jsons} \
             --output ${params.sample_name}.stats.json
         """
 }
