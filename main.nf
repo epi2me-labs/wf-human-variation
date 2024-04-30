@@ -40,7 +40,7 @@ include {
     sift_clinvar_vcf as sift_clinvar_snp_vcf;
     bed_filter;
     sanitise_bed;
-    combine_json;
+    combine_metrics_json;
     output_cnv;
     infer_sex;
 } from './modules/local/common'
@@ -479,23 +479,25 @@ workflow {
         }
         .set{discarded_bams}
 
-    // Set biological sex as long as genome_build is not null.
-    // Add also to metadata for future use, when meta is properly handled.
-    if (genome_build) {
-        if (params.sex) {
-            sex = Channel.of(params.sex)
-        }
-        else {
-            log.warn "Inferring genetic sex of sample as params.sex was not provided."
-            sex = infer_sex(mosdepth_summary)
-        }
-        pass_bam_channel = pass_bam_channel
-            | combine(sex)
-            | map{
-                xam, xai, meta, sex_v ->
-                [xam, xai, meta + [sex: sex_v]]
-            }
+    // Set biological sex to the user-provided sex if given
+    // Otherwise, attempt to infer if genome_build is set (as we're likely going to need it)
+    if (params.sex) {
+        sex = Channel.of(params.sex)
     }
+    else if (genome_build) {
+        log.warn "Inferring genetic sex of sample as params.sex was not provided."
+        sex = infer_sex(mosdepth_summary)
+    }
+    else {
+        sex = Channel.of(null)
+    }
+    // Add also to metadata for future use, when meta is properly handled.
+    pass_bam_channel = pass_bam_channel
+        | combine(sex)
+        | map{
+            xam, xai, meta, sex_v ->
+            [xam, xai, meta + [sex: sex_v]]
+        }
 
     // Create reports for pass and fail channels
     if (params.output_report){
@@ -822,12 +824,13 @@ workflow {
         | collect
         | ifEmpty(OPTIONAL)
 
-    final_json = combine_json(
+    final_json = combine_metrics_json(
         analyses_jsons,
         bam_stats,
         bam_flag,
         mosdepth_stats,
-        mosdepth_summary    
+        mosdepth_summary,
+        sex,
     )
 
     publish_artifact(

@@ -33,6 +33,7 @@ METRICS = [
     "SV insertions",
     "SV deletions",
     "Other SVs",
+    "Predicted sex chromosome karyotype",
 ]
 
 
@@ -70,6 +71,13 @@ def argparser():
         "--bamstats_flagstats",
         required=True,
         help="bamstats flagstats"
+    )
+
+    # additional sample information
+    parser.add_argument(
+        "--inferred_sex",
+        choices=["XX", "XY"],
+        help="Genetic sex of sample inferred by the workflow"
     )
 
     # Output files
@@ -204,6 +212,8 @@ def main(args):
     if args.jsons:
         for json_file in args.jsons:
             out_json.update(json.load(open(json_file)))
+
+    out_json["Predicted sex chromosome karyotype"] = args.inferred_sex
 
     # Save output JSON
     json.dump(out_json, open(args.output, 'w'))
