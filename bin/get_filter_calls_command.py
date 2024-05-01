@@ -104,7 +104,7 @@ def main():
 
     # Add target_bed filter (optional)
     if args.target_bedfile:
-        filter_string = f"-T {args.target_bedfile} " + filter_string
+        filter_string = f"-T {args.target_bedfile} --targets-overlap 1 {filter_string}"
 
     # Add list of contigs to keep
     if args.contigs:
@@ -112,7 +112,8 @@ def main():
 
     # Print command to stdout
     command = (
-        f"bcftools view --threads {args.bcftools_threads} {filter_string} {args.vcf}"
+        "bcftools view --threads "
+        f"{args.bcftools_threads} {filter_string} {args.vcf}"
     )
     sys.stdout.write(command)
 
