@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Providing `--basecaller_cfg` will not be required if `basecall_model` is present in the DS tag of the read groups of the input BAM
     - `--basecaller_cfg` will be ignored if a `basecall_model` is found in the input BAM
 - Reconciled workflow with wf-template v5.1.2
+- Update to Clair3 v1.0.8.
+- Update to longphase v1.7.1.
 
 ### Fixed
 - Update schema to allow selection of multiple BAM files per sample in EPI2ME.
