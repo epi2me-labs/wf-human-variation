@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved modkit runtime by increasing the default interval size and running modkit on individual contigs.
 - `modkit` is now run only on chromosomes 1-22, X, Y and MT, unless `--include_all_ctgs` is provided.
 - Increased minimum CPU requirement for the workflow to 16.
+- Filtering of SVs using a BED file now includes sites only partially overlapping the specified regions.
 - `basecaller_cfg` will be inferred from the `basecall_model` DS key of input read groups, if available
     - Providing `--basecaller_cfg` will not be required if `basecall_model` is present in the DS tag of the read groups of the input BAM
     - `--basecaller_cfg` will be ignored if a `basecall_model` is found in the input BAM
