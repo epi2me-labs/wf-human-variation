@@ -114,6 +114,7 @@ def main(args):
     report = LabsReport(
         "Small variation statistics", "wf-human-variation",
         args.params, args.versions,
+        args.workflow_version,
         head_resources=[*LAB_head_resources])
 
     # VCF At-a-glance report
@@ -264,6 +265,10 @@ def argparser():
     parser.add_argument(
         "--skip_annotation", action="store_true",
         help="Do not show ClinVar variants in report"
+    )
+    parser.add_argument(
+        "--workflow_version", required=True,
+        help="Workflow version",
     )
 
     return parser

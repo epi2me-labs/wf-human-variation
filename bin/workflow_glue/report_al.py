@@ -6,6 +6,7 @@ from ezcharts.components.fastcat import load_bamstats_flagstat
 from ezcharts.components.fastcat import SeqSummary
 from ezcharts.components.mosdepth import load_mosdepth_regions, load_mosdepth_summary
 from ezcharts.components.reports import labs
+from ezcharts.layout.snippets import Tabs
 import pandas as pd
 
 from .report_utils import sections  # noqa: ABS101
@@ -26,23 +27,14 @@ def main(args):
         if faidx.empty:
             raise pd.errors.EmptyDataError(f'{args.reference_fai}')
 
-    # read input stats data
-    stats_df = pd.read_csv(
-        args.stats_fn,
-        sep="\t",
-        usecols=['sample_name', 'ref', 'read_length', 'acc', 'coverage'],
-        dtype={
-            "sample_name": common.CATEGORICAL,
-            "ref": common.CATEGORICAL,
-            "read_length": int,
-            "acc": float,
-            "coverage": float,
-        }
-    )
-    read_number_str = str(len(stats_df.index))
+    # Load length histograms
+    len_hist, len_hist_map, len_hist_umap = common.load_hists(args.hists_dir, 'length')
+
+    # Compute number of reads and read N50
+    read_number_str = str(sum(len_hist['count']))
+    read_n50 = common.compute_n50(len_hist)
 
     # get read n50
-    read_n50 = common.compute_n50(stats_df["read_length"].values)
     n50_str = str(read_n50) + " bp"
 
     # get total region depth summary
@@ -54,12 +46,10 @@ def main(args):
     cov_str = "{}x".format(cov)
 
     # read input flagstats data
-    flagstat_df = load_bamstats_flagstat(args.flagstat_dir)
+    flagstat_df = load_bamstats_flagstat(args.flagstat_fn)
 
-    # Define categories
-    sample_names = stats_df["sample_name"].cat.categories
-    if sample_names != sample_names:
-        raise ValueError('Sample names in the two stats file do not match')
+    # Define sample name
+    sample_names = [args.sample_name]
 
     # Import depth files when provided, otherwise make an empty df
     # If the dataframe has no columns, it will return a KeyError when
@@ -87,6 +77,7 @@ def main(args):
         args.name,
         args.params,
         args.versions,
+        args.workflow_version
     )
 
     # If low-cov provided, then display the error
@@ -106,15 +97,26 @@ def main(args):
     sections.at_a_glance(report, sample_names, fields)
 
     # Add summary table of the input flagstats
-    sections.summary(report, sample_names, stats_df, flagstat_df)
+    sections.summary(report, sample_names, len_hist, flagstat_df)
 
     # Combine multiple input files
     with report.add_section("Read statistics", "Stats"):
-        SeqSummary(f"{args.stats_fn}")
+        p(
+            """
+            This section displays the read statistics for the sample processed.
+            The left plot shows the read quality (range cropped to 4-30) vs. the
+            number of reads. The central plot shows the reald lenth vs. number
+            of reads. The left plot shows the base yield above a given read length.
+            """
+        )
+        tabs = Tabs()
+        # prepare data for cumulative depth plot
+        for sample_name in sample_names:
+            with tabs.add_tab(sample_name):
+                SeqSummary(seq_summary=args.hists_dir)
 
-    # extract the mapped reads and some other metrics used in the report sections
-    stats_df_mapped = stats_df.query('ref != "*"')
-    sections.mapping(report, stats_df_mapped)
+    # Generate accuracy and coverage plots from pre-computed histograms
+    sections.mapping(report, args.hists_dir, sample_names)
 
     # Add depth plots
     if not depth_df.empty:
@@ -138,8 +140,12 @@ def argparser():
         help="`bamstats` per-read stats for the sample",
     )
     parser.add_argument(
-        "--flagstat_dir",
+        "--flagstat_fn",
         help="Directory with `bamstats` per-file stats",
+    )
+    parser.add_argument(
+        "--hists_dir",
+        help="Directory with `bamstats` histogram files",
     )
     parser.add_argument(
         "--depths_dir",
@@ -177,5 +183,9 @@ def argparser():
     parser.add_argument(
         "--versions",
         help="CSV file with software versions",
+    )
+    parser.add_argument(
+        "--workflow_version", required=True,
+        help="Workflow version",
     )
     return parser

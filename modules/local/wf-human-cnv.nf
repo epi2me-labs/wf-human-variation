@@ -81,6 +81,7 @@ process getParams {
 
 
 process makeReport {
+    label "wf_common"
     cpus 1
     memory 12.GB
     input:
@@ -97,7 +98,8 @@ process makeReport {
             --params params.json \
             --versions versions \
             --cnv_bed ${cnv_bed} \
-            -o $report_name
+            -o $report_name \
+            --workflow_version ${workflow.manifest.version}
         """
 
 }

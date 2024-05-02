@@ -168,7 +168,7 @@ workflow runReport {
             vcf.collect(),
             eval_json,
             software_versions,
-            workflow_params,
+            workflow_params
         )
     emit:
         html = report.out.html

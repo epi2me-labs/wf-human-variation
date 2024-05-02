@@ -717,6 +717,7 @@ process vcfStats {
 
 
 process makeReport {
+    label "wf_common"
     cpus 1
     memory 16.GB
     input:
@@ -745,6 +746,7 @@ process makeReport {
         --vcf_stats $vcfstats \
         --sample_name $params.sample_name \
         --clinvar_vcf $clinvar \
+        --workflow_version ${workflow.manifest.version} \
         $annotation $generate_html
         """
 }

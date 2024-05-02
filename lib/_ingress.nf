@@ -51,6 +51,7 @@ process minimap2_alignment {
 
 // Check if the XAM header refers to the input reference.
 process check_for_alignment {
+    label "wf_common"
     cpus 2
     memory 4.GB
     input:

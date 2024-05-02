@@ -135,6 +135,7 @@ process getParams {
 
 
 process report {
+    label "wf_common"
     cpus 1
     memory 6.GB
     input:
@@ -159,6 +160,7 @@ process report {
         --revision ${workflow.revision} \
         --commit ${workflow.commitId} \
         --output_json "${params.sample_name}.svs.json" \
+        --workflow_version ${workflow.manifest.version} \
         $evalResults $generate_html
     """
 }

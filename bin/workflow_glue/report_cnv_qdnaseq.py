@@ -108,6 +108,10 @@ def argparser():
         help="Workflow versions"
     )
     parser.add_argument(
+        "--workflow_version", required=True,
+        help="Workflow version",
+    )
+    parser.add_argument(
         '-o', '--output', required=True, dest="output_report",
         help="Output report")
 
@@ -363,7 +367,8 @@ def make_report(
         args):
     """Layout all the compeonets of the report."""
     report = LabsReport(
-        f"{args.sample_id} | {REPORT_TITLE}", WORKFLOW_NAME, params, versions,
+        f"{args.sample_id} | {REPORT_TITLE}",
+        WORKFLOW_NAME, params, versions, args.workflow_version,
         head_resources=[*LAB_head_resources])
 
     with report.add_section(

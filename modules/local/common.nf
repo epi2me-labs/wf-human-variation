@@ -113,10 +113,11 @@ process readStats {
     output:
         path "${params.sample_name}.readstats.tsv.gz", emit: read_stats
         path "${params.sample_name}.flagstat.tsv", emit: flagstat
+        path "${params.sample_name}-histograms/", emit: histograms
     script:
         def stats_threads = Math.max(task.cpus - 1, 1)
         """
-        bamstats -s ${params.sample_name} -u -f ${params.sample_name}.flagstat.tsv --threads ${stats_threads} "${xam}" | gzip > "${params.sample_name}.readstats.tsv.gz"
+        bamstats -s ${params.sample_name} --histogram ${params.sample_name}-histograms -u -f ${params.sample_name}.flagstat.tsv --threads ${stats_threads} "${xam}" | gzip > "${params.sample_name}.readstats.tsv.gz"
         """
 }
 
@@ -156,6 +157,7 @@ process getAllChromosomesBed {
 //TODO alignment track only output when alignment has been done, for now
 //TODO --variant locations should be constructed legitimately instead of guessed
 process configure_jbrowse {
+    label "wf_common"
     cpus 2
     input:
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
@@ -197,6 +199,7 @@ process getGenome {
 }
 
 process eval_downsampling {
+    label "wf_common"
     cpus 1
     memory 4.GB
     input:
@@ -274,6 +277,7 @@ process get_region_coverage {
 
 // Make bam QC reporting.
 process failedQCReport  {
+    label "wf_common"
     cpus 1
     memory 12.GB
     input: 
@@ -281,7 +285,8 @@ process failedQCReport  {
             path(xam_idx),
             val(xam_meta),
             path("readstats.tsv.gz"),
-            path("flagstats/*"),
+            path("flagstats.tsv"),
+            path("hists"),
             path("depths/*"),
             path("summary/*"),
             path('ref.fasta'),
@@ -307,18 +312,21 @@ process failedQCReport  {
             --sample_name ${params.sample_name} \\
             --stats_fn readstats.tsv.gz \\
             --summary_dir summary/ \\
-            --flagstat_dir flagstats/ \\
+            --hists_dir hists/ \\
+            --flagstat_fn flagstats.tsv \\
             --depths_dir depths/ \\
             --versions versions.txt \\
             --window_size ${params.depth_window_size} \\
             --params params.json \\
             ${genome_wide_depth} \\
-            --low_cov ${params.bam_min_coverage}
+            --low_cov ${params.bam_min_coverage} \\
+            --workflow_version ${workflow.manifest.version}
         """
 }
 
 // Alignment report
 process makeAlignmentReport {
+    label "wf_common"
     cpus 1
     memory 12.GB
     input: 
@@ -326,7 +334,8 @@ process makeAlignmentReport {
             path(xam_idx),
             val(xam_meta),
             path("readstats.tsv.gz"),
-            path("flagstats/*"),
+            path("flagstats.tsv"),
+            path("hists"),
             path("depths/*"),
             path("summary/*"),
             path('ref.fasta'),
@@ -347,12 +356,14 @@ process makeAlignmentReport {
             --sample_name "${params.sample_name}" \\
             --stats_fn readstats.tsv.gz \\
             --summary_dir summary/ \\
+            --hists_dir hists/ \\
             --reference_fai ref.fasta.fai \\
-            --flagstat_dir flagstats/ \\
+            --flagstat_fn flagstats.tsv \\
             --depths_dir depths/ \\
             --versions versions.txt \\
             --window_size ${params.depth_window_size} \\
-            --params params.json 
+            --params params.json \\
+            --workflow_version ${workflow.manifest.version}
         """
 }
 
@@ -531,12 +542,13 @@ process sanitise_bed {
 // Combine the JSON with base metrics for read stats,
 // coverage, SNPs and SVs
 process combine_metrics_json {
+    label "wf_common"
     cpus 1
     memory 4.GB
     input:
         path jsons
-        path "readstats.tsv.gz"
         path "flagstat.tsv"
+        path "hists"
         tuple \
             path("regions.bed.gz"),
             path("mosdepth.global.dist.txt"),
@@ -551,8 +563,8 @@ process combine_metrics_json {
         String sex_arg = (!params.sex && sex) ? "--inferred_sex ${sex}" : ""
         """
         workflow-glue combine_jsons \
-            --bamstats_readstats readstats.tsv.gz \
             --bamstats_flagstats flagstat.tsv \
+            --bamstats_hists hists \
             --mosdepth_summary mosdepth.summary.txt \
             --mosdepth_thresholds thresholds.bed.gz \
             ${sex_arg} \

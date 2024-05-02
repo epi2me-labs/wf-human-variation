@@ -400,6 +400,7 @@ workflow {
     }
     bam_stats = readStats.out.read_stats
     bam_flag = readStats.out.flagstat
+    bam_hists = readStats.out.histograms
     
     // Define depth_pass channel
     if (params.bed){
@@ -505,6 +506,7 @@ workflow {
         report_pass = pass_bam_channel
             .combine(bam_stats)
             .combine(bam_flag)
+            .combine(bam_hists)
             .combine(mosdepth_stats.map{it[0]})
             .combine(mosdepth_summary)
             .combine(ref_channel)
@@ -516,6 +518,7 @@ workflow {
         report_fail = discarded_bams
             .combine(bam_stats)
             .combine(bam_flag)
+            .combine(bam_hists)
             .combine(mosdepth_stats.map{it[0]})
             .combine(mosdepth_summary)
             .combine(ref_channel)
@@ -826,8 +829,8 @@ workflow {
 
     final_json = combine_metrics_json(
         analyses_jsons,
-        bam_stats,
         bam_flag,
+        bam_hists,
         mosdepth_stats,
         mosdepth_summary,
         sex,

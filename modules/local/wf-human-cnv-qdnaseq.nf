@@ -66,6 +66,7 @@ process getParams {
 
 
 process makeReport {
+    label "wf_common"
     cpus 1
     memory 12.GB
     input:
@@ -90,7 +91,8 @@ process makeReport {
             --genome ${genome_build} \
             --sample_id ${params.sample_name} \
             --noise_plot ${noise_plot} \
-            --isobar_plot ${isobar_plot}
+            --isobar_plot ${isobar_plot} \
+            --workflow_version ${workflow.manifest.version}
         """
 
 }
