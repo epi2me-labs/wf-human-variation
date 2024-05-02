@@ -112,6 +112,7 @@ process concat_bedmethyl {
 
 // Check that the bam has modifications
 process validate_modbam {
+    label "wf_common"
     cpus 1
     memory 4.GB
     input:

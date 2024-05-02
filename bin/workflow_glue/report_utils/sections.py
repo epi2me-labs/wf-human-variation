@@ -1,89 +1,20 @@
 """Sections for ezcharts report."""
+import os
+
 import pandas as pd
 
 import dominate.tags as dom_tags  # noqa: I100,I202
 
 import ezcharts as ezc  # noqa: I202
 from ezcharts.components.ezchart import EZChart
+from ezcharts.components.fastcat import read_quality_plot
 from ezcharts.layout.snippets import Grid, Progress, Stats, Tabs
 
 from .common import THEME  # noqa: ABS101
 
 
-def histogram_with_mean_and_median(
-    series,
-    title=None,
-    x_axis_name=None,
-    y_axis_name=None,
-    bins=100,
-    round_digits=1,
-):
-    """Create ezcharts histogram showing the mean and median underneath the plot title.
-
-    :param series: `pd.Series` with data to plot
-    :param title: plot title, defaults to None
-    :param x_axis_name: x axis label, defaults to None
-    :param y_axis_name: y axis label, defaults to None
-    :param bins: number of bins, defaults to 100
-    :param round_digits: number of decimals to round the mean and median values to,
-        defaults to 1
-    :raises ValueError: Raise error if `series` is not a `pd.Series`
-    :return: the histogram (`ezcharts.plots.Plot`)
-    """
-    if not isinstance(series, pd.Series):
-        raise ValueError("`series` must be `pd.Series`.")
-
-    plt = ezc.histplot(data=series, bins=bins)
-    plt.title = dict(
-        text=title,
-        subtext=(
-            f"Mean: {series.mean().round(round_digits)}. "
-            f"Median: {series.median().round(round_digits)}"
-        ),
-    )
-    if x_axis_name is not None:
-        plt.xAxis.name = x_axis_name
-    if y_axis_name is not None:
-        plt.yAxis.name = y_axis_name
-    return plt
-
-
-def tabs_with_histograms(
-    data,
-    groupby_column,
-    data_column,
-    plot_title_func,
-    x_axis_name,
-    y_axis_name,
-):
-    """Create multiple tabs with a histogram in each.
-
-    Take a `pd.DataFrame`, perform a groupby on the `groupby_column` and then
-    generate a tab with a histogram of the values in `data_column` for each group.
-
-    :param data: `pd.DataFrame` containing at least `groupby_column` and `data_column`
-    :param groupby_column: column to group by
-    :param data_column: column of data to plot in the histogram
-    :param plot_title_func: function taking the name of the group and returning the plot
-        title
-    :param x_axis_name: x axis label
-    :param y_axis_name: y axis label
-    """
-    tabs = Tabs()
-    for name, df in data.groupby(groupby_column, observed=True):
-        with tabs.add_tab(name):
-            title = plot_title_func(name)
-            plt = histogram_with_mean_and_median(
-                df[data_column].dropna(),
-                title=title if title is not None else None,
-                x_axis_name=x_axis_name,
-                y_axis_name=y_axis_name,
-            )
-            EZChart(plt, theme=THEME)
-
-
 def get_summary_table(
-    stats_df, flagstat_df, n_reads_total, n_bases_total, secondary=False
+    hist_df, flagstat_df, n_reads_total, n_bases_total, secondary=False
 ):
     """Create table with summary statistics.
 
@@ -95,9 +26,9 @@ def get_summary_table(
     :param secondary: _description_, defaults to False
     """
     # get metrics
-    n_reads = stats_df.shape[0]
+    n_reads = sum(hist_df['count'])
     n_unmapped = flagstat_df["unmapped"].sum()
-    n_bases = stats_df["read_length"].sum()
+    n_bases = sum(hist_df['count'] * hist_df['start'])
     # get percentages
     perc_reads = n_reads / n_reads_total * 100
     perc_unmapped = n_unmapped / n_reads * 100
@@ -139,7 +70,7 @@ def get_summary_table(
             percentage_table_cell(perc_bases)
 
 
-def summary(report, sample_names, stats_df, flagstat_df):
+def summary(report, sample_names, hist_df, flagstat_df):
     """Create summary section.
 
     :param report: report object (`ezcharts.components.reports.labs.LabsReport`)
@@ -150,8 +81,8 @@ def summary(report, sample_names, stats_df, flagstat_df):
     :param flagstat_df: `pd.DataFrame` with bamstats per-file stats
     """
     with report.add_section("Summary", "Summary"):
-        n_reads_total = stats_df.shape[0]
-        n_bases_total = stats_df["read_length"].sum()
+        n_reads_total = sum(hist_df['count'])
+        n_bases_total = sum(hist_df['count'] * hist_df['start'])
         tabs = Tabs()
         for sample_name in [*sample_names]:
             with tabs.add_tab(
@@ -159,7 +90,7 @@ def summary(report, sample_names, stats_df, flagstat_df):
             ):
                 # get summary stats for individual sample
                 get_summary_table(
-                    stats_df.query(f"sample_name == '{sample_name}'"),
+                    hist_df,
                     flagstat_df.query(f"sample_name == '{sample_name}'"),
                     n_reads_total,
                     n_bases_total,
@@ -176,7 +107,7 @@ def sub_heading(string):
         dom_tags.h5(string, {"class": "mb-0 pb-3 pt-3"})
 
 
-def mapping(report, stats_df_mapped):
+def mapping(report, hists_dir, sample_names):
     """Create alignment stats section.
 
     :param report: report object (`ezcharts.components.reports.labs.LabsReport`)
@@ -192,29 +123,42 @@ def mapping(report, stats_df_mapped):
             of reads.
             """
         )
-        with Grid():
-            with dom_tags.div():
-                sub_heading("Mapping accuracy")
-                # Mapping accuracy
-                tabs_with_histograms(
-                    data=stats_df_mapped,
-                    groupby_column="sample_name",
-                    data_column="acc",
-                    plot_title_func=lambda _: None,
-                    x_axis_name="Accuracy [%]",
-                    y_axis_name="Number of reads",
-                )
-            with dom_tags.div():
-                sub_heading("Read coverage")
-                # coverage per sample
-                tabs_with_histograms(
-                    data=stats_df_mapped,
-                    groupby_column="sample_name",
-                    data_column="coverage",
-                    plot_title_func=lambda _: None,
-                    x_axis_name="Coverage [%]",
-                    y_axis_name="Number of reads",
-                )
+        tabs = Tabs()
+        # prepare data for cumulative depth plot
+        for sample_name in sample_names:
+            with tabs.add_tab(sample_name):
+                with Grid():
+                    with dom_tags.div():
+                        # Mapping accuracy
+                        acc_hist = pd.read_csv(
+                            os.path.join(hists_dir, "accuracy.hist"),
+                            sep="\t",
+                            names=["start", "end", "count"],
+                            dtype={"start": float, "end": float, "count": float},
+                        )
+                        acc_plt = read_quality_plot(
+                            acc_hist, binwidth=1, min_qual=80, max_qual=100)
+                        acc_plt.title.text = "Mapping accuracy"
+                        acc_plt.xAxis = dict(name="Accuracy (%)", min=80, max=100)
+                        EZChart(acc_plt, theme=THEME)
+                    with dom_tags.div():
+                        # Mapping accuracy
+                        cvg_hist = pd.read_csv(
+                            os.path.join(hists_dir, "coverage.hist"),
+                            sep="\t",
+                            names=["start", "end", "count"],
+                            dtype={"start": float, "end": float, "count": float},
+                        )
+                        cvg_plt = read_quality_plot(
+                            cvg_hist,
+                            binwidth=1,
+                            min_qual=0,
+                            max_qual=max(cvg_hist['end'])
+                        )
+                        cvg_plt.title.text = "Coverage"
+                        cvg_plt.xAxis = dict(
+                            name="Coverage", min=0, max=max(cvg_hist['end']))
+                        EZChart(cvg_plt, theme=THEME)
 
 
 def depths(report, depth_df, sample_name):

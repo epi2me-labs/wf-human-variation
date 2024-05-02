@@ -83,6 +83,10 @@ def argparser():
         choices=["user-provided", "workflow-inferred"],
         help="Source of genetic sex determination."
     )
+    parser.add_argument(
+        "--workflow_version", required=True,
+        help="Workflow version",
+    )
 
     return parser
 
@@ -441,8 +445,9 @@ def make_report(
         stranger_annotation, str_content_csv, args):
     """Put the STR plots into a report."""
     report = LabsReport(
-        f"{args.sample_name} | {REPORT_TITLE}", WORKFLOW_NAME, params,
-        versions, head_resources=[*LAB_head_resources])
+        f"{args.sample_name} | {REPORT_TITLE}",
+        WORKFLOW_NAME, params, versions,
+        args.workflow_version, head_resources=[*LAB_head_resources])
 
     vcf_data = parse_vcf(vcf, info_cols={'VARID': str})
 

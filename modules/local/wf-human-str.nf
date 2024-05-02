@@ -102,6 +102,7 @@ process bam_read_filter {
 
 process generate_str_content {
     // extract content info from BAM and generate TSV files for plot data
+    label "wf_common"
     cpus 1
     memory 4.GB
     input:
@@ -143,6 +144,7 @@ process merge_tsv {
 
 
 process make_report {
+    label "wf_common"
     cpus 1
     memory 16.GB
     input:
@@ -174,7 +176,8 @@ process make_report {
             --str_content ${str_content} \
             --read_stats ${bam_stats} \
             --sex ${sex} \
-            --sex_source ${sex_source}
+            --sex_source ${sex_source} \
+            --workflow_version ${workflow.manifest.version}
         """
 }
 
