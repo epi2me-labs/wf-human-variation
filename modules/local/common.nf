@@ -397,7 +397,6 @@ process getVersions {
     script:
         """
         mosdepth --version | sed 's/ /,/' >> versions.txt
-        bamstats --version | awk '{print "bamstats,"\$1}' >> versions.txt
         """
 }
 
