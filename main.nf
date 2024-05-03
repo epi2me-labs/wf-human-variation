@@ -255,7 +255,7 @@ workflow {
     if (params.depth_intervals){
         mosdepth_perbase = mosdepth_input.out.perbase
     } else {
-        mosdepth_perbase = Channel.from("$projectDir/data/OPTIONAL_FILE")
+        mosdepth_perbase = Channel.empty()
     }
 
     // Determine if the coverage threshold is met to perform analysis.
@@ -387,7 +387,7 @@ workflow {
                         )
                     .map{it - null}
         } else {
-            mosdepth_perbase = Channel.from("$projectDir/data/OPTIONAL_FILE")
+            mosdepth_perbase = Channel.empty()
         }
     }
 
