@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spectre CNV report not handling cases when no CNVs detected.
 - Lines denoting normal maximum and pathogenic minimum thresholds now correctly displayed on STR repeat content plots.
 - Workflow will not emit `sample.cram` if `sample.haplotagged.cram` has been created by the workflow to save storage.
+- Emitting nonsense `input.1` file
 
 ### Removed
 - Single-step joint phasing of SV and SNP.
