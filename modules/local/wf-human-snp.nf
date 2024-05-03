@@ -129,7 +129,10 @@ process aggregate_pileup_variants {
     // to use for phasing.
     label "wf_human_snp"
     cpus 2
-    memory 4.GB
+    memory { 4.GB * task.attempt }
+    maxRetries 2
+    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
+
     input:
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         // these need to be named as original, as program uses info from
