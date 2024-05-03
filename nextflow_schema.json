@@ -264,6 +264,12 @@
                         }
                     }
                 },
+                "output_gene_summary": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If set to true, the workflow will generate gene-level coverage summaries.",
+                    "help_text": "If set to true, a 4-column BED file must be supplied, where column 4 is the gene label. The workflow will generate a list of all genes in the BED and their percentage coverage at a range of thresholds (1x, 10x, 15x, 20x, and 30x), as well as the average coverage of each gene."
+                },
                 "output_report": {
                     "type": "boolean",
                     "default": true,

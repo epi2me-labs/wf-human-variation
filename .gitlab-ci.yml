@@ -65,7 +65,8 @@ docker-run:
                 "wf-human-phase_all_lp",
                 "downsample",
                 "wf-human-snp_GVCF_unphased",
-                "wf-human-snp_GVCF_phased"
+                "wf-human-snp_GVCF_phased",
+                "wf-human-snp-gene-summary"
               ]
     rules:
         # NOTE As we're overriding the rules block for the included docker-run
@@ -213,6 +214,14 @@ docker-run:
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,hap,phase_contig,post_clair_phase_contig,bed_filter,phase_gvcf,refine_with_sv"
               NF_WORKFLOW_OPTS: "--mod false --cnv false --str false --sv false --snp --phased true --GVCF --use_longphase false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --sample_name demo --sex XX --bam_min_coverage 0.00001 --annotation false"
+
+        - if: $MATRIX_NAME == "wf-human-snp-gene-summary"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/snp_demo_new/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
+              NF_IGNORE_PROCESSES: "phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20_with_gene.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --phased --bam_min_coverage 0.00001 --output_gene_summary --annotation false"
+
 
 aws-run:
     stage: test

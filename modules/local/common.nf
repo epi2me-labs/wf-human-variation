@@ -65,6 +65,7 @@ process mosdepth {
         file target_bed
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH) 
         val (window_size)
+        val (create_gene_summary)
     output:
         tuple \
             path("${params.sample_name}.regions.bed.gz"),
@@ -72,6 +73,7 @@ process mosdepth {
             path("${params.sample_name}.thresholds.bed.gz"), emit: mosdepth_tuple
         path "${params.sample_name}.mosdepth.summary.txt", emit: summary
         path("${params.sample_name}.per-base.bedgraph.gz"), emit: perbase, optional: true
+        path "${params.sample_name}.gene_summary.tsv", emit: gene_summary, optional: true
     script:
         def perbase_args = params.depth_intervals ? "" : "--no-per-base"
         """
@@ -97,6 +99,23 @@ process mosdepth {
         # Rename the output, avoiding ambiguity in the output formatting
         if [ -e ${params.sample_name}.per-base.bed.gz ]; then
             mv ${params.sample_name}.per-base.bed.gz ${params.sample_name}.per-base.bedgraph.gz
+        fi
+
+        # If gene summary requested and a BED provided, run mosdepth again without -x to get precise coverage 
+        # Use thresholds and regions file to create gene summary
+        if [ "${create_gene_summary}" = true ]; then
+            mosdepth \
+            -t $task.cpus \
+            -b ${target_bed} \
+            --thresholds 1,10,15,20,30 \
+            --no-per-base \
+            ${params.sample_name}.gene \
+            $xam
+
+            gunzip -c ${params.sample_name}.gene.thresholds.bed.gz > thresholds.bed
+            gunzip -c ${params.sample_name}.gene.regions.bed.gz  > regions.bed
+
+            workflow-glue generate_gene_summary --mosdepth_threshold thresholds.bed --mosdepth_average regions.bed --output ${params.sample_name}.gene_summary.tsv
         fi
         """
 }
