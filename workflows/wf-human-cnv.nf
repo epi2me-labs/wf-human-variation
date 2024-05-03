@@ -22,7 +22,7 @@ workflow cnv {
         bed
     main:
         // get mosdepth results for window size 1000
-        mosdepth(bam, bed, ref, "1000")
+        mosdepth(bam, bed, ref, "1000", false)
         mosdepth_stats = mosdepth.out.mosdepth_tuple
         mosdepth_summary = mosdepth.out.summary
         if (params.depth_intervals) {

@@ -183,6 +183,14 @@
       "mime-type": "application/gzip",
       "optional": true,
       "type": "per-sample"
+    },
+    "gene-summary": {
+      "filepath": "SAMPLE.gene_summary.tsv",
+      "title": "Gene level coverage summary",
+      "description": "A table where each gene of the input BED file has columns describing the percentage of positions along the gene region that are covered to a given threshold, and a column with the average coverage.",
+      "mime-type": "text/tsv",
+      "optional": true,
+      "type": "per-sample"
     }
   }
 }

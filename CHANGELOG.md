@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Added
 - Output `{{sample}}.stats.json` file describing some key metrics for the analysis.
+- Summary of gene coverage if a 4-column BED is provided.
 - Automated sex determination using relative coverage of chrX and chrY.
 
 ### Changed
