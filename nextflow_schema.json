@@ -75,6 +75,7 @@
                     "default": false,
                     "overrides": {
                         "minknow": {
+                            "title": "Methylation",
                             "default": true
                         }
                     }
