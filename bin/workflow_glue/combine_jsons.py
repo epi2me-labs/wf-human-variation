@@ -13,6 +13,7 @@ from .report_utils.common import CHROMOSOMES, compute_n50, load_hists  # noqa: A
 
 # Define output metrics names
 METRICS = [
+    "Contaminated",
     "N50",
     "Yield",
     "Yield (reads >=Nbp)",
@@ -61,6 +62,13 @@ def argparser():
         "--bamstats_flagstats", required=True, help="bamstats flagstats"
     )
 
+    # Required haplocheck output
+    parser.add_argument(
+        "--haplocheck",
+        required=False,
+        help="haplocheck output estimating contamination"
+    )
+
     # additional sample information
     parser.add_argument(
         "--inferred_sex",
@@ -68,10 +76,26 @@ def argparser():
         help="Genetic sex of sample inferred by the workflow"
     )
 
+    # additional threshold
+    parser.add_argument(
+        "--contamination_threshold",
+        default=0.05,
+        help=(
+            "Report as contaminated samples with" +
+            "haplocheck contamination values above this threshold"
+        )
+    )
+
     # Output files
     parser.add_argument("--output", required=True, help="Summary stats file")
 
     return parser
+
+
+def hapcheck_contamination(haplocheck):
+    """Return contamination level from haplocheck file."""
+    hc = pd.read_csv(haplocheck, sep="\t")
+    return hc.iat[0, hc.columns.get_loc("Contamination Level")]
 
 
 def mosdepth_summary_stats(mosdepth_summary, mosdepth_thresholds):
@@ -164,6 +188,18 @@ def main(args):
     """Run entry point."""
     # Create the output dictionary
     out_json = {metric: None for metric in METRICS}
+
+    # Check if the contamination level is >= threshold
+    out_json['Contaminated'] = "n/a"
+    if args.haplocheck:
+        contamination = hapcheck_contamination(args.haplocheck)
+        if contamination == 'ND':
+            out_json['Contaminated'] = False
+        elif contamination == 'NV':
+            out_json['Contaminated'] = "n/a"
+        else:
+            is_contaminated = contamination >= args.contamination_threshold
+            out_json['Contaminated'] = True if is_contaminated else False
 
     # Add bamstats stats
     metrics = bamstats_summary_stats(
