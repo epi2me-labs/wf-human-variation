@@ -6,6 +6,7 @@ process sample_probs {
     memory 8.GB
     input:
         tuple path(xam), path(xam_index), val(meta)
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         env(probs), emit: probs
 
