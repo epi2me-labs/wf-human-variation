@@ -277,6 +277,12 @@
                     "description": "Emits HTML reports for the individual analyses",
                     "help_text": "By default, the workflow generates HTML reports summarising the results for each analysis; setting this value to `false` disables the reporting functions and the workflow will not output reports."
                 },
+                "mitogenome": {
+                    "type": "boolean",
+                    "hidden": true,
+                    "description": "Sequence ID of the michondrial genome",
+                    "help_text": "By default, the workflow will attempt to extract the sequences mapping to the sequences called chrM, MT and Mt when assessing the contamination. If the mitochondrial genome has a different sequence ID, please provide it here."
+                },
                 "out_dir": {
                     "title": "Output directory",
                     "type": "string",

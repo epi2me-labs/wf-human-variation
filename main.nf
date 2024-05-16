@@ -43,6 +43,7 @@ include {
     combine_metrics_json;
     output_cnv;
     infer_sex;
+    haplocheck;
 } from './modules/local/common'
 
 include {
@@ -251,6 +252,9 @@ workflow {
     ref_path = cram_cache.out.ref_path
     // canonical ref and BAM channels to pass around to all processes
     ref_channel = ref.concat(ref_index).concat(ref_cache).concat(ref_path).buffer(size: 4)
+
+    // Check for contamination, if MT is present.
+    hap_check = haplocheck(bam_channel, ref_channel.collect())
 
     // Set BED (and create the default all chrom BED if necessary)
     // Make a second bed channel that won't be filtered based on coverage,
@@ -862,6 +866,7 @@ workflow {
         bam_hists,
         mosdepth_stats,
         mosdepth_summary,
+        hap_check,
         sex,
     )
 
@@ -879,7 +884,8 @@ workflow {
             report_pass.flatten(),
             report_fail.flatten(),
             final_json.flatten(),
-            coverage_summary.flatten()
+            coverage_summary.flatten(),
+            hap_check.flatten()
         )
     )
 
