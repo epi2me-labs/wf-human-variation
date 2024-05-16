@@ -784,7 +784,7 @@ workflow {
                 .map{cram, crai, meta, code -> [cram, crai, meta]}
 
         // Compute the probabilities on the valid modbam
-        modkit_probs = sample_probs(modbam_ch)
+        modkit_probs = sample_probs(modbam_ch, ref_channel)
 
         // Save the other as input, keeping only the necessary elements
         if (run_haplotagging){
