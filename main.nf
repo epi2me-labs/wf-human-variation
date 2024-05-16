@@ -436,48 +436,56 @@ workflow {
     bam_hists = readStats.out.histograms
     
     // Define depth_pass channel
-    if (params.bed){
-        // Count the number of lines in the file to ensure that
-        // there are intervals with enough coverage for downstream
-        // analyses.
-        n_lines = mosdepth_stats
-        | map{ it[0] }
-        | countLines()
+    if (params.bam_min_coverage > 0){
+        // If bam_min_coverage is > 0, then check the coverage
+        if (params.bed){
+            // Count the number of lines in the file to ensure that
+            // there are intervals with enough coverage for downstream
+            // analyses.
+            n_lines = mosdepth_stats
+            | map{ it[0] }
+            | countLines()
 
-        // Ensure that the data have enough region coverage
-        // and intervals in the output coverage BED file.
-        // First, load and split the summary file, keeping only
-        // the `total_region` value (`total_region` and `total`
-        // are identical in absence of a BED file).
-        depth_pass = mosdepth_summary
-            | splitCsv(sep: "\t", header: true)
-            | filter{it -> it.chrom == "total_region"}
-            // Extract the mean coverage as floating value
-            | map{
-                it -> 
-                float mean = it.mean as float
-                [mean]}
-            // Add line number in the coverage BED file
-            | combine(n_lines)
-            // Check if the coverage is appropriate
-            | map {
-                mean, n_lines_v -> 
-                int n_lines = n_lines_v as int
-                boolean pass = mean > params.bam_min_coverage && n_lines > 0
-                [pass, mean]
-            }
+            // Ensure that the data have enough region coverage
+            // and intervals in the output coverage BED file.
+            // First, load and split the summary file, keeping only
+            // the `total_region` value (`total_region` and `total`
+            // are identical in absence of a BED file).
+            depth_pass = mosdepth_summary
+                | splitCsv(sep: "\t", header: true)
+                | filter{it -> it.chrom == "total_region"}
+                // Extract the mean coverage as floating value
+                | map{
+                    it -> 
+                    float mean = it.mean as float
+                    [mean]}
+                // Add line number in the coverage BED file
+                | combine(n_lines)
+                // Check if the coverage is appropriate
+                | map {
+                    mean, n_lines_v -> 
+                    int n_lines = n_lines_v as int
+                    boolean pass = mean > params.bam_min_coverage && n_lines > 0
+                    [pass, mean]
+                }
 
-    // Without a BED, use summary values for the region
+        // Without a BED, use summary values for the region
+        } else {
+            depth_pass = mosdepth_summary
+                | splitCsv(sep: "\t", header: true)
+                | filter{it -> it.chrom == "total_region"}
+                | map{
+                    it -> 
+                    float mean = it.mean as float
+                    boolean pass = mean > params.bam_min_coverage
+                    [pass, mean]}
+        }
     } else {
-        depth_pass = mosdepth_summary
-            | splitCsv(sep: "\t", header: true)
-            | filter{it -> it.chrom == "total_region"}
-            | map{
-                it -> 
-                float mean = it.mean as float
-                boolean pass = mean > params.bam_min_coverage
-                [pass, mean]}
+        // Otherwise, set all BAM to pass.
+        depth_pass = bam_channel
+            | map{ it -> [true, null] }
     }
+
 
     // Implement the BAM stats barrier after the pre-processing.
     // This will use the reads after the downsampling when requested.

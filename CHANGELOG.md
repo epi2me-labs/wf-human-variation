@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 ### Fixed
-- `modkit sample-probs` failing with downsampling and re-alignments
+- `modkit sample-probs` failing with downsampling and re-alignments.
+- Workflow waiting for `mosdepth` and `readStats` processes when `--bam_min_coverage 0`.
 
 ## [v2.2.0]
 ### Added
