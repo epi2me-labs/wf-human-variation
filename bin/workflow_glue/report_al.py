@@ -113,7 +113,7 @@ def main(args):
         # prepare data for cumulative depth plot
         for sample_name in sample_names:
             with tabs.add_tab(sample_name):
-                SeqSummary(seq_summary=args.hists_dir)
+                SeqSummary(seq_summary=args.hists_dir, alignment_stats=False)
 
     # Generate accuracy and coverage plots from pre-computed histograms
     sections.mapping(report, args.hists_dir, sample_names)
