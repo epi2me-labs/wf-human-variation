@@ -633,6 +633,16 @@
                     "description": "Downsample if the bam effective coverage / target coverage if greater than this value.",
                     "help_text": "By default, if the coverage of the input alignments is within 1.1x the target coverage, downsampling will not be performed even if it was enabled. This is to avoid triggering the downsampling of alignments when coverage is already close to the target coverage.",
                     "hidden": true
+                },
+                "output_xam_fmt": {
+                    "type": "string",
+                    "default": "bam",
+                    "description": "Desired file format of alignment files created by alignment and phasing.",
+                    "help_text": "This setting controls the file format of (1) alignment files created by aligning or re-aligning an input BAM and (2) alignment files with haplotag information created during phasing of an input BAM. If using QDNASeq for CNV calling, the setting will be ignored for alignment or realignment as QDNASeq requires BAM input.",
+                    "enum": [
+                        "bam",
+                        "cram"
+                    ]
                 }
             }
         },

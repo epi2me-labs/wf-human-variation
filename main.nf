@@ -140,13 +140,6 @@ workflow {
             }
         }
     }
-    
-
-    // Notify users that QDNAseq uses BAM as input.
-    if (params.cnv && params.use_qdnaseq) {
-        log.warn "CNV calling subworkflow using QDNAseq does not support CRAM. You don't need to do anything, but we're just letting you know that:"
-        log.warn "- If your input requires alignment, the outputs will be saved to your output directory as BAM instead of CRAM."
-    }
 
     // Programmatically define chromosome codes.
     // note that we avoid interpolation (eg. "${chr}N") to ensure that values
@@ -162,6 +155,22 @@ workflow {
 
     // Trigger CRAM to BAM conversion
     def convert_cram_to_bam = params.cnv && params.use_qdnaseq
+
+    // Define ingress extension based on presence/absence of downsampling.
+    // This is only relevant when reads are remapped.
+    def ingress_ext = convert_cram_to_bam && !params.downsample_coverage ? ['bam', 'bai'] : ['cram', 'crai']
+
+    // Set extensions for the final haplotagged XAM
+    // CNV is run on the ingressed BAM channel,
+    //   and STR is run on the intermediate phased BAM,
+    //   so we are free to output CRAM here, if desired.
+    def haplotagged_output_fmt = params.output_xam_fmt == "cram" ? ["cram", "crai"]: ["bam", "bai"]
+
+    // Notify users that QDNAseq usage will override the format of output XAM
+    if (convert_cram_to_bam && params.output_xam_fmt == "cram") {
+        log.warn "CNV calling subworkflow using QDNAseq does not support CRAM, but you have selected CRAM for your output file format."
+        log.warn "You do not need to do anything, but any alignment or realignment will ignore your CRAM selection and be written as BAM to maintain compatibility with QDNAseq."
+    }
 
     // Trigger the SNP workflow based on a range of different conditions:
     def run_snp = params.snp || run_haplotagging || (params.cnv && !params.use_qdnaseq)
@@ -209,10 +218,6 @@ workflow {
     }
 
     Pinguscript.ping_start(nextflow, workflow, params)
-
-    // Define extension based on presence/absence of downsampling.
-    // This is only relevant when reads are remapped.
-    def ingress_ext = convert_cram_to_bam && !params.downsample_coverage ? ['bam', 'bai'] : ['cram', 'crai']
 
     // Determine if (re)alignment is required for input BAM
     bam_channel = ingress(
@@ -304,13 +309,6 @@ workflow {
     } 
     bam_channel.set{pass_bam_channel}
     discarded_bams = Channel.empty()
-
-    // Set extensions for downstream analyses based on the input type
-    // This will affect only the haplotagging.
-    extensions = pass_bam_channel.map{
-        xam, xai, meta -> 
-        meta.is_cram ? ['cram', 'crai'] : ['bam', 'bai']
-    }
 
     // Check and perform downsampling if needed.
     if (params.downsample_coverage){
@@ -569,7 +567,7 @@ workflow {
         report_pass = Channel.empty()
         report_fail = Channel.empty()
     }
-    
+
     // Set up BED for wf-human-snp, wf-human-str or run_haplotagging
     // CW-2383: we first call the SNPs to generate an haplotagged bam file for downstream analyses
     if (run_snp) {
@@ -643,7 +641,7 @@ workflow {
             ref_channel,
             clair3_model,
             genome_build,
-            extensions,
+            haplotagged_output_fmt,
             run_haplotagging,
             using_user_bed,
             chromosome_codes
