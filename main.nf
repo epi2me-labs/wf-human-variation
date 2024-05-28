@@ -142,17 +142,10 @@ workflow {
     }
     
 
-    // switch workflow to BAM if calling CNV
-    // CW-3324: Prevent ingress from running the CRAM to BAM conversion if
-    //   downsampling is on, as the downsampling step can output BAM instead.
+    // Notify users that QDNAseq uses BAM as input.
     if (params.cnv && params.use_qdnaseq) {
         log.warn "CNV calling subworkflow using QDNAseq does not support CRAM. You don't need to do anything, but we're just letting you know that:"
-        log.warn "- If your input file is CRAM, it will be converted to a temporary BAM inside the workflow automatically."
         log.warn "- If your input requires alignment, the outputs will be saved to your output directory as BAM instead of CRAM."
-        output_bam = params.downsample_coverage ? false : true
-    }
-    else {
-        output_bam = false
     }
 
     // Programmatically define chromosome codes.
