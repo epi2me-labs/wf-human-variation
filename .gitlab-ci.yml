@@ -39,6 +39,7 @@ docker-run:
             - ${CI_PROJECT_NAME}/**/*.fna
             - ${CI_PROJECT_NAME}/**/*.fasta
             - ${CI_PROJECT_NAME}/**/ref_cache/**
+            - ${CI_PROJECT_NAME}/data/**/*
 
     # Define a 1D job matrix to inject a variable named MATRIX_NAME into
     #   the CI environment, we can use the value of MATRIX_NAME to determine

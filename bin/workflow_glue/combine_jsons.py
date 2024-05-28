@@ -86,6 +86,20 @@ def argparser():
         )
     )
 
+    # random k=v metadata that we are just going to wedge in here
+    parser.add_argument(
+        "--metadata",
+        metavar="KEY=VALUE",
+        nargs='*',
+        help=(
+            "Zero or more key value pairs to be added to the output "
+            "meta object. Use quotes to escape spaces, e.g.: "
+            "--metadata hoot=meow \"space owl=space cat\". "
+            "Supports nested keys with period, e.g.: --metadata "
+            "nested.owl=meow"
+        )
+    )
+
     # Output files
     parser.add_argument("--output", required=True, help="Summary stats file")
 
@@ -188,6 +202,22 @@ def main(args):
     """Run entry point."""
     # Create the output dictionary
     out_json = {metric: None for metric in METRICS}
+
+    # Inject "meta" -- it's lowercase to inform users this is where
+    # the sensibly named keys are kept
+    out_json["meta"] = {}
+    for kv in args.metadata:
+        if '=' not in kv:
+            # Quietly drop incorrectly delimited metadata
+            continue
+        head = out_json["meta"]
+        k, v = kv.split("=", 1)
+        key_path = k.split('.')
+        for key_comp in key_path[:-1]:
+            if key_comp not in head:
+                head[key_comp] = {}
+            head = head[key_comp]
+        head[key_path[-1]] = v
 
     # Check if the contamination level is >= threshold
     out_json['Contaminated'] = "n/a"

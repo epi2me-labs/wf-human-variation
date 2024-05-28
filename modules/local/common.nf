@@ -559,6 +559,11 @@ process sanitise_bed {
 
 // Combine the JSON with base metrics for read stats,
 // coverage, SNPs and SVs
+// NOTE The keys in here are rather sad to look at but form part of downstream
+//   processes for several 3rd party providers and MUST NOT be fiddled with.
+// Currently, the workflow's sample_name parameter is used to fill in
+//   meta.sample_sheet.alias, this should be populated more fully by an
+//   input sample_sheet in a not so distant future (and sample_name deprecated)
 process combine_metrics_json {
     label "wf_common"
     cpus 1
@@ -591,6 +596,7 @@ process combine_metrics_json {
             ${haplocheck_arg} \
             ${sex_arg} \
             ${input_jsons} \
+            --metadata "sample_sheet.alias=${params.sample_name}" \
             --output ${params.sample_name}.stats.json
         """
 }
