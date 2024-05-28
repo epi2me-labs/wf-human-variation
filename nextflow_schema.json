@@ -278,6 +278,13 @@
                     "description": "Emits HTML reports for the individual analyses",
                     "help_text": "By default, the workflow generates HTML reports summarising the results for each analysis; setting this value to `false` disables the reporting functions and the workflow will not output reports."
                 },
+                "haplocheck": {
+                    "type": "boolean",
+                    "hidden": true,
+                    "default": false,
+                    "description": "Run contamination check",
+                    "help_text": "If set to true, the workflow will try to estimate the contamination level of the sample using [haplocheck](https://mitoverse.readthedocs.io/haplocheck/haplocheck/) on the mitogenome."
+                },
                 "mitogenome": {
                     "type": "boolean",
                     "hidden": true,

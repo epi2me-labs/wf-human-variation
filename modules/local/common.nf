@@ -580,13 +580,15 @@ process combine_metrics_json {
         String input_jsons = jsons.name != 'OPTIONAL_FILE' ? "--jsons ${jsons}" : ""
         // only emit an inferred sex if sex is defined and params.sex is not
         String sex_arg = (!params.sex && sex) ? "--inferred_sex ${sex}" : ""
+        // If haplocheck is optional file, then skip it
+        String haplocheck_arg = params.haplocheck ? "--haplocheck haplocheck" : ""
         """
         workflow-glue combine_jsons \
             --bamstats_flagstats flagstat.tsv \
             --bamstats_hists hists \
             --mosdepth_summary mosdepth.summary.txt \
             --mosdepth_thresholds thresholds.bed.gz \
-            --haplocheck haplocheck \
+            ${haplocheck_arg} \
             ${sex_arg} \
             ${input_jsons} \
             --output ${params.sample_name}.stats.json
