@@ -254,7 +254,12 @@ workflow {
     ref_channel = ref.concat(ref_index).concat(ref_cache).concat(ref_path).buffer(size: 4)
 
     // Check for contamination, if MT is present.
-    hap_check = haplocheck(bam_channel, ref_channel.collect())
+    if (params.haplocheck){
+        hap_check = haplocheck(bam_channel, ref_channel.collect())
+    } else {
+        // If haplocheck is not needed, use the predefined NV file.
+        hap_check = Channel.fromPath("$projectDir/data/OPTIONAL_FILE")
+    }
 
     // Set BED (and create the default all chrom BED if necessary)
     // Make a second bed channel that won't be filtered based on coverage,
@@ -881,7 +886,9 @@ workflow {
     publish_artifact(
         // emit bams with the "to_align" meta tag
         // but only if haplotagging is not on
-        bam_channel.filter( { it[2].to_align && !run_haplotagging} ).mix(
+        bam_channel
+        | filter( { it[2].to_align && !run_haplotagging} )
+        | mix(
             bam_stats.flatten(),
             bam_flag.flatten(),
             mosdepth_stats.flatten(),
@@ -895,6 +902,7 @@ workflow {
             coverage_summary.flatten(),
             hap_check.flatten()
         )
+        | filter{it.name != 'OPTIONAL_FILE'}
     )
 
 }
