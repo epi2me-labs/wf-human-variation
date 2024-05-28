@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v2.2.2]
 ### Changed
 - Workflow emitting `OPTIONAL_FILE` in some cases.
+- File format of alignment files created by the workflow can be explicitly controlled with `--output_xam_fmt [bam|cram]`
 
 ## [v2.2.1]
 ### Changed
