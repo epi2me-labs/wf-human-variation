@@ -11,10 +11,6 @@ from .util import get_named_logger, wf_parser  # noqa: ABS101
 
 def main(args):
     """Run the entry point."""
-    # Check that the input files exist
-    if not os.path.exists(args.bam):
-        raise FileNotFoundError(f"File {args.bam} not found.")
-
     # Load other input files
     logger = get_named_logger("check_valid_modbam")
     logger.info(f'Checking file: {args.bam}')

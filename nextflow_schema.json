@@ -636,7 +636,7 @@
                 },
                 "output_xam_fmt": {
                     "type": "string",
-                    "default": "bam",
+                    "default": "cram",
                     "description": "Desired file format of alignment files created by alignment and phasing.",
                     "help_text": "This setting controls the file format of (1) alignment files created by aligning or re-aligning an input BAM and (2) alignment files with haplotag information created during phasing of an input BAM. If using QDNASeq for CNV calling, the setting will be ignored for alignment or realignment as QDNASeq requires BAM input.",
                     "enum": [
@@ -679,11 +679,6 @@
                     "type": "integer",
                     "default": 1,
                     "description": "Set max number of threads to use for uncompressing uBAM and generating FASTQ for alignment (limited by config executor cpus)"
-                },
-                "merge_threads": {
-                    "type": "integer",
-                    "default": 4,
-                    "description": "Set max number of threads to use for merging alignment files (limited by config executor cpus)"
                 },
                 "modkit_threads": {
                     "type": "integer",

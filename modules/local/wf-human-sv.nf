@@ -8,7 +8,7 @@ process sniffles2 {
     cpus params.threads
     memory 6.GB
     input:
-        tuple path(xam), path(xam_idx)
+        tuple path(xam), path(xam_idx), val(xam_meta)
         file tr_bed
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         val genome_build

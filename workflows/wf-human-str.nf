@@ -30,7 +30,7 @@ workflow str {
 
     // call straglr and get annotations per contig
     str_vcf_and_tsv = call_str(bam_channel.combine(sex), ref_as_value, str_list)
-    annotations = annotate_repeat_expansions(str_vcf_and_tsv.straglr_output, variant_catalogue_hg38)
+    annotations = annotate_repeat_expansions(str_vcf_and_tsv, variant_catalogue_hg38)
 
     software_versions = getVersions()
     workflow_params = getParams()
@@ -40,44 +40,52 @@ workflow str {
     str_regions_bam = bam_region_filter(bam_channel, str_list)
 
     // make a channel of chr, xam, xam_idx, vcf, straglr_tsv
-    reads_join = str_regions_bam.join(str_vcf_and_tsv.straglr_output)
+    reads_join = str_regions_bam.join(str_vcf_and_tsv)
 
     // subset contig STR regions BAM to include only supporting reads from straglr 
     str_reads_bam = bam_read_filter(reads_join)
 
     // join all the contig information ready to generate STR content
-    str_content_join = str_vcf_and_tsv.straglr_output.join(annotations.stranger_annotation).join(str_reads_bam.reads_bam)
-    
+    str_content_join = str_vcf_and_tsv.join(annotations).join(str_reads_bam)
+
     str_content = generate_str_content(
       str_content_join,
       str_list
-    )
+    ).collect()
+
+    branched_annotations = annotations.multiMap { chr, vcf, tbi, plot, annot ->
+        stranger_vcfs_and_tbis: [ vcf, tbi ]
+        plot_tsv_all: plot
+        stranger_annotations: annot
+    }
 
     // merge the contig VCFs
-    stranger_vcfs_and_tbis = annotations.stranger_annotation.map{ it -> [it[1], it[2]] }.collect()
-    merged_vcf = concat_str_vcfs(stranger_vcfs_and_tbis, "${params.sample_name}.wf_str").final_vcf
+    merged_vcf = concat_str_vcfs(
+        branched_annotations.stranger_vcfs_and_tbis.collect(),
+        "${params.sample_name}.wf_str"
+    ).final_vcf
 
     // merge the contig TSVs/CSVs
-    plot_tsv_all = annotations.stranger_annotation.map{it -> it[3]}.collect()
-    straglr_tsv_all = str_vcf_and_tsv.map{it -> it[2]}.collect()
-    stranger_annotation_all = annotations.stranger_annotation.map{it -> it[4]}.collect()
-
-    str_content_all = str_content.str_content.collect()
-
-    // get the merged TSVs ready for the report
-    merged_tsvs = merge_tsv(plot_tsv_all, straglr_tsv_all, stranger_annotation_all, str_content_all)
-    merged_plot = merged_tsvs.map{it -> it[0]}
-    merged_straglr = merged_tsvs.map{it -> it[1]}
-    merged_stranger = merged_tsvs.map{it -> it[2]}
-    merged_str_content = merged_tsvs.map{it -> it[3]}
+    straglr_tsv_all = str_vcf_and_tsv.map{ chr, vcf, tsv -> tsv }.collect()
+    branched_merged = merge_tsv(
+        branched_annotations.plot_tsv_all.collect(),
+        straglr_tsv_all.collect(),
+        branched_annotations.stranger_annotations.collect(),
+        str_content)
+        | multiMap { plot, straglr_table, stranger_table, str_content_table ->
+            plot: plot
+            straglr: straglr_table
+            stranger: stranger_table
+            str_content: str_content_table
+        }
 
     if (params.output_report){
       report = make_report(
           merged_vcf,
-          merged_straglr,
-          merged_plot,
-          merged_stranger,
-          merged_str_content,
+          branched_merged.straglr.collect(),
+          branched_merged.plot.collect(),
+          branched_merged.stranger.collect(),
+          branched_merged.str_content.collect(),
           software_versions,
           workflow_params,
           read_stats,
@@ -88,6 +96,6 @@ workflow str {
     }
 
   emit:
-    merged_vcf.concat(report).concat(merged_straglr).flatten()
+    merged_vcf.concat(report).concat(branched_merged.straglr).flatten()
 
 }

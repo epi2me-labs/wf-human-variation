@@ -16,7 +16,7 @@ process make_chunks {
     cpus 1
     memory 4.GB
     input:
-        tuple path(xam), path(xam_idx)
+        tuple path(xam), path(xam_idx), val(xam_meta)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path bed
         path model_path
@@ -81,7 +81,7 @@ process pileup_variants {
     maxRetries 1
     input:
         each region
-        tuple path(xam), path(xam_idx)
+        tuple path(xam), path(xam_idx), val(xam_meta)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path model
         path bed
@@ -201,9 +201,9 @@ process phase_contig {
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
     input:
-        tuple val(contig), path(het_snps), path(het_snps_tbi), path(xam), path(xam_idx), path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
+        tuple val(contig), path(het_snps), path(het_snps_tbi), path(xam), path(xam_idx), val(xam_meta), path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
-        tuple val(contig), path(xam), path(xam_idx), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
+        tuple val(contig), path(xam), path(xam_idx), val(xam_meta), path("phased_${contig}.vcf.gz"), emit: phased_bam_and_vcf
     script:
         // Intermediate phasing is performed with longphase.
         """
@@ -328,7 +328,7 @@ process evaluate_candidates {
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
     input:
-        tuple val(contig), path(phased_xam), path(phased_xam_idx), path(phased_vcf)
+        tuple val(contig), path(phased_xam), path(phased_xai), val(phased_meta), path(phased_vcf)
         tuple val(contig), path(candidate_bed)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path(model)
@@ -458,17 +458,17 @@ process post_clair_phase_contig {
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
     input:
-        tuple val(contig), 
-            path(vcf), path(vcf_tbi), 
-            path(xam), path(xam_idx), 
+        tuple val(contig),
+            path(vcf), path(vcf_tbi),
+            path(xam), path(xam_idx), val(xam_meta),
             path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
-        tuple val(contig), 
-            path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"), 
+        tuple val(contig),
+            path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"),
             emit: vcf
-        tuple val(contig), 
-            path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"), 
-            path(xam), path(xam_idx), 
+        tuple val(contig),
+            path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"),
+            path(xam), path(xam_idx), val(xam_meta),
             path(ref), path(ref_idx), path(ref_cache), env(REF_PATH),
             emit: for_tagging
     script:
@@ -512,7 +512,7 @@ process post_clair_contig_haplotag {
     input:
         tuple val(contig),
             path(vcf), path(tbi),
-            path(xam), path(xam_idx),
+            path(xam), path(xam_idx), val(xam_meta),
             path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         tuple val(contig), path("${contig}_hp.bam"), path("${contig}_hp.bam.bai"), emit: phased_bam
@@ -598,7 +598,7 @@ process refine_with_sv {
     input:
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH) 
         tuple path(clair_vcf, stageAs: 'clair.vcf.gz'), path(clair_tbi, stageAs: 'clair.vcf.gz.tbi'), val(contig)
-        tuple path(xam), path(xam_idx), val(meta) // this may be a haplotagged_bam or input CRAM 
+        tuple path(xam), path(xam_idx), val(xam_meta) // this may be a haplotagged_bam or input CRAM 
         path sniffles_vcf
     output:
         tuple path("${params.sample_name}.${contig}.wf_snp.vcf.gz"), path("${params.sample_name}.${contig}.wf_snp.vcf.gz.tbi"), emit: vcf
