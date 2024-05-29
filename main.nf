@@ -25,7 +25,6 @@ include {
     readStats;
     getAllChromosomesBed;
     publish_artifact;
-    configure_jbrowse;
     get_region_coverage;
     failedQCReport; 
     makeAlignmentReport; 
@@ -153,18 +152,32 @@ workflow {
     // Trigger haplotagging
     def run_haplotagging = params.str || params.phased
 
-    // Trigger CRAM to BAM conversion
+    // Trigger CRAM to BAM conversion (for qdnaseq)
+    // This will:
+    // - cause downsampling to always be emitted as BAM
+    // - OR if not downsampling, cause (re)alignment to always be emitted as BAM
+    // - OR if not downsampling or (re)aligning, explicitly convert input CRAM to BAM
     def convert_cram_to_bam = params.cnv && params.use_qdnaseq
 
-    // Define ingress extension based on presence/absence of downsampling.
-    // This is only relevant when reads are remapped.
-    def ingress_ext = convert_cram_to_bam && !params.downsample_coverage ? ['bam', 'bai'] : ['cram', 'crai']
+    // User desired alignment extentions
+    def desired_xam_ext = params.output_xam_fmt == "cram" ? ["cram", "crai"] : ["bam", "bai"]
+
+    // Determine what extentions should be output by ingress
+    // Note that ingress does not handle downsampling so we carve that case out here
+    if (convert_cram_to_bam && !params.downsample_coverage) {
+        // Force BAM if not downsampling and BAM is needed downstream
+        ingress_ext = ['bam', 'bai']
+    }
+    else {
+        // No need to force a BAM - do what the user wants
+        ingress_ext = desired_xam_ext
+    }
 
     // Set extensions for the final haplotagged XAM
     // CNV is run on the ingressed BAM channel,
     //   and STR is run on the intermediate phased BAM,
     //   so we are free to output CRAM here, if desired.
-    def haplotagged_output_fmt = params.output_xam_fmt == "cram" ? ["cram", "crai"]: ["bam", "bai"]
+    def haplotagged_output_fmt = desired_xam_ext
 
     // Notify users that QDNAseq usage will override the format of output XAM
     if (convert_cram_to_bam && params.output_xam_fmt == "cram") {
@@ -226,18 +239,23 @@ workflow {
         params.bam,
         ingress_ext,
     )
-    
-    // Check if the genome build in the BAM is suitable for any workflows that have restrictions
-    // NOTE getGenome will exit non-zero if the build is neither hg19 or hg38, so it shouldn't be called
-    // if annotation is skipped for snp, sv and phased, to allow other genomes (including non-human)
-    // to be processed
 
-    // always getGenome for CNV and STR
-    if (params.cnv || params.str) {
-        genome_build = getGenome(bam_channel)
-    }
-    // getGenome for SNP, SV and phased as long as annotation is not disabled
-    else if ((params.snp || params.sv || params.phased) && params.annotation) {
+    // enforce_genome_build determines if getGenome should be run
+    //   and can be used later to determine if a genome build was enforced
+    // NOTE Logic for whether humvar should make a decision as to continue
+    //   based on the genome build should be activated only by this boolean
+    def enforce_genome_build = \
+        // always check genome build for CNV and STR subworkflows
+        // getGenome will take care of checking which build is required for the CNV flavours
+        (params.cnv || params.str) \
+        // or if annotating, check genome build when using SNP, SV or phasing
+        // as SnpEff annotations are only provided for hg19 and hg38
+        || (params.annotation && (params.snp || params.sv || params.phased))
+
+    // Check if the genome build in the BAM is suitable for any workflows that have restrictions
+    // NOTE getGenome will cause the workflow to terminate if the build is neither hg19 or hg38
+    //   so it shouldn't be called if annotation is skipped to allow other genomes (including non-human)
+    if (enforce_genome_build) {
         genome_build = getGenome(bam_channel)
     }
     else {
@@ -326,10 +344,10 @@ workflow {
             .set{ratio}
 
         // Define extension based on whether we are asking for CNV. If so,
-        // use BAM, otherwise CRAM.
+        // use BAM, otherwise use what the user wants.
         downsampling_ext = pass_bam_channel.map{
             xam, xai, meta -> 
-            convert_cram_to_bam ? ['bam', 'bai'] : ['cram', 'crai']
+            convert_cram_to_bam ? ['bam', 'bai'] : desired_xam_ext
         }
         downsampling(pass_bam_channel, ref_channel, ratio.subset, downsampling_ext)
 
@@ -699,11 +717,11 @@ workflow {
             .collect()
             .set{clair3_results}
 
-        // Define which bam to use
+        // Define which bam to use for final refinement
         if (run_haplotagging){
-            snp_bam = clair_vcf.haplotagged_xam
+            snp_refinement_xam = clair_vcf.haplotagged_xam
         } else {
-            snp_bam = pass_bam_channel
+            snp_refinement_xam = pass_bam_channel
         }
 
         // Refine the SNP phase using SVs from Sniffles
@@ -714,7 +732,7 @@ workflow {
             refined_snps = refine_with_sv(
                 ref_channel.collect(),
                 clair_vcf.vcf_files.combine(clair_vcf.contigs),
-                snp_bam.collect(),
+                snp_refinement_xam | first,
                 sniffles_vcf.collect()
             )
             final_snp_vcf = concat_refined_snp(
@@ -850,11 +868,6 @@ workflow {
         output_str(results_str)
     }
 
-    jb_conf = configure_jbrowse(
-        ref_channel,
-        bam_channel,
-    )
-
     // Combine into a final JSON of analyses stats
     analyses_jsons = Channel.empty()
         | mix(
@@ -886,7 +899,6 @@ workflow {
             mosdepth_summary.flatten(),
             mosdepth_perbase.flatten(),
             mod_stats.flatten(),
-            jb_conf.flatten(),
             report_pass.flatten(),
             report_fail.flatten(),
             final_json.flatten(),

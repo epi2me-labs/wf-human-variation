@@ -170,33 +170,6 @@ process getAllChromosomesBed {
 }
 
 
-//TODO reference is later copied to out_dir to save us a lot of trouble but is wasteful
-//     additionally, --reference is hacked to allow the actual_ref to be opened
-//     (as it cannot be guaranteed to exist in the out_dir at this point)
-//TODO alignment track only output when alignment has been done, for now
-//TODO --variant locations should be constructed legitimately instead of guessed
-process configure_jbrowse {
-    label "wf_common"
-    cpus 2
-    input:
-        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
-        tuple path(xam), path(xam_idx), val(xam_meta)
-    output:
-        path("jbrowse.json")
-    script:
-    boolean output_bam = xam_meta.output
-    def snp_variant = params.snp ? "--variant snp '${params.out_dir}/${params.sample_name}.wf_snp.vcf.gz' '${params.out_dir}/${params.sample_name}.wf_snp.vcf.gz.tbi'" : ''
-    def sv_variant = params.sv ? "--variant sv '${params.out_dir}/${params.sample_name}.wf_sv.vcf.gz' '${params.out_dir}/${params.sample_name}.wf_sv.vcf.gz.tbi'" : ''
-    def alignment = output_bam ? "--alignment '${params.out_dir}/${xam.name}' '${params.out_dir}/${xam_idx.name}'" : ''
-    """
-    workflow-glue configure_jbrowse \
-        --reference ${ref} '${params.out_dir}/${ref.name}' '${params.out_dir}/${ref_idx.name}' \
-        ${alignment} \
-        ${snp_variant} \
-        ${sv_variant} > jbrowse.json
-    """
-}
-
 process getGenome {
     cpus 1
     memory 4.GB

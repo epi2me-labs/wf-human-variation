@@ -14,7 +14,7 @@ process call_str {
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path(repeat_bed)
     output:
-        tuple val(chr), path("*.vcf.gz"), path ("*.tsv"), optional: true, emit: straglr_output
+        tuple val(chr), path("*.vcf.gz"), path ("*.tsv"), optional: true
     script:
         // workflow default behaviour is to assume XX, so fall back if sex is not XY
         String straglr_sex = sex == "XY" ? "male" : "female"
@@ -48,7 +48,7 @@ process annotate_repeat_expansions {
         tuple val (chr), path(vcf), path(tsv)
         path(variant_catalogue_hg38)
     output:
-        tuple val(chr), path("${chr}_repeat-expansion_annotated.vcf.gz"), path("${chr}_repeat-expansion_annotated.vcf.gz.tbi"), path("*_plot.tsv"), path("*_annotated.tsv"), emit: stranger_annotation
+        tuple val(chr), path("${chr}_repeat-expansion_annotated.vcf.gz"), path("${chr}_repeat-expansion_annotated.vcf.gz.tbi"), path("*_plot.tsv"), path("*_annotated.tsv")
     script:
         """
         stranger -f ${variant_catalogue_hg38} ${vcf} \
@@ -92,7 +92,7 @@ process bam_read_filter {
     input:
         tuple val(chr), path(xam), path(xam_idx), path(vcf), path(straglr_tsv)
     output:
-        tuple val(chr), path ("*str_reads.bam"), path("*str_reads.bam.bai"), emit: reads_bam
+        tuple val(chr), path ("*str_reads.bam"), path("*str_reads.bam.bai")
     shell:
         """
         tail -n +3 !{straglr_tsv} | cut -f6 > reads_to_filter.txt
@@ -109,7 +109,7 @@ process generate_str_content {
         tuple val(chr), path(straglr_vcf), path(straglr_tsv), path(annotated_vcf), path(annotated_vcf_tbi), path(stranger_tsv), path(stranger_annotation), path (xam), path(xam_idx)
         path (repeat_bed)
     output:
-        path ("*str-content.csv"), emit: str_content, optional: true
+        path ("*str-content.csv"), optional: true
     script:
         """
         workflow-glue generate_str_content \

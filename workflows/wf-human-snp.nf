@@ -46,13 +46,10 @@ workflow snp {
             genotyping_ch = Channel.fromPath("$projectDir/data/OPTIONAL_FILE", checkIfExists: true)
         }
 
-        // truncate bam channel to remove meta to keep compat with snp pipe
-        bam = bam_channel.map{ it -> tuple(it[0], it[1]) }
-
         // Run preliminaries to find contigs and generate regions to process in
         // parallel.
         // > Step 0
-        make_chunks(bam, ref, bed, model, chromosome_codes, genotyping_ch)
+        make_chunks(bam_channel, ref, bed, model, chromosome_codes, genotyping_ch)
         chunks = make_chunks.out.chunks_file
             .splitText(){ 
                 cols = (it =~ /(.+)\s(.+)\s(.+)/)[0]
@@ -68,7 +65,7 @@ workflow snp {
         }
         // Run the "pileup" caller on all chunks and collate results
         // > Step 1 
-        pileup_variants(chunks, bam, ref, model, bed, cmd_file, split_beds)
+        pileup_variants(chunks, bam_channel, ref, model, bed, cmd_file, split_beds)
         aggregate_pileup_variants(
             ref, pileup_variants.out.pileup_vcf_chunks.collect(),
             make_chunks.out.contigs_file, cmd_file)
@@ -83,7 +80,7 @@ workflow snp {
         // Perform phasing for each contig.
         // `each` doesn't work with tuples, so we have to make the product ourselves
         phase_inputs = select_het_snps.out.het_snps_vcf
-            .combine(bam).combine(ref)
+            .combine(bam_channel).combine(ref)
         // > Step 3
         // > Step 4 (haplotagging is now done at the end of the workflow, rather than here)
         phase_contig(phase_inputs)
@@ -109,7 +106,7 @@ workflow snp {
                 y = x[1]; if(! (y instanceof java.util.ArrayList)){y = [y]}
                 // effectively duplicate chr for all beds - [chr, bed]
                 y.collect { [x[0], it] } }
-        // produce something emitting: [[chr, bam, bai, vcf], [chr20, bed], [ref, fai, cache], model]
+        // produce something emitting: [[chr, bam, bai, meta, vcf], [chr20, bed], [ref, fai, cache], model]
         bams_beds_and_stuff = phased_bam_and_vcf
             .cross(candidate_beds)
             .combine(ref.map {it->[it]})
@@ -168,7 +165,7 @@ workflow snp {
         // Otherwise use final joint phasing only.
         if (run_haplotagging) {
             post_clair_phase = merge_pileup_and_full_vars.out.merged_vcf
-                .combine(bam)
+                .combine(bam_channel)
                 .combine(ref) |
                 post_clair_phase_contig
             post_clair_phase.vcf
