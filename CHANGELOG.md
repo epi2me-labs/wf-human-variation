@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Workflow emitting `OPTIONAL_FILE` in some cases.
 - File format of alignment files created by the workflow can be explicitly controlled with `--output_xam_fmt [bam|cram]`
+### Fixed
+- "No such file or directory" error for SV tandem repeat BED when user has assets in /data/
 
 ## [v2.2.1]
 ### Changed
