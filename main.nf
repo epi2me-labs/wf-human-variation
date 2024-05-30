@@ -537,6 +537,8 @@ workflow {
 
     // Set biological sex to the user-provided sex if given
     // Otherwise, attempt to infer if genome_build is set (as we're likely going to need it)
+    // NOTE You may feel compelled to add sex to the bam channel meta but then
+    //      this will block any downstream access to the bam channel on infer_sex!
     if (params.sex) {
         sex = Channel.of(params.sex)
     }
@@ -547,13 +549,6 @@ workflow {
     else {
         sex = Channel.of(null)
     }
-    // Add also to metadata for future use, when meta is properly handled.
-    pass_bam_channel = pass_bam_channel
-        | combine(sex)
-        | map{
-            xam, xai, meta, sex_v ->
-            [xam, xai, meta + [sex: sex_v]]
-        }
 
     // Create reports for pass and fail channels
     if (params.output_report){
