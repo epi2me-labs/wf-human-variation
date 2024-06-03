@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Fixed
 - infer_sex causing SNP subworkflow to wait unnecessarily on completion of mosdepth
+- alignment QC report crashing due to missing unmapped histograms
 
 ## [v2.2.2]
 ### Changed

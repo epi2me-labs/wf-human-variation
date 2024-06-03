@@ -26,13 +26,22 @@ def get_summary_table(
     :param secondary: _description_, defaults to False
     """
     # get metrics
-    n_reads = sum(hist_df['count'])
-    n_unmapped = flagstat_df["unmapped"].sum()
-    n_bases = sum(hist_df['count'] * hist_df['start'])
-    # get percentages
-    perc_reads = n_reads / n_reads_total * 100
-    perc_unmapped = n_unmapped / n_reads * 100
-    perc_bases = n_bases / n_bases_total * 100
+    if hist_df.empty:
+        n_reads = 0
+        n_unmapped = 0
+        n_bases = 0
+        # get percentages
+        perc_reads = 0.0
+        perc_unmapped = 0.0
+        perc_bases = 0.0
+    else:
+        n_reads = sum(hist_df['count'])
+        n_unmapped = flagstat_df["unmapped"].sum()
+        n_bases = sum(hist_df['count'] * hist_df['start'])
+        # get percentages
+        perc_reads = n_reads / n_reads_total * 100
+        perc_unmapped = n_unmapped / n_reads * 100
+        perc_bases = n_bases / n_bases_total * 100
 
     # function for progress bar cell showing percentage values
     def percentage_table_cell(value):
