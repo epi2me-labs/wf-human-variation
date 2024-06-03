@@ -111,6 +111,9 @@ def n50_array(lengths):
 
 def n50_hist(length_hist, x='start', y='count'):
     """Compute read N50 from histogram data."""
+    # If the dataframe is empty, return 0
+    if length_hist.empty:
+        return 0
     # Create the vector from the histogram data
     cumsum = np.cumsum(length_hist[y].values * length_hist[x].values)
     # Get lowest cumulative value >= (total_length/2)
@@ -137,25 +140,36 @@ def load_hists(hists_dir, dtype):
         dt = int
 
     # Load mapped
-    hist_map = pd.read_csv(
-        os.path.join(hists_dir, f"{dtype}.hist"),
-        sep="\t",
-        names=["start", "end", "count"],
-        dtype={"start": dt, "end": dt, "count": int},
-    )
-    # Try loading unmapped
-    if dtype in ['length', 'quality']:
-        hist_umap = pd.read_csv(
-            os.path.join(hists_dir, f"{dtype}.unmap.hist"),
+    try:
+        hist_map = pd.read_csv(
+            os.path.join(hists_dir, f"{dtype}.hist"),
             sep="\t",
             names=["start", "end", "count"],
             dtype={"start": dt, "end": dt, "count": int},
         )
+    # If failing due to empty DF/missing DF, create an empty dataframe
+    except Exception:
+        hist_map = pd.DataFrame(
+            columns=["start", "end", "count"],
+        ).astype({"start": dt, "end": dt, "count": int})
+
+    # Try loading unmapped
+    if dtype in ['length', 'quality']:
+        try:
+            hist_umap = pd.read_csv(
+                os.path.join(hists_dir, f"{dtype}.unmap.hist"),
+                sep="\t",
+                names=["start", "end", "count"],
+                dtype={"start": dt, "end": dt, "count": int},
+            )
+        except Exception:
+            hist_umap = pd.DataFrame(
+                columns=["start", "end", "count"],
+            ).astype({"start": dt, "end": dt, "count": int})
     else:
         hist_umap = pd.DataFrame(
-            names=["start", "end", "count"],
-            dtype={"start": dt, "end": dt, "count": int},
-        )
+            columns=["start", "end", "count"],
+        ).astype({"start": dt, "end": dt, "count": int})
     # Sum mapped and unmapped histograms.
     hist = sum_hists(hist_map, hist_umap)
     return hist, hist_map, hist_umap
