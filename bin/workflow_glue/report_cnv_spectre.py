@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """Plot Spectre CNVs."""
 
+import json
+
 from dominate.tags import a, p
 from ezcharts.components.reports.labs import LabsReport
 from ezcharts.components.theme import LAB_head_resources
@@ -42,6 +44,10 @@ def argparser():
         help="Workflow version",
     )
     parser.add_argument(
+        "--karyotype_json",
+        help="JSON file containing karyotype"
+    )
+    parser.add_argument(
         '-o', '--output', required=True, dest="output_report",
         help="Output report")
 
@@ -54,6 +60,8 @@ def make_report(params, versions, cnv_df, args):
         f"{args.sample_id} | {REPORT_TITLE}",
         WORKFLOW_NAME, params, versions, args.workflow_version,
         head_resources=[*LAB_head_resources])
+
+    karyotype = generate_karyotype(args.karyotype_json)
 
     with report.add_section(
             'Introduction', 'Intro'):
@@ -73,8 +81,9 @@ def make_report(params, versions, cnv_df, args):
 
         with report.main_content:
             Stats(
-                columns=3,
+                columns=4,
                 items=[
+                    (karyotype, 'Predicted karyotype'),
                     (total_cnv, 'Total no. of CNVs'),
                     (total_dups, 'Total no. of duplications'),
                     (total_dels, 'Total no. of deletions')
@@ -121,6 +130,20 @@ def make_report(params, versions, cnv_df, args):
             p("""No CNVs were detected.""")
 
     return report
+
+
+def generate_karyotype(json_path):
+    """Convert karyotype JSON to string."""
+    with open(json_path, 'r') as json_file:
+        data = json.load(json_file)
+
+    count_x = data.get("X", 0)
+    count_y = data.get("Y", 0)
+
+    # construct string
+    karyotype = "X" * count_x + "Y" * count_y
+
+    return karyotype
 
 
 def main(args):

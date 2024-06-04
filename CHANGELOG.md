@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Clair3 HAC and SUP V5.0.0 models
 ### Changed
+- Update Spectre to v0.2.1, which generates a predicted karyotype that is included in the HTML report.
 - Improved reliability of the haplocheck process.
 ### Fixed
 - infer_sex causing SNP subworkflow to wait unnecessarily on completion of mosdepth
