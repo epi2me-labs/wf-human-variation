@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - infer_sex causing SNP subworkflow to wait unnecessarily on completion of mosdepth
 - alignment QC report crashing due to missing unmapped histograms
 
+### Changed
+- Workflow will exit early with an informative message and alignment report if there are no aligned reads in the BAM
+
 ## [v2.2.2]
 ### Changed
 - Workflow emitting `OPTIONAL_FILE` in some cases.

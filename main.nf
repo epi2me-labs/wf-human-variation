@@ -535,7 +535,7 @@ workflow {
         .combine(pass_bam_channel)
         .branch{
             dp_pass, dp_val_env, bam, bai, meta ->
-            pass: dp_pass
+            pass: dp_pass && meta.has_mapped_reads
             not_pass: true
             }
     // Create the pass_bam_channel  channel when they pass
@@ -551,9 +551,9 @@ workflow {
         .subscribe {
             dp_pass, dp, bam, bai, meta ->
             // check where it failed
-            def fail_depth = dp < params.bam_min_coverage ? "Depth: ${dp} < ${params.bam_min_coverage}" : "Depth: ${dp} > ${params.bam_min_coverage}"
+            def fail_depth = !meta.has_mapped_reads ? "No mapped reads." : dp < params.bam_min_coverage ? "Depth: ${dp} < ${params.bam_min_coverage}" : "Unknown."
             // Log where it failed
-            log.error "ERROR: File ${bam.getName()} will not be processed by the workflow due:\n - ${fail_depth}\n"
+            log.error "File ${bam.getName()} will not be processed by the workflow because:\n - ${fail_depth}\n"
         }
     filter.not_pass
         .map{it ->

@@ -37,7 +37,7 @@ process minimap2_alignment {
         tuple val(align_ext), val(index_ext) // either [bam, bai] or [cram, crai]
 
     output:
-        tuple val(meta), path("${params.sample_name}.${align_ext}"), path("${params.sample_name}.${align_ext}.${index_ext}"), emit: alignment
+        tuple val(meta), env(has_maps), path("${params.sample_name}.${align_ext}"), path("${params.sample_name}.${align_ext}.${index_ext}"), emit: alignment
     script:
     """
     samtools bam2fq -@ ${params.ubam_bam2fq_threads} -T 1 ${reads} \
@@ -46,6 +46,10 @@ process minimap2_alignment {
         | samtools sort -@ ${params.ubam_sort_threads} \
             --write-index -o ${params.sample_name}.${align_ext}##idx##${params.sample_name}.${align_ext}.${index_ext} \
             -O ${align_ext} --reference ${reference} -
+
+    # Check that the first line is not unmapped
+    REF_PATH=${reference} workflow-glue check_mapped_reads --xam ${params.sample_name}.${align_ext} > env.vars
+    source env.vars
     """
 }
 
@@ -58,7 +62,7 @@ process check_for_alignment {
         tuple path(reference), path(ref_idx)
         tuple val(meta), path(xam), path(xam_idx)
     output:
-        tuple env(to_align), val(meta), path(xam), path(xam_idx)
+        tuple env(to_align), env(has_maps), val(meta), path(xam), path(xam_idx)
     script:
         """
         to_align=0
@@ -67,6 +71,10 @@ process check_for_alignment {
         # Count SQ lines to help determine if this is unaligned BAM/CRAM later
         # permit grep to exit 1 if the count is zero, otherwise blow up here
         xam_sq_len=\$(samtools view -H ${xam} | { grep -c '^@SQ' || [[ \$? == 1 ]]; })
+
+        # Check that the first line is not unmapped
+        workflow-glue check_mapped_reads --xam ${xam} > env.vars
+        source env.vars
 
         # Allow EX_OK and EX_DATAERR, otherwise explode
         if [ \$to_align -ne 0 ] && [ \$to_align -ne 65 ]; then
@@ -117,10 +125,11 @@ workflow ingress {
         checked_bam = check_for_alignment(
                 check_ref,
                 ingressed_bam.map{ it - null }
-            ) | 
-            map{ to_align, meta, xam, xai ->
-                [meta + [to_align: to_align != '0'], xam, xai]
+            ) |
+            map{ to_align, has_maps, meta, xam, xai ->
+                [meta + [to_align: to_align != '0', has_mapped_reads: has_maps == '1'], xam, xai]
             }
+
         // fork BAMs into to_align and noalign subchannels
         checked_bam.branch {
             meta, xam, xai -> 
@@ -131,8 +140,8 @@ workflow ingress {
         // call minimap on bams that require (re)alignment
         // then map the result of minimap2_alignment to the canonical (reads, index, meta) tuple
         new_mapped_bams = minimap2_alignment(ref_file, alignment_fork.to_align, alignment_exts).map{
-            meta, xam, xai -> 
-            [meta, xam, xai]
+            meta, has_maps, xam, xai -> 
+            [meta + [has_mapped_reads: has_maps == '1'], xam, xai]
         }
 
         // map to (xam_path, xam_index, xam_meta) tuple
