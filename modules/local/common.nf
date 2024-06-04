@@ -550,7 +550,7 @@ process combine_metrics_json {
             path("mosdepth.global.dist.txt"),
             path("thresholds.bed.gz")
         path "mosdepth.summary.txt"
-        path "haplocheck"
+        path haplocheck, stageAs: "haplocheck/*"
         val(sex)
     output:
         path "${params.sample_name}.stats.json", emit: json
@@ -559,7 +559,7 @@ process combine_metrics_json {
         // only emit an inferred sex if sex is defined and params.sex is not
         String sex_arg = (!params.sex && sex) ? "--inferred_sex ${sex}" : ""
         // If haplocheck is optional file, then skip it
-        String haplocheck_arg = params.haplocheck ? "--haplocheck haplocheck" : ""
+        String haplocheck_arg = params.haplocheck && haplocheck.baseName != "OPTIONAL_FILE" ? "--haplocheck ${haplocheck}" : ""
         """
         workflow-glue combine_jsons \
             --bamstats_flagstats flagstat.tsv \
@@ -627,27 +627,25 @@ process haplocheck {
     memory 8.GB
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
-        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH) 
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
+        val mt_chr
     output:
         path "${params.sample_name}.haplocheck.tsv"
     script:
-        def mt_chr = params.mitogenome ? "${params.mitogenome}" : "chrM MT Mt"
         """
+        # Create the reference genome
+        samtools faidx ${ref} ${mt_chr} > mt.fa && samtools faidx mt.fa
+
         # Extract mito-genome reads first
         samtools view -@${task.cpus - 1} -hb ${xam} ${mt_chr} > ${params.sample_name}
         samtools index -@${task.cpus} ${params.sample_name}
 
-        # Get MT sequence IDs. This is needed because, providing inexisting
-        # sequence IDs to `samtools faidx` causes to create new empty sequences
-        # in the output FASTA file.
-        samtools view ${params.sample_name} | cut -f 3 | sort | uniq > seqs.txt
-        has_mt=\$( wc -l seqs.txt | awk '{print \$1}' )
+        # Count how many reads are mapped to the mitogenome.
+        n_reads=\$( samtools view -c ${params.sample_name} )
 
-        # Run the commands if there are reads to process
-        if [ \$has_mt -gt 0 ]; then
-            # Extract regions from the fasta file
-            samtools faidx -r seqs.txt ${ref} > mt.fa && samtools faidx mt.fa
-
+        # Run the commands if there are reads to process.
+        # We already checked if the reference has a valid mitogenome.
+        if [ \$n_reads -gt 0 ]; then
             # Run mutserve
             java -jar `which mutserve.jar` call \
                 --level 0.01 \
@@ -659,9 +657,22 @@ process haplocheck {
                 --threads ${task.cpus} \
                 ${params.sample_name}
 
-            # Run haplocheck
-            haplocheck --out ${params.sample_name}.haplocheck.tsv mt.vcf.gz
-        # If no MT is found, then save it as NV (no value) as opposed to ND (not determined)
+            # Before running haplocheck, count how many sites are in the
+            # VCF file. If it is 0, then do not proceed.
+            n_sites=0
+            if [ -e mt.vcf.gz ]; then
+                n_sites=\$( zcat mt.vcf.gz | awk '\$1!~"#" {print}' | wc -l | awk '{print \$1}' )
+            fi
+
+            # Run haplocheck if there are sites in the VCF file
+            if [ \$n_sites -gt 0 ]; then
+                haplocheck --out ${params.sample_name}.haplocheck.tsv mt.vcf.gz
+            # Otherwise, save as NV (no value) as opposed to ND (not determined)
+            else
+                echo "Sample\tContamination Status\tContamination Level\tDistance\tSample Coverage" > ${params.sample_name}.haplocheck.tsv
+                echo "${params.sample_name}\tNO\tNV\t0\t0" >> ${params.sample_name}.haplocheck.tsv
+            fi
+        # If no reads are found, create the placeholder.
         else
             echo "Sample\tContamination Status\tContamination Level\tDistance\tSample Coverage" > ${params.sample_name}.haplocheck.tsv
             echo "${params.sample_name}\tNO\tNV\t0\t0" >> ${params.sample_name}.haplocheck.tsv

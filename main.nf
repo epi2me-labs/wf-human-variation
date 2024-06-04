@@ -271,7 +271,33 @@ workflow {
 
     // Check for contamination, if MT is present.
     if (params.haplocheck){
-        hap_check = haplocheck(bam_channel, ref_channel.collect())
+        // First, let's get the mitogenome code.
+        if (params.mitogenome){
+            // Ensure that the given chromosome code is in the reference genome
+            mt_code = ref_index
+            | splitCsv(sep: "\t")
+            | map{chrom, size, os1, os2, os3 -> chrom}
+            | filter{it == params.mitogenome}
+            | ifEmpty{
+                throw new Exception(colors.red + "Mitochondrial genome ${params.mitogenome} not present in the reference." + colors.reset)
+            }
+        } else {
+            default_mt_codes = Channel.of(['chrM', 'Mt', 'MT']) | flatten
+            mt_code = ref_index
+            | splitCsv(sep: "\t")
+            | map{chrom, size, os1, os2, os3 -> chrom}
+            | cross(default_mt_codes)
+            | map{it[0]}
+        }
+        // Do not run if there are multiple mitochondrial codes.
+        n_mt_codes = mt_code
+        | count
+        | subscribe {
+            if (it != 1){
+                throw new Exception(colors.red + "Unexpected number of mitochondrial chromosome found: ${it}." + colors.reset) 
+            }
+        }
+        hap_check = haplocheck(bam_channel, ref_channel.collect(), mt_code)
     } else {
         // If haplocheck is not needed, use the predefined NV file.
         hap_check = Channel.fromPath("$projectDir/data/OPTIONAL_FILE")
