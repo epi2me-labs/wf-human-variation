@@ -37,6 +37,7 @@ workflow cnv {
         spectre_vcf = cnvs.spectre_vcf
         spectre_vcf_bgzipped = bgzip_and_index_vcf(spectre_vcf)
         spectre_bed = cnvs.spectre_bed
+        spectre_karyotype = cnvs.spectre_karyotype
 
         // append '*' to indicate that annotation should be performed on all chr at once
         vcf_for_annotation = spectre_vcf_bgzipped.map{ it << '*' }
@@ -46,7 +47,7 @@ workflow cnv {
         software_versions = add_snp_tools_to_versions(software_versions_tmp)
         workflow_params = getParams()
         if (params.output_report){
-            report = makeReport(software_versions.collect(), workflow_params, spectre_bed)
+            report = makeReport(software_versions.collect(), workflow_params, spectre_bed, spectre_karyotype)
         } else {
             report = Channel.empty()
         }

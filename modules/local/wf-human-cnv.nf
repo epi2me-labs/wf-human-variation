@@ -11,9 +11,10 @@ process callCNV {
     output:
         path ("spectre_output/${params.sample_name}.vcf"), emit: spectre_vcf
         path ("spectre_output/${params.sample_name}_cnv.bed"), emit: spectre_bed
+        path ("spectre_output/expected_karyotype.json"), emit: spectre_karyotype
     script:
         """
-        python3 \$SPECTRE_PATH/spectre.py CNVCaller \
+        spectre CNVCaller \
         --bin-size 1000 \
         --threshhold-quantile 10 \
         --dist-proportion 0.3 \
@@ -21,10 +22,10 @@ process callCNV {
         --sample-id ${params.sample_name} \
         --output-dir spectre_output/ \
         --reference ${ref} \
-        --blacklist \$SPECTRE_PATH/data/black_list_bins_0.02_merged.bed \
+        --blacklist grch38_blacklist_0.3 \
         --min-cnv-len 80000 \
         --snv ${vcf} \
-        --metadata \$SPECTRE_PATH/data/metadata_GRCh38_no_alt.mdr
+        --metadata grch38_metadata
         """
 }
 
@@ -49,7 +50,7 @@ process getVersions {
         path "versions.txt"
     script:
         """
-        python3 \$SPECTRE_PATH/spectre.py version 2>&1 | awk '{print \$2","\$4}' >> versions.txt
+        spectre version 2>&1 | awk '{print \$2","\$4}' >> versions.txt
         """
 }
 
@@ -88,6 +89,7 @@ process makeReport {
         path "versions/*"
         path "params.json"
         path cnv_bed
+        path karyotype_json
     output:
         path("*wf-human-cnv-report.html")
     script:
@@ -98,6 +100,7 @@ process makeReport {
             --params params.json \
             --versions versions \
             --cnv_bed ${cnv_bed} \
+            --karyotype_json ${karyotype_json} \
             -o $report_name \
             --workflow_version ${workflow.manifest.version}
         """
