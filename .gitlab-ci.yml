@@ -49,6 +49,9 @@ docker-run:
     parallel:
         matrix:
             - MATRIX_NAME: [
+                "haplocheck_mt",
+                "haplocheck_nomt",
+                "haplocheck_custommt_missing",
                 "run_all_no_report",
                 "gzref-bam-mod",
                 "gzref-bam-mod-hap",
@@ -75,6 +78,35 @@ docker-run:
         #   being incorrectly scheduled for "detached merge request pipelines" etc.
         - if: ($CI_COMMIT_BRANCH == null || $CI_COMMIT_BRANCH == "dev-template")
           when: never
+
+        # This uses the Spectre dataset, that contains the mt genome, and should therefore run
+        # haplocheck.
+        - if: $MATRIX_NAME == "haplocheck_mt"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-spectre/spectre_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
+              NF_IGNORE_PROCESSES: "post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp true --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/spectre_demo/demo.bam --ref ${CI_PROJECT_NAME}/data/spectre_demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fasta --bam_min_coverage 0 --haplocheck --annotation false"
+
+        # The SNP demo doesn't have the MT genome in the reference, and should fail with an expected error.
+        - if: $MATRIX_NAME == "haplocheck_nomt"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
+              NF_IGNORE_PROCESSES: "phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom --haplocheck --bam_min_coverage 0 --annotation false"
+              ASSERT_NEXTFLOW_FAILURE: "yes"
+              ASSERT_NEXTFLOW_FAILURE_REXP : "Unexpected number of mitochondrial chromosome found:"
+
+        # The SNP demo doesn't have the MT genome in the reference, and should fail with an expected error.
+        - if: $MATRIX_NAME == "haplocheck_custommt_missing"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-spectre/spectre_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
+              NF_IGNORE_PROCESSES: "post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp true --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/spectre_demo/demo.bam --ref ${CI_PROJECT_NAME}/data/spectre_demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fasta --bam_min_coverage 0 --haplocheck --mitogenome myVerySpecialMt --annotation false"
+              ASSERT_NEXTFLOW_FAILURE: "yes"
+              ASSERT_NEXTFLOW_FAILURE_REXP : "Mitochondrial genome myVerySpecialMt not present in the reference"
 
         - if: $MATRIX_NAME == "wf-human-snp_modelint"
           variables:
