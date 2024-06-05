@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [v2.2.3]
 ### Added
 - Clair3 HAC and SUP V5.0.0 models
 ### Changed
@@ -12,7 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved reliability of the haplocheck process.
 ### Fixed
 - infer_sex causing SNP subworkflow to wait unnecessarily on completion of mosdepth
-- alignment QC report crashing due to missing unmapped histograms
+- Alignment QC report crashing due to missing unmapped histograms
+- Unsupported dna_r10.4.1_e8.2_5khz_400bps_sup@v4.2.0 model
+- Missing Clair3 mapping for v3.5.1 models
+  - The missing model mapping is provided for completeness, users are strongly encouraged to re-basecall data on newer models to take advantage of significant improvements.
 
 ### Changed
 - Workflow will exit early with an informative message and alignment report if there are no aligned reads in the BAM

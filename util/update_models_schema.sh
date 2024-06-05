@@ -28,8 +28,9 @@ else
 fi
 
 # Get basecaller_cfg with a valid Clair3 model
-awk 'NR>1 && $1 == "dorado" && $3 != "-" {print $2}' data/clair3_models.tsv | sort | uniq > valid_clair3_dorado_models.ls
-awk 'NR>1 && $1 == "dorado" && $3 == "-" {print $2}' data/clair3_models.tsv | sort | uniq > invalid_clair3_dorado_models.ls
+# CW-4166 Note we skip including khz models which are synonymous with the model name without the distinction ... for now
+awk 'NR>1 && $1 == "dorado" && $3 != "-" {print $2}' data/clair3_models.tsv | grep -v khz_ | sort | uniq > valid_clair3_dorado_models.ls
+awk 'NR>1 && $1 == "dorado" && $3 == "-" {print $2}' data/clair3_models.tsv | grep -v khz_ | sort | uniq > invalid_clair3_dorado_models.ls
 awk 'NR>1 && $1 != "dorado" && $3 != "-" {print $2}' data/clair3_models.tsv | sort | uniq > valid_clair3_nondorado_models.ls
 
 # Get basecaller_cfg with a valid Dorado model in the container (should be sorted but lets be sure)
