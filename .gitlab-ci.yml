@@ -49,6 +49,8 @@ docker-run:
     parallel:
         matrix:
             - MATRIX_NAME: [
+                "multibam",
+                "haplocheck_contaminated",
                 "multimods",
                 "multimods_phase",
                 "haplocheck_mt",
@@ -80,6 +82,30 @@ docker-run:
         #   being incorrectly scheduled for "detached merge request pipelines" etc.
         - if: ($CI_COMMIT_BRANCH == null || $CI_COMMIT_BRANCH == "dev-template")
           when: never
+        
+        # This test takes multiple input BAM files, concatenates them and process them.
+        - if: $MATRIX_NAME == "multibam"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-somatic-variation/wf-somatic-variation-demo.tar.gz && \
+              tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && \
+              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-reference/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz"
+              NF_PROCESS_FILES: "workflows/methyl.nf"
+              NF_IGNORE_PROCESSES: "modkit_phase,minimap2_ubam,index_ref_gzi,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf,eval_downsampling,downsampling,modkit"
+              NF_WORKFLOW_OPTS: "--snp true --sv true --mod --cnv false --str false \
+              --bed ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo.bed \
+              --bam ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/20240213_0951_0-AN-DN__abcde123/bam_pass/normal/ \
+              --ref ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set_chr20.fna \
+              --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 --bam_min_coverage 0 \
+              --annotation false --modkit_threads 4"
+
+        # This uses BAM with reads on chr6, chr20 and chrM. The chrM reads come from both HG001 and HG002, and should
+        # result contaminated at the haplocheck stage.
+        - if: $MATRIX_NAME == "haplocheck_contaminated"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_PROCESS_FILES: "workflows/methyl.nf"
+              NF_IGNORE_PROCESSES: "modkit_phase,getVersions,getParams,failedQCReport,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod true --cnv false --str false --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/demo_chr6_chr20_chrM_unmap.bam --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta --bed ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.bed --bam_min_coverage 0 --basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v4.2.0 --haplocheck --annotation false"
 
         # This process checks the use with multiple modified bases concurrently.
         - if: $MATRIX_NAME == "multimods"
