@@ -298,6 +298,10 @@ workflow {
             }
         }
         hap_check = haplocheck(bam_channel, ref_channel.collect(), mt_code)
+        | ifEmpty{
+            log.warn "Haplocheck failed to run. The workflow will continue, but will not output a contamination determination."
+            file("$projectDir/data/OPTIONAL_FILE")
+        }
     } else {
         // If haplocheck is not needed, use the predefined NV file.
         hap_check = Channel.fromPath("$projectDir/data/OPTIONAL_FILE")
