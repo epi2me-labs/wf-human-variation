@@ -625,6 +625,7 @@ process haplocheck {
     // using haplocheck.
     cpus 2
     memory 8.GB
+    errorStrategy 'ignore'
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
@@ -670,12 +671,12 @@ process haplocheck {
             # Otherwise, save as NV (no value) as opposed to ND (not determined)
             else
                 echo "Sample\tContamination Status\tContamination Level\tDistance\tSample Coverage" > ${params.sample_name}.haplocheck.tsv
-                echo "${params.sample_name}\tNO\tNV\t0\t0" >> ${params.sample_name}.haplocheck.tsv
+                echo "${params.sample_name}\tNA\tNV\t0\t0" >> ${params.sample_name}.haplocheck.tsv
             fi
         # If no reads are found, create the placeholder.
         else
             echo "Sample\tContamination Status\tContamination Level\tDistance\tSample Coverage" > ${params.sample_name}.haplocheck.tsv
-            echo "${params.sample_name}\tNO\tNV\t0\t0" >> ${params.sample_name}.haplocheck.tsv
+            echo "${params.sample_name}\tNA\tNV\t0\t0" >> ${params.sample_name}.haplocheck.tsv
         fi
         """
 }
