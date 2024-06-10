@@ -226,7 +226,7 @@ workflow snp {
 
     emit:
         clair3_results = clair3_results
-        str_bams = haplotagged_ctg_bams // intermediate haplotagged contigs used for STR
+        str_bams = haplotagged_ctg_bams.combine(bam_channel.map{it[2]}).map{ sq, xam, xai, meta -> tuple(xam, xai, meta + [sq:sq]) } // intermediate haplotagged contigs used for STR, with meta
         vcf_files = clair_final.vcf
         haplotagged_xam = haplotagged_cat_xam.combine(bam_channel.map{it[2]}) // haplotagged XAM with meta appended
         contigs = contigs

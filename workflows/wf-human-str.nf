@@ -37,13 +37,13 @@ workflow str {
 
     // subset contig BAM to include only STR regions
     // ignore those contigs which aren't in repeats BED so this output is optional
-    str_regions_bam = bam_region_filter(bam_channel, str_list)
+    str_regions_bam = bam_region_filter(bam_channel, str_list) | map { bam, bai, meta -> tuple(meta.sq, bam, bai, meta) }
 
     // make a channel of chr, xam, xam_idx, vcf, straglr_tsv
     reads_join = str_regions_bam.join(str_vcf_and_tsv)
 
-    // subset contig STR regions BAM to include only supporting reads from straglr 
-    str_reads_bam = bam_read_filter(reads_join)
+    // subset contig STR regions BAM to include only supporting reads from straglr
+    str_reads_bam = bam_read_filter(reads_join) | map { bam, bai, meta -> tuple(meta.sq, bam, bai, meta) }
 
     // join all the contig information ready to generate STR content
     str_content_join = str_vcf_and_tsv.join(annotations).join(str_reads_bam)

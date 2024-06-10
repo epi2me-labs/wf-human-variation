@@ -24,7 +24,7 @@ process modkit {
     maxRetries 1
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     input:
-        tuple val(chr), path(alignment), path(alignment_index), val(alignment_meta), val(probs)
+        tuple val(meta), path(xam), path(xai)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         val options
     output:
@@ -33,17 +33,17 @@ process modkit {
     script:
     """
     modkit pileup \\
-        ${alignment} \\
-        ${params.sample_name}.wf_mods.${chr}.bedmethyl \\
+        ${xam} \\
+        ${params.sample_name}.wf_mods.${meta.sq}.bedmethyl \\
         --ref ${ref} \\
-        --region ${chr} \\
+        --region ${meta.sq} \\
         --interval-size 1000000 \\
         --log-filepath modkit.log \\
-        ${probs} \\
+        ${meta.probs} \\
         --threads ${task.cpus} ${options}
     
     # Compress all
-    bgzip ${params.sample_name}.wf_mods.${chr}.bedmethyl
+    bgzip ${params.sample_name}.wf_mods.${meta.sq}.bedmethyl
     """
 }
 
@@ -55,7 +55,7 @@ process modkit_phase {
     maxRetries 1
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     input:
-        tuple val(chr), path(xam), path(xam_idx), val(probs)
+        tuple val(meta), path(xam), path(xai)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         val options
     // some of the outputs can be optional based on the tagging (they can all be from one hap, either haps, or none)
@@ -74,10 +74,10 @@ process modkit_phase {
         --ref ${ref} \\
         --partition-tag HP \\
         --interval-size 1000000 \\
-        --prefix ${params.sample_name}.wf_mods.${chr} \\
+        --prefix ${params.sample_name}.wf_mods.${meta.sq} \\
         --log-filepath modkit.log \\
-        --region ${chr} \\
-        ${probs} \\
+        --region ${meta.sq} \\
+        ${meta.probs} \\
         --threads ${task.cpus} ${options}
     
     # Compress all
@@ -85,7 +85,7 @@ process modkit_phase {
         root_name=\$( basename \$i '.bed' )
         # modkit saves the file as params.sample_name.wf_mods_haplotype.bed
         # create a new name with the patter params.sample_name.wf_mods.haplotype.bedmethyl
-        new_name=\$( echo \${root_name} | sed 's/wf_mods_/wf_mods\\./' )
+        new_name=\$( echo \${root_name} | sed 's/wf_mods\\.${meta.sq}_/wf_mods\\.${meta.sq}\\./' )
         mv ${params.sample_name}/\${root_name}.bed ${params.sample_name}/\${new_name}.bedmethyl
         bgzip ${params.sample_name}/\${new_name}.bedmethyl
     done
@@ -150,6 +150,7 @@ workflow mod {
         chromosome_codes
         probs
         reference
+        run_haplotagging
     main:
         def modkit_options = params.force_strand ? '' : '--combine-strands --cpg'
         // Custom options overwrite every custom setting.
@@ -157,21 +158,21 @@ workflow mod {
             modkit_options = "${params.modkit_args}"
         }
 
-        // CW-2370: modkit doesn't require to treat each haplotype separately, as
-        // you simply provide --partition-tag HP and it will automatically generate
-        // three distinct output files, one for each haplotype and one for the untagged regions.
-        if (params.phased){
-            // Process the chunked haplotagged BAM file.
-            modkit_out = modkit_phase(modkit_bam.combine(probs), reference.collect(), modkit_options)
-            // Concatenate the haplotypes.
-            out = modkit_out.modkit_H0 
-                | mix(modkit_out.modkit_H1, modkit_out.modkit_H2)
-                | groupTuple(by: 0)
-                | concat_bedmethyl
+        // Create input channel
+        // Process only contigs with reads mapped to them.
+        // Follow behaviour of SNP and SV by filtering contigs to chromosomes_codes,
+        // if --`include_all_ctgs false`.
+        // Add chromosome and filtering probs to the modkit channel.
+        // If haplotagging is requested, then the channel already has the chromosome ID
+        // in it, so ignore the target_chrom.
+        if (run_haplotagging){
+            modkit_bam = modkit_bam
+            | combine(probs)
+            | map{
+                xam, xai, meta, probs ->
+                [meta + [probs: probs], xam, xai]
+            }
         } else {
-            // Process only contigs with reads mapped to them.
-            // Follow behaviour of SNP and SV by filtering contigs to chromosomes_codes,
-            // if --`include_all_ctgs false`.
             target_chrom = bam_flagstats
                 | splitCsv(sep: "\t", header: true)
                 | filter{
@@ -181,8 +182,27 @@ workflow mod {
                     params.include_all_ctgs ? true : chromosome_codes.contains(it.ref)
                 }
                 | map{it.ref}
-            // Add chromosome and filtering probs to the modkit channel.
-            modkit_bam = target_chrom.combine(modkit_bam).combine(probs)
+            modkit_bam = target_chrom
+            | combine(modkit_bam)
+            | combine(probs)
+            | map{
+                sq, xam, xai, meta, probs ->
+                [meta + [sq:sq, probs:probs], xam, xai]
+            }
+        }
+
+        // CW-2370: modkit doesn't require to treat each haplotype separately, as
+        // you simply provide --partition-tag HP and it will automatically generate
+        // three distinct output files, one for each haplotype and one for the untagged regions.
+        if (params.phased){
+            // Process the chunked haplotagged BAM file.
+            modkit_out = modkit_phase(modkit_bam, reference.collect(), modkit_options)
+            // Concatenate the haplotypes.
+            out = modkit_out.modkit_H0 
+                | mix(modkit_out.modkit_H1, modkit_out.modkit_H2)
+                | groupTuple(by: 0)
+                | concat_bedmethyl
+        } else {
             // Run modkit.
             out = modkit(modkit_bam, reference.collect(), modkit_options)
                 | groupTuple(by: 0)
