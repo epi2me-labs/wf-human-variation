@@ -847,7 +847,8 @@ workflow {
             bam_flag,  // Flagstats used to define chromosomes to analyse
             chromosome_codes,  // Accepted chromosome codes for the human genome
             modkit_probs,  // modkit probabilities for filtering
-            ref_channel
+            ref_channel,
+            run_haplotagging  // Define if the data are haplotagged.
         )
         mod_stats = results.modkit.flatten()
     } else {

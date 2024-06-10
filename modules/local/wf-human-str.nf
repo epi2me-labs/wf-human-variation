@@ -10,26 +10,28 @@ process call_str {
     cpus 2
     memory 4.GB
     input:
-        tuple val(chr), path(xam), path(xam_idx), val(sex)
+        tuple path(xam), path(xam_idx), val(xam_meta), val(sex)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path(repeat_bed)
     output:
-        tuple val(chr), path("*.vcf.gz"), path ("*.tsv"), optional: true
+        // emit meta.sq as join key (TODO a multi sample approach will want a compound key)
+        tuple val(xam_meta.sq), path("*.vcf.gz"), path ("*.tsv"), optional: true
     script:
         // workflow default behaviour is to assume XX, so fall back if sex is not XY
         String straglr_sex = sex == "XY" ? "male" : "female"
+        def chr = xam_meta.sq
         """
-        { grep ${chr} -Fw ${repeat_bed} || true; } > repeats_subset.bed
-
+        { grep '${chr}' -Fw ${repeat_bed} || true; } > repeats_subset.bed
         if [[ -s repeats_subset.bed ]]; then
             straglr-genotype --loci repeats_subset.bed \
                 --sample ${params.sample_name} \
                 --tsv ${chr}_straglr.tsv \
                 -v ${chr}_tmp.vcf \
-                --sex ${straglr_sex} ${xam} ${ref} \
+                --sex ${straglr_sex} \
                 --min_support 1 \
                 --threads 1 \
-                --min_cluster_size 1
+                --min_cluster_size 1 \
+                ${xam} ${ref}
             bgzip -c ${chr}_tmp.vcf > ${chr}_straglr.vcf.gz
             tabix -p vcf ${chr}_straglr.vcf.gz
         else
@@ -45,11 +47,12 @@ process annotate_repeat_expansions {
     cpus 1
     memory 4.GB
     input:
-        tuple val (chr), path(vcf), path(tsv)
+        tuple val(join_key), path(vcf), path(tsv)
         path(variant_catalogue_hg38)
     output:
-        tuple val(chr), path("${chr}_repeat-expansion_annotated.vcf.gz"), path("${chr}_repeat-expansion_annotated.vcf.gz.tbi"), path("*_plot.tsv"), path("*_annotated.tsv")
+        tuple val(join_key), path("${join_key}_repeat-expansion_annotated.vcf.gz"), path("${join_key}_repeat-expansion_annotated.vcf.gz.tbi"), path("*_plot.tsv"), path("*_annotated.tsv")
     script:
+        def chr = join_key
         """
         stranger -f ${variant_catalogue_hg38} ${vcf} \
             | sed 's/\\ /_/g' \
@@ -68,21 +71,21 @@ process bam_region_filter {
     cpus 1
     memory 4.GB
     input:
-        tuple val(chr), path(xam), path(xam_idx)
+        tuple path(xam), path(xam_idx), val(xam_meta)
         path (repeat_bed)
     output:
-        tuple val(chr), path ("*str_regions.bam"), path("*str_regions.bam.bai"), emit: region_bam, optional: true
-    shell:
-        '''    
-        { grep !{chr} -Fw !{repeat_bed} || true; } > repeats_subset.bed
+        tuple path("*str_regions.bam"), path("*str_regions.bam.bai"), val(meta), emit: region_bam, optional: true
+    script:
+        meta = [id: xam_meta.id, sq: xam_meta.sq] // nodef
+        """
+        { grep ${xam_meta.sq} -Fw ${repeat_bed} || true; } > repeats_subset.bed
 
         if [[ -s repeats_subset.bed ]]; then
-            samtools view -b -h -o !{chr}.wf_str_regions.bam -L repeats_subset.bed !{xam}
-            samtools index !{chr}.wf_str_regions.bam
+            samtools view -b -h --write-index -o "${xam_meta.sq}.wf_str_regions.bam##idx##${xam_meta.sq}.wf_str_regions.bam.bai" -L repeats_subset.bed ${xam}
         else
             echo "blank subset BED"
         fi
-        '''
+        """
 }
 
 process bam_read_filter {
@@ -90,9 +93,9 @@ process bam_read_filter {
     cpus 1
     memory 4.GB
     input:
-        tuple val(chr), path(xam), path(xam_idx), path(vcf), path(straglr_tsv)
+        tuple val(chr), path(xam), path(xam_idx), val(xam_meta), path(vcf), path(straglr_tsv)
     output:
-        tuple val(chr), path ("*str_reads.bam"), path("*str_reads.bam.bai")
+        tuple path ("*str_reads.bam"), path("*str_reads.bam.bai"), val(xam_meta)
     shell:
         """
         tail -n +3 !{straglr_tsv} | cut -f6 > reads_to_filter.txt
@@ -106,7 +109,7 @@ process generate_str_content {
     cpus 1
     memory 4.GB
     input:
-        tuple val(chr), path(straglr_vcf), path(straglr_tsv), path(annotated_vcf), path(annotated_vcf_tbi), path(stranger_tsv), path(stranger_annotation), path (xam), path(xam_idx)
+        tuple val(chr), path(straglr_vcf), path(straglr_tsv), path(annotated_vcf), path(annotated_vcf_tbi), path(stranger_tsv), path(stranger_annotation), path(xam), path(xam_idx), val(xam_meta)
         path (repeat_bed)
     output:
         path ("*str-content.csv"), optional: true
@@ -117,7 +120,7 @@ process generate_str_content {
             --stranger ${stranger_tsv} \
             --chr ${chr} \
             --repeat_bed ${repeat_bed} \
-            --str_reads_bam ${xam} 
+            --str_reads_bam ${xam}
         """
 }
 
