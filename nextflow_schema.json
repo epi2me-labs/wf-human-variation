@@ -155,7 +155,8 @@
                     "overrides": {
                         "minknow": {
                             "hint": "alignmentRefFile",
-                            "title": "Reference file for alignment"
+                            "title": "Reference file for alignment",
+                            "help_text": "Reference against which to compare reads for variant calling.\n\nThis workflow is only compatible with the hg19/GRCh37 or hg38/GRCh38 reference genomes. Please upload one of these to use this workflow."
                         }
                     }
                 },
