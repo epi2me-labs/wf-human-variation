@@ -488,7 +488,6 @@ process post_clair_phase_contig {
             --output phased_${contig}.vcf.gz \
             --reference ${ref} \
             --chromosome ${contig} \
-            --distrust-genotypes \
             --ignore-read-groups \
             ${vcf} \
             ${xam}
