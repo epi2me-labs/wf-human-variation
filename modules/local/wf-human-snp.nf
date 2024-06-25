@@ -489,6 +489,7 @@ process post_clair_phase_contig {
             --reference ${ref} \
             --chromosome ${contig} \
             --ignore-read-groups \
+            --only-snvs \
             ${vcf} \
             ${xam}
         tabix -f -p vcf phased_${contig}.vcf.gz
