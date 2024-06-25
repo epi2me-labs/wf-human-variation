@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Non-deterministic SNP output when `--phased` is on.
 - Post-Clair3 `whatshap` phases only SNVs to match whatshap<2.0 behaviour.
+- Updated `straglr` to v1.4.5 to fix possible ZeroDivisionError during call_str.
 ### Changed
 - Updated `modkit` to v0.3.0.
 
