@@ -14,6 +14,11 @@ process sniffles2 {
         val genome_build
     output:
         path "*.sniffles.vcf", emit: vcf
+        path "${params.sample_name}.wf_sv.snf", emit: snf
+    publishDir \
+        path: "${params.out_dir}",
+        pattern: "${params.sample_name}.wf_sv.snf",
+        mode: 'copy'
     script:
         // if tr_arg is not provided and genome_build is set
         // automatically pick the relevant TR BED from the SV image
@@ -39,6 +44,7 @@ process sniffles2 {
         --input $xam \
         --reference $ref \
         --input-exclude-flags 2308 \
+        --snf ${params.sample_name}.wf_sv.snf \
         $tr_arg \
         $sniffles_args \
         $phase \

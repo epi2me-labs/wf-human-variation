@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Post-Clair3 `whatshap` phases only SNVs to match whatshap<2.0 behaviour.
 ### Changed
 - Updated `modkit` to v0.3.0.
+- SV subworkflow publishes SNF file for onward multi-sample SV calling.
 
 ## [v2.2.4]
 ### Fixed
