@@ -64,6 +64,14 @@
       "optional": true,
       "type": "per-sample"
     },
+    "sv-snf": {
+      "filepath": "{{ alias }}.wf_sv.snf",
+      "title": "Structural variant SNF",
+      "description": "SNF file with the SVs for the sample, for onward multi-sample SV calling.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
     "cnv-vcf": {
       "filepath": "{{ alias }}.wf_cnv.vcf.gz",
       "title": "Copy number variants VCF",
