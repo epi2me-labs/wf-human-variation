@@ -480,10 +480,11 @@ workflow {
     bam_stats = readStats.out.read_stats
     bam_flag = readStats.out.flagstat
     bam_hists = readStats.out.histograms
-    // populate output json with ingressed runids
+    // populate output json with ingressed runids and models
     bam_runids = readStats.out.runids
+    bam_basecallers = readStats.out.basecallers
     ArrayList ingressed_run_ids = []
-    readStats.out.runids.splitText().subscribe(
+    bam_runids.splitText().subscribe(
         onNext: {
             ingressed_run_ids += it.strip()
         },
@@ -640,13 +641,28 @@ workflow {
             clair3_model = Channel.fromPath(params.clair3_model_path, type: "dir", checkIfExists: true)
         }
         else {
+            // Add back basecaller models, if available.
+            // Combine each BAM channel with the appropriate basecaller file
+            // Fetch the unique basecaller models and, if these are more than the
+            // ones in the metadata, add them in there.
+            // We do it in the snv scope as it is the only workflow relying on the
+            // model, and given it has to wait for the readStats process, we try
+            // minimizing the waits
+            pass_bam_channel = pass_bam_channel
+            | combine(bam_basecallers)
+            | map{
+                xam, xai, meta, bc ->
+                def models = bc.splitText().collect { it.strip() }
+                [xam, xai, meta + [basecall_models: models]]
+            }
+
             // map basecalling model to clair3 model
             lookup_table = Channel.fromPath("${projectDir}/data/clair3_models.tsv", checkIfExists: true)
 
             // attempt to pull out basecaller_cfg from metadata
             metamap_basecaller_cfg = pass_bam_channel
                 | map { xam, bai, meta ->
-                    meta["ds_basecall_models"]
+                    meta["basecall_models"]
                 }
                 | flatten  // squash lists
 
@@ -676,6 +692,22 @@ workflow {
                             '''.stripIndent()
                             error input_data_err_msg
                         }
+                    } else if (n_models > 1){
+                        String input_data_err_msg = '''\
+                        ################################################################################
+                        # INPUT DATA PROBLEM
+                        Your input data contains reads basecalled with more than one basecaller model.
+
+                        Our workflows automatically select appropriate configuration and models for
+                        downstream tools for a given basecaller model. This cannot be done reliably when
+                        reads with different basecaller models are mixed in the same data set.
+
+                        ## Next steps
+                        To use this workflow you must separate your input files, making sure all reads
+                        are have been basecalled with the same basecaller model.
+                        ################################################################################
+                        '''.stripIndent()
+                        error input_data_err_msg
                     }
                 }
 

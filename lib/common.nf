@@ -23,33 +23,33 @@ process configure_igv {
         // extensions
         path "file-names.txt"
         val locus_str
-        val bam_extra_opts
-        val vcf_extra_opts
+        val aln_extra_opts
+        val var_extra_opts
     output: path "igv.json"
     script:
     // the locus argument just makes sure that the initial view in IGV shows something
     // interesting
     String locus_arg = locus_str ? "--locus $locus_str" : ""
     // extra options for alignment tracks
-    def bam_opts_json_str = \
-        bam_extra_opts ? new JsonBuilder(bam_extra_opts).toPrettyString() : ""
-    String bam_extra_opts_arg = \
-        bam_extra_opts ? "--extra-bam-opts bam-extra-opts.json" : ""
+    def aln_opts_json_str = \
+        aln_extra_opts ? new JsonBuilder(aln_extra_opts).toPrettyString() : ""
+    String aln_extra_opts_arg = \
+        aln_extra_opts ? "--extra-alignment-opts extra-aln-opts.json" : ""
     // extra options for variant tracks
-    def vcf_opts_json_str = \
-        vcf_extra_opts ? new JsonBuilder(vcf_extra_opts).toPrettyString() : ""
-    String vcf_extra_opts_arg = \
-        vcf_extra_opts ? "--extra-vcf-opts vcf-extra-opts.json" : ""
+    def var_opts_json_str = \
+        var_extra_opts ? new JsonBuilder(var_extra_opts).toPrettyString() : ""
+    String var_extra_opts_arg = \
+        var_extra_opts ? "--extra-vcf-opts extra-var-opts.json" : ""
     """
     # write out JSON files with extra options for the alignment and variant tracks
-    echo '$bam_opts_json_str' > bam-extra-opts.json
-    echo '$vcf_opts_json_str' > vcf-extra-opts.json
+    echo '$aln_opts_json_str' > extra-aln-opts.json
+    echo '$var_opts_json_str' > extra-var-opts.json
 
     workflow-glue configure_igv \
         --fofn file-names.txt \
         $locus_arg \
-        $bam_extra_opts_arg \
-        $vcf_extra_opts_arg \
+        $aln_extra_opts_arg \
+        $var_extra_opts_arg \
     > igv.json
     """
 }
