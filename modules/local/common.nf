@@ -134,20 +134,31 @@ process readStats {
         path "${params.sample_name}.flagstat.tsv", emit: flagstat
         path "${params.sample_name}-histograms/", emit: histograms
         path "${params.sample_name}.runids.txt", emit: runids
+        path "${params.sample_name}.basecallers.txt", emit: basecallers
     script:
         def stats_threads = Math.max(task.cpus - 1, 1)
         """
         bamstats \
             -s ${params.sample_name} \
             -i ${params.sample_name}.per-file-runids.txt \
+            -l ${params.sample_name}.basecallers.tsv \
             --histogram ${params.sample_name}-histograms \
             -u \
             -f ${params.sample_name}.flagstat.tsv \
             --threads ${stats_threads} \
             "${xam}" | gzip > "${params.sample_name}.readstats.tsv.gz"
         # get unique run IDs
-        awk 'NR==1{for (i=1; i<=NF; i++) {ix[\$i] = i}} NR>1 {print \$ix["run_id"]}' \
-            ${params.sample_name}.per-file-runids.txt | sort | uniq > ${params.sample_name}.runids.txt
+        awk -F '\\t' '
+            NR==1 {for (i=1; i<=NF; i++) {ix[\$i] = i}}
+            # only print run_id if present
+            NR>1 && \$ix["run_id"] != "" {print \$ix["run_id"]}
+        ' ${params.sample_name}.per-file-runids.txt | sort | uniq > ${params.sample_name}.runids.txt
+        # get unique basecall models
+        awk -F '\\t' '
+            NR==1 {for (i=1; i<=NF; i++) {ix[\$i] = i}}
+            # only print basecall model if present
+            NR>1 && \$ix["basecaller"] != "" {print \$ix["basecaller"]}
+        ' ${params.sample_name}.basecallers.tsv | sort | uniq > ${params.sample_name}.basecallers.txt
         """
 }
 

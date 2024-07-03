@@ -26,28 +26,40 @@ def is_target_file(Path file, List extensions) {
 /**
  * Take a channel of the shape `[meta, reads, path-to-stats-dir | null]` (or
  * `[meta, [reads, index], path-to-stats-dir | null]` in the case of XAM) and extract the
- * run IDs from the `run_ids` file in the stats directory into the metamap. If the path
- * to the stats dir is `null`, add an empty list.
+ * run IDs and basecall model, from the `run_ids` and `basecaller` files in the stats
+ * directory, into the metamap. If the path to the stats dir is `null`, add an empty list.
  *
  * @param ch: input channel of shape `[meta, reads, path-to-stats-dir | null]`
- * @return: channel with a list of run IDs added to the metamap
+ * @return: channel with lists of run IDs and basecall models added to the metamap
  */
-def add_run_IDs_to_meta(ch) {
+def add_run_IDs_and_basecall_models_to_meta(ch, boolean allow_multiple_basecall_models) {
     // HashSet for all observed run_ids
     Set<String> ingressed_run_ids = new HashSet<String>()
 
     // extract run_ids from fastcat stats / bamstats results and add to metadata as well
     // as `ingressed_run_ids`
     ch = ch | map { meta, reads, stats ->
-        ArrayList run_ids = []
         if (stats) {
             run_ids = stats.resolve("run_ids").splitText().collect { it.strip() }
             ingressed_run_ids += run_ids
+
+            basecall_models = \
+                stats.resolve("basecallers").splitText().collect { it.strip() }
+            // check if we got more than one basecall model and set reads + stats to
+            // `null` for that sample unless `allow_multiple_basecall_models`
+            if ((basecall_models.size() > 1) && !allow_multiple_basecall_models) {
+                log.warn "Found multiple basecall models for sample " + \
+                    "'$meta.alias': ${basecall_models.join(", ")}. The sample's " + \
+                    "reads were discarded."
+                reads = reads instanceof List ? [null, null] : null
+                stats = null
+            }
+            // `meta + [...]` returns a new map which is handy to avoid any
+            // modifying-maps-in-closures weirdness
+            // See https://github.com/nextflow-io/nextflow/issues/2660
+            meta = meta + [run_ids: run_ids, basecall_models: basecall_models]
         }
-        // `meta + [...]` returns a new map which is handy to avoid any
-        // modifying-maps-in-closures weirdness
-        // See https://github.com/nextflow-io/nextflow/issues/2660
-        [meta + [run_ids: run_ids], reads, stats]
+        [meta, reads, stats]
     }
     // put run_ids somewhere global for trivial access later
     // bit grim but decouples ingress metadata from workflow main.nf
@@ -125,6 +137,9 @@ def add_number_of_reads_to_meta(ch, String input_type_format) {
  *  - "required_sample_types": list of required sample types in the sample sheet
  *  - "watch_path": boolean whether to use `watchPath` and run in streaming mode
  *  - "fastq_chunk": null or a number of reads to place into chunked FASTQ files
+ *  - "allow_multiple_basecall_models": emit data of samples that had more than one
+ *     basecall model; if this is `false`, such samples will be emitted as `[meta, null,
+ *     null]`
  * @return: channel of `[Map(alias, barcode, type, ...), Path|null, Path|null]`.
  *  The first element is a map with metadata, the second is the path to the
  *  `.fastq.gz` file with the (potentially concatenated) sequences and the third is
@@ -140,7 +155,6 @@ def fastq_ingress(Map arguments)
         [
             "fastcat_extra_args": "",
             "fastq_chunk": null,
-            "per_read_stats": false
         ]
     )
     margs["fastq_chunk"] ?= 0  // cant pass null through channel
@@ -196,8 +210,11 @@ def fastq_ingress(Map arguments)
             [meta + new_keys, files, stats]
         }
 
-    def ch_final = add_number_of_reads_to_meta(
-        add_run_IDs_to_meta(ch_spread_result), "fastq")
+    // add number of reads, run IDs, and basecall models to meta
+    def ch_final = add_number_of_reads_to_meta(ch_spread_result, "fastq")
+    ch_final = add_run_IDs_and_basecall_models_to_meta(
+        ch_final, margs.allow_multiple_basecall_models
+    )
     return ch_final
 }
 
@@ -242,7 +259,6 @@ def xam_ingress(Map arguments)
             "return_fastq": false,
             "fastcat_extra_args": "",
             "fastq_chunk": null,
-            "per_read_stats": false
         ]
     )
     margs["fastq_chunk"] ?= 0  // cant pass null through channel
@@ -276,7 +292,7 @@ def xam_ingress(Map arguments)
         [meta + [xai_fn: xai_fn], paths]
     }
     | checkBamHeaders
-    | map { meta, paths, is_unaligned_env, mixed_headers_env, is_sorted_env, ds_basecaller_env, ds_runids_env ->
+    | map { meta, paths, is_unaligned_env, mixed_headers_env, is_sorted_env ->
         // convert the env. variables from strings ('0' or '1') into bools
         boolean is_unaligned = is_unaligned_env as int as boolean
         boolean mixed_headers = mixed_headers_env as int as boolean
@@ -288,15 +304,7 @@ def xam_ingress(Map arguments)
         // add `is_unaligned` to the metamap (note the use of `+` to create a copy of
         // `meta` to avoid modifying every item in the channel;
         // https://github.com/nextflow-io/nextflow/issues/2660)
-        [
-            meta + [
-                is_unaligned: is_unaligned,
-                is_sorted: is_sorted,
-                ds_runids: ds_runids_env.tokenize(','),
-                ds_basecall_models: ds_basecaller_env.tokenize(','),
-            ],
-            paths
-        ]
+        [meta + [is_unaligned: is_unaligned, is_sorted: is_sorted], paths]
     }
     | branch { meta, paths ->
         // set `paths` to `null` for uBAM samples if unallowed (they will be added to
@@ -366,8 +374,11 @@ def xam_ingress(Map arguments)
                 [meta.findAll { it.key !in ['xai_fn', 'is_sorted'] }, path, stats]
             }
 
-        def ch_final = add_number_of_reads_to_meta(
-            add_run_IDs_to_meta(ch_spread_result), "fastq")
+        // add number of reads, run IDs, and basecall models to meta
+        def ch_final = add_number_of_reads_to_meta(ch_spread_result, "fastq")
+        ch_final = add_run_IDs_and_basecall_models_to_meta(
+            ch_final, margs.allow_multiple_basecall_models
+        )
         return ch_final
     }
 
@@ -457,7 +468,6 @@ def xam_ingress(Map arguments)
         | map{
             it[3] ? [it[0], [it[1], it[2]], it[3]] : it
         }
-        | add_run_IDs_to_meta
         | map{
             it.flatten()
         }
@@ -483,6 +493,7 @@ def xam_ingress(Map arguments)
     //     n_unmapped: always present, but can be `null`
     //     is_unaligned: present if there is a (u)BAM file
     // ]
+    // also, add number of reads, run IDs, and basecall models to meta
     ch_result = add_number_of_reads_to_meta(
         ch_result
             | map{
@@ -490,6 +501,9 @@ def xam_ingress(Map arguments)
                 [meta.findAll { it.key !in ['xai_fn', 'is_sorted'] }, [bam, bai], stats]
             }, 
         "xam"
+    )
+    ch_result = add_run_IDs_and_basecall_models_to_meta(
+        ch_result, margs.allow_multiple_basecall_models
     )
     | map{
         it.flatten()
@@ -529,7 +543,8 @@ process fastcat {
     fastcat \
         -s ${meta["alias"]} \
         -f fastcat_stats/per-file-stats.tsv \
-        -i fastcat_stats/per-file-runids.txt \
+        -i fastcat_stats/per-file-runids.tsv \
+        -l fastcat_stats/per-file-basecallers.tsv \
         --histograms histograms \
         $stats_args \
         ${fcargs["fastcat_extra_args"]} \
@@ -545,10 +560,20 @@ process fastcat {
     # get n_seqs from per-file stats - need to sum them up
     awk 'NR==1{for (i=1; i<=NF; i++) {ix[\$i] = i}} NR>1 {c+=\$ix["n_seqs"]} END{print c}' \
         fastcat_stats/per-file-stats.tsv > fastcat_stats/n_seqs
-    # get unique run IDs
-    awk 'NR==1{for (i=1; i<=NF; i++) {ix[\$i] = i}} NR>1 {print \$ix["run_id"]}' \
-        fastcat_stats/per-file-runids.txt | sort | uniq > fastcat_stats/run_ids
-    """    
+    # get unique run IDs (we add `-F '\\t'` as `awk` uses any stretch of whitespace
+    # as field delimiter per default and thus ignores empty columns)
+    awk -F '\\t' '
+        NR==1 {for (i=1; i<=NF; i++) {ix[\$i] = i}}
+        # only print run_id if present
+        NR>1 && \$ix["run_id"] != "" {print \$ix["run_id"]}
+    ' fastcat_stats/per-file-runids.tsv | sort | uniq > fastcat_stats/run_ids
+    # get unique basecall models
+    awk -F '\\t' '
+        NR==1 {for (i=1; i<=NF; i++) {ix[\$i] = i}}
+        # only print basecall model if present
+        NR>1 && \$ix["basecaller"] != "" {print \$ix["basecaller"]}
+    ' fastcat_stats/per-file-basecallers.tsv | sort | uniq > fastcat_stats/basecallers
+    """
 }
 
 process checkBamHeaders {
@@ -564,15 +589,11 @@ process checkBamHeaders {
             env(IS_UNALIGNED),
             env(MIXED_HEADERS),
             env(IS_SORTED),
-            env(DS_BASECALL_MODELS),
-            env(DS_RUNIDS),
         )
     script:
     """
     workflow-glue check_bam_headers_in_dir input_dir > env.vars
     source env.vars
-    DS_RUNIDS=\$(workflow-glue get_ds_records --xam input_dir --key runid --cardinality zero-or-more --sep ',')
-    DS_BASECALL_MODELS=\$(workflow-glue get_ds_records --xam input_dir --key basecall_model --cardinality zero-or-one --sep ',' --explode_obviously)
     """
 }
 
@@ -667,7 +688,8 @@ process bamstats {
     mkdir bamstats_results
     bamstats reads.bam -s $meta.alias -u \
         -f bamstats_results/bamstats.flagstat.tsv -t $bamstats_threads \
-        -i bamstats_results/bamstats.runids.txt \
+        -i bamstats_results/bamstats.runids.tsv \
+        -l bamstats_results/bamstats.basecallers.tsv \
         --histograms histograms \
     $per_read_stats_arg
     mv histograms/* bamstats_results/
@@ -675,9 +697,19 @@ process bamstats {
     # get n_seqs from flagstats - need to sum them up
     awk 'NR==1{for (i=1; i<=NF; i++) {ix[\$i] = i}} NR>1 {c+=\$ix["total"]} END{print c}' \
         bamstats_results/bamstats.flagstat.tsv > bamstats_results/n_seqs
-    # get unique run IDs
-    awk 'NR==1{for (i=1; i<=NF; i++) {ix[\$i] = i}} NR>1 {print \$ix["run_id"]}' \
-        bamstats_results/bamstats.runids.txt | sort | uniq > bamstats_results/run_ids
+    # get unique run IDs (we add `-F '\\t'` as `awk` uses any stretch of whitespace
+    # as field delimiter otherwise and thus ignore empty columns)
+    awk -F '\\t' '
+        NR==1 {for (i=1; i<=NF; i++) {ix[\$i] = i}}
+        # only print run_id if present
+        NR>1 && \$ix["run_id"] != "" {print \$ix["run_id"]}
+    ' bamstats_results/bamstats.runids.tsv | sort | uniq > bamstats_results/run_ids
+    # get unique basecall models
+    awk -F '\\t' '
+        NR==1 {for (i=1; i<=NF; i++) {ix[\$i] = i}}
+        # only print run_id if present
+        NR>1 && \$ix["basecaller"] != "" {print \$ix["basecaller"]}
+    ' bamstats_results/bamstats.basecallers.tsv | sort | uniq > bamstats_results/basecallers
     """
 }
 /**
@@ -840,7 +872,8 @@ Map parse_arguments(String func_name, Map arguments, Map extra_kwargs=[:]) {
         "stats": true,
         "required_sample_types": [],
         "watch_path": false,
-        "per_read_stats": false
+        "per_read_stats": false,
+        "allow_multiple_basecall_models": false,
     ]
     ArgumentParser parser = new ArgumentParser(
         args: required_args,
@@ -1033,6 +1066,7 @@ Map create_metamap(Map arguments) {
             "barcode": null,
             "type": "test_sample",
             "run_ids": [],
+            "basecall_models": [],
         ],
         name: "create_metamap",
     )
@@ -1077,9 +1111,31 @@ def get_sample_sheet(Path sample_sheet, ArrayList required_sample_types) {
     // concat the channel holding the path to the sample sheet to `ch_err` and call
     // `.last()` to make sure that the error-checking closure above executes before
     // emitting values from the CSV
-    return ch_err.concat(Channel.fromPath(sample_sheet)).last().splitCsv(
+    ch_sample_sheet = ch_err.concat(Channel.fromPath(sample_sheet)).last().splitCsv(
         header: true, quote: '"'
     )
+    // in case there is an 'analysis_group' column, we need to define a `groupKey` to
+    // allow for non-blocking calls of `groupTuple` later (on the values in the
+    // 'analysis_group' column); we first collect the sample sheet in a single list of
+    // maps and then count the occurrences of each group before using these to create
+    // the `groupKey` objects; note that the below doesn't do anything if there is no
+    // 'analysis_group' column
+    ch_group_counts = ch_sample_sheet
+    | collect
+    | map { rows -> rows.collect { it.analysis_group } .countBy { it } }
+
+    // now we `combine` the analysis group counts with the sample sheet channel and add
+    // the `groupKey` to the entries
+    ch_sample_sheet = ch_sample_sheet
+    | combine(ch_group_counts)
+    | map { row, group_counts ->
+        if (row.analysis_group) {
+            int counts = group_counts[row.analysis_group]
+            row = row + [analysis_group: groupKey(row.analysis_group, counts)]
+        }
+        row
+    }
+    return ch_sample_sheet
 }
 
 

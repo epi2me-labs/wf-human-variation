@@ -8,16 +8,16 @@ from .util import get_named_logger, wf_parser  # noqa: ABS101
 
 
 def parse_fnames(fofn):
-    """Parse list with filenames and return them grouped as ref-, BAM-, or VCF-related.
+    """Parse list with filenames and return them grouped as ref-, XAM-, or VCF-related.
 
     :param fofn: File with list of file names (one per line)
     :return: dict of reference-related filenames (with keys 'ref', 'fai', and '.gzi' and
-        `None` as default values); lists of BAM- and VCF-related filenames
+        `None` as default values); lists of XAM- and VCF-related filenames
     """
     ref_extensions = [".fasta", ".fasta.gz", ".fa", ".fa.gz", ".fna", ".fna.gz"]
     ref_dict = {}
-    bams = []
-    bam_indices = []
+    xams = []
+    xam_indices = []
     vcfs = []
     vcf_indices = []
     with open(fofn, "r") as f:
@@ -29,10 +29,10 @@ def parse_fnames(fofn):
                 ref_dict["fai"] = fname
             elif fname.endswith(".gzi"):
                 ref_dict["gzi"] = fname
-            elif fname.endswith(".bam"):
-                bams.append(fname)
-            elif fname.endswith(".bai"):
-                bam_indices.append(fname)
+            elif fname.endswith(".bam") or fname.endswith(".cram"):
+                xams.append(fname)
+            elif fname.endswith(".bai") or fname.endswith(".crai"):
+                xam_indices.append(fname)
             elif fname.endswith(".vcf") or fname.endswith(".vcf.gz"):
                 vcfs.append(fname)
             elif fname.endswith(".csi") or fname.endswith(".tbi"):
@@ -52,20 +52,20 @@ def parse_fnames(fofn):
                 f"Found GZI reference index '{gzi}', but the reference file "
                 f"'{ref}' appears not to be compressed."
             )
-    if bam_indices:
-        if len(bams) != len(bam_indices):
-            raise ValueError("Got different number of BAM and BAM index files.")
+    if xam_indices:
+        if len(xams) != len(xam_indices):
+            raise ValueError("Got different number of XAM and XAM index files.")
     if vcf_indices:
         if len(vcfs) != len(vcf_indices):
             raise ValueError("Got different number of VCF and VCF index files.")
-    if bams and vcfs:
-        if len(bams) != len(vcfs):
-            raise ValueError("Got different number of BAM and VCF files.")
-    # if we got BAM or VCF indices, pair them up with their corresponding files (and
+    if xams and vcfs:
+        if len(xams) != len(vcfs):
+            raise ValueError("Got different number of XAM and VCF files.")
+    # if we got XAM or VCF indices, pair them up with their corresponding files (and
     # otherwise with `None`)
-    bams_with_indices = zip_longest(bams, bam_indices)
+    xams_with_indices = zip_longest(xams, xam_indices)
     vcfs_with_indices = zip_longest(vcfs, vcf_indices)
-    return ref_dict, bams_with_indices, vcfs_with_indices
+    return ref_dict, xams_with_indices, vcfs_with_indices
 
 
 def get_reference_options(ref, fai=None, gzi=None):
@@ -90,23 +90,23 @@ def get_reference_options(ref, fai=None, gzi=None):
     return ref_opts
 
 
-def get_alignment_track(bam, bai=None, extra_opts=None):
+def get_alignment_track(xam, xai=None, extra_opts=None):
     """Create dict with options for IGV alignment track.
 
-    :param bam: name of BAM file to be displayed
-    :param bai: name of BAM index file
+    :param xam: name of XAM file to be displayed
+    :param xai: name of XAM index file
     :param extra_opts: dict of extra options for the alignment track
     :return: dict with alignment track options
     """
     alignment_track_dict = {
-        "name": bam,
+        "name": xam,
         "type": "alignment",
-        "format": "bam",
-        "url": bam,
+        "format": xam.split(".")[-1],
+        "url": xam,
     }
-    # add the BAM index if present
-    if bai is not None:
-        alignment_track_dict["indexURL"] = bai
+    # add the XAM index if present
+    if xai is not None:
+        alignment_track_dict["indexURL"] = xai
     alignment_track_dict.update(extra_opts or {})
     return alignment_track_dict
 
@@ -137,7 +137,7 @@ def main(args):
     logger = get_named_logger("configIGV")
 
     # parse the FOFN
-    ref_dict, bams_with_indices, vcfs_with_indices = parse_fnames(args.fofn)
+    ref_dict, xams_with_indices, vcfs_with_indices = parse_fnames(args.fofn)
 
     # initialise the IGV options dict with the reference options
     json_dict = {"reference": get_reference_options(**ref_dict)}
@@ -145,30 +145,30 @@ def main(args):
     # if we got JSON files with extra options for the alignment / variant tracks, read
     # them
     extra_alignment_opts = {}
-    if args.extra_bam_opts is not None:
-        with open(args.extra_bam_opts, "r") as f:
+    if args.extra_alignment_opts is not None:
+        with open(args.extra_alignment_opts, "r") as f:
             extra_alignment_opts = json.load(f)
     extra_variant_opts = {}
-    if args.extra_vcf_opts is not None:
-        with open(args.extra_vcf_opts, "r") as f:
+    if args.extra_variant_opts is not None:
+        with open(args.extra_variant_opts, "r") as f:
             extra_variant_opts = json.load(f)
 
     # now add the alignment and variant tracks
     json_dict["tracks"] = []
     # we use `zip_longest` to make sure that variant and alignment tracks from the same
     # sample are added after each other
-    for (vcf, vcf_index), (bam, bam_index) in zip_longest(
-        vcfs_with_indices, bams_with_indices, fillvalue=(None, None)
+    for (vcf, vcf_index), (xam, xam_index) in zip_longest(
+        vcfs_with_indices, xams_with_indices, fillvalue=(None, None)
     ):
         if vcf is not None:
-            # add an variant track for the VCF
+            # add a variant track for the VCF
             json_dict["tracks"].append(
                 get_variant_track(vcf, vcf_index, extra_variant_opts)
             )
-        if bam is not None:
-            # add an alignment track for the BAM
+        if xam is not None:
+            # add an alignment track for the XAM
             json_dict["tracks"].append(
-                get_alignment_track(bam, bam_index, extra_alignment_opts)
+                get_alignment_track(xam, xam_index, extra_alignment_opts)
             )
 
     if args.locus is not None:
@@ -186,7 +186,7 @@ def argparser():
         "--fofn",
         required=True,
         help=(
-            "File with list of names of reference / BAM / VCF files and indices "
+            "File with list of names of reference / XAM / VCF files and indices "
             "(one filename per line)"
         ),
     )
@@ -195,11 +195,11 @@ def argparser():
         help="Locus string to set initial genomic coordinates to display in IGV",
     )
     parser.add_argument(
-        "--extra-bam-opts",
+        "--extra-alignment-opts",
         help="JSON file with extra options for alignment tracks",
     )
     parser.add_argument(
-        "--extra-vcf-opts",
+        "--extra-variant-opts",
         help="JSON file with extra options for variant tracks",
     )
     return parser
