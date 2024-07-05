@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Changed
 - Reconciled workflow with wf-template v5.2.0
+- Removed `FXN` homopolymer region from list of STRs genotyped by `--str` sub-workflow
 
 ## [v2.2.5]
 ### Fixed
