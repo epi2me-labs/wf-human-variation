@@ -711,18 +711,9 @@
         "Source": "GeneReviews",
         "SourceId": "NBK535148",
         "LocusStructure": "(A)*(GAA)*",
-        "ReferenceRegion": [
-            "chr9:69037261-69037286",
-            "chr9:69037286-69037304"
-        ],
-        "VariantId": [
-            "FXN_A",
-            "FXN"
-        ],
-        "VariantType": [
-            "Repeat",
-            "Repeat"
-        ],
+        "ReferenceRegion": "chr9:69037286-69037304",
+        "VariantId": "FXN",
+        "VariantType": "Repeat",
         "Disease": "FRDA",
         "NormalMax": 35,
         "PathologicMin": 51,
