@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
+### Fixed
+- ERROR_OUT_OF_CHROMOSOME_RANGE annotation in VCF on `chrM` variants due to different nomenclature used by SnpEff.
 ### Changed
 - Reconciled workflow with wf-template v5.2.0
 - Removed `FXN` homopolymer region from list of STRs genotyped by `--str` sub-workflow
