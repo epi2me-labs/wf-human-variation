@@ -141,6 +141,13 @@ def main(args):
                         (f'{"{:,}".format(int(nindels))}', 'Indels'),
                         (f'{titv}', 'Ti/Tv')
                     ])
+        p(
+            """
+            The number of SNVs and indels are computed independently, and
+            their sum could be different from the number of records due
+            to the presence of multiallelic variants.
+            """
+        )
 
     # Base statistics
     with report.add_section('Statistics', 'Stats'):
