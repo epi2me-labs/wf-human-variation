@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """Report using ezcharts."""
-from dominate.tags import p
+from dominate.tags import b, br, p
 from ezcharts.components.common import fasta_idx
 from ezcharts.components.fastcat import load_bamstats_flagstat
 from ezcharts.components.fastcat import SeqSummary
@@ -102,12 +102,18 @@ def main(args):
     # Combine multiple input files
     with report.add_section("Read statistics", "Stats"):
         p(
-            """
-            This section displays the read statistics for the sample processed.
-            The left plot shows the read quality (range cropped to 4-30) vs. the
-            number of reads. The central plot shows the reald lenth vs. number
-            of reads. The left plot shows the base yield above a given read length.
-            """
+            "This section displays the read statistics for the sample processed. A ",
+            "description of each plot is as follows:",
+            br(), br(), b("Read quality: "),
+            "read quality (range cropped to 4-30) vs. the number of reads.", br(),
+            b("Read length: "), "read length vs. the number of reads.", br(),
+            b("Base yield above read length: "),
+            "base yield above a given read length.",
+            br(), b("Accuracy: "),
+            " mapping accuracy (ranging from 0-100%) vs. the number of reads.",
+            br(), b("Coverage: "),
+            "coverage (proportion of read spanned by alignment) vs. the number of ",
+            "reads."
         )
         tabs = Tabs()
         # prepare data for cumulative depth plot
