@@ -430,7 +430,9 @@ process annotate_vcf {
     else
         # SNP is slow to annotate, we'll break it apart by contig
         # and merge it back later. filter the master VCF to current contig
-        bcftools view -r !{contig} input.vcf.gz | bgzip > input.chr.vcf.gz
+        # Also, relabel chrM as chrMT so SnpEff can annotate
+        bcftools view -r !{contig} input.vcf.gz | sed 's/^chrM\\t/chrMT\\t/' | bgzip > input.chr.vcf.gz
+
         INPUT_FILENAME=input.chr.vcf.gz
         OUTPUT_LABEL="!{output_label}.!{contig}"
     fi
@@ -451,7 +453,9 @@ process annotate_vcf {
             clinvar_vcf="${CLINVAR_PATH}/clinvar_GRCh37.vcf.gz"
         fi
 
-        snpEff -Xmx!{task.memory.giga - 1}g ann -noStats -noLog $snpeff_db ${INPUT_FILENAME} > !{params.sample_name}.intermediate.snpeff_annotated.vcf
+        # Revert back chrMT to chrM
+        snpEff -Xmx!{task.memory.giga - 1}g ann -noStats -noLog $snpeff_db ${INPUT_FILENAME} | sed 's/^chrMT\\t/chrM\\t/' > !{params.sample_name}.intermediate.snpeff_annotated.vcf
+
         # Add ClinVar annotations
         SnpSift annotate $clinvar_vcf !{params.sample_name}.intermediate.snpeff_annotated.vcf | bgzip > !{params.sample_name}.wf_${OUTPUT_LABEL}.vcf.gz
         tabix !{params.sample_name}.wf_${OUTPUT_LABEL}.vcf.gz
