@@ -49,7 +49,7 @@ def main(args):
 
 def argparser():
     """Argument parser for entrypoint."""
-    parser = wf_parser("check_bam_headers")
+    parser = wf_parser("get_max_depth_locus")
     parser.add_argument(
         "depths_bed",
         type=Path,
