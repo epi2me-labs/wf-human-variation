@@ -38,6 +38,6 @@ def main(args):
 
 def argparser():
     """Argument parser for entrypoint."""
-    parser = wf_parser("check_bam_headers")
+    parser = wf_parser("check_xam_index")
     parser.add_argument("input_xam", type=Path, help="Path to target XAM")
     return parser

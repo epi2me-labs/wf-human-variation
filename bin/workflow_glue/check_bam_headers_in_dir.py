@@ -60,6 +60,6 @@ def main(args):
 
 def argparser():
     """Argument parser for entrypoint."""
-    parser = wf_parser("check_bam_headers")
+    parser = wf_parser("check_bam_headers_in_dir")
     parser.add_argument("input_path", type=Path, help="Path to target directory")
     return parser
