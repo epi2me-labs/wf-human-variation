@@ -4,8 +4,8 @@
     "title": "epi2me-labs/wf-human-variation",
     "workflow_title": "Human variation workflow",
     "description": "SNV, SV and CNV calling, modified base calling, and STR genotyping of human samples.",
-    "demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo.tar.gz",
-    "aws_demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo/aws.nextflow.config",
+    "demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/hg002%2bmods.v1/wf-human-variation-demo.tar.gz",
+    "aws_demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo/hg002%2bmods.v1.aws.nextflow.config",
     "url": "https://github.com/epi2me-labs/wf-human-variation",
     "type": "object",
     "definitions": {
@@ -157,54 +157,6 @@
                             "hint": "alignmentRefFile",
                             "title": "Reference file for alignment",
                             "help_text": "Reference against which to compare reads for variant calling.\n\nThis workflow is only compatible with the hg19/GRCh37 or hg38/GRCh38 reference genomes. Please upload one of these to use this workflow."
-                        }
-                    }
-                },
-                "basecaller_cfg": {
-                    "title": "Basecaller configuration",
-                    "type": "string",
-                    "description": "Name of the model to use for selecting a small variant calling model.",
-                    "help_text": "The workflow will attempt to find the basecaller model from the headers of your input data. If the model cannot be found in the header, it must be provided with this option as the basecaller model is required for small variant calling. The basecaller model is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. You should select 'custom' to override the basecaller_cfg with clair3_model_path.",
-                    "default": "dna_r10.4.1_e8.2_400bps_sup@v4.1.0",
-                    "enum": [
-                        "dna_r10.4.1_e8.2_260bps_fast@v4.1.0",
-                        "dna_r10.4.1_e8.2_260bps_hac@v4.1.0",
-                        "dna_r10.4.1_e8.2_260bps_sup@v4.1.0",
-                        "dna_r10.4.1_e8.2_400bps_fast@v4.1.0",
-                        "dna_r10.4.1_e8.2_400bps_fast@v4.2.0",
-                        "dna_r10.4.1_e8.2_400bps_fast@v4.3.0",
-                        "dna_r10.4.1_e8.2_400bps_fast@v5.0.0",
-                        "dna_r10.4.1_e8.2_400bps_hac@v4.1.0",
-                        "dna_r10.4.1_e8.2_400bps_hac@v4.3.0",
-                        "dna_r10.4.1_e8.2_400bps_hac@v5.0.0",
-                        "dna_r10.4.1_e8.2_400bps_sup@v4.1.0",
-                        "dna_r10.4.1_e8.2_400bps_sup@v4.3.0",
-                        "dna_r10.4.1_e8.2_400bps_sup@v5.0.0",
-                        "dna_r10.4.1_e8.2_apk_sup@v5.0.0",
-                        "dna_r9.4.1_e8_fast@v3.4",
-                        "dna_r9.4.1_e8_hac@v3.3",
-                        "dna_r9.4.1_e8_sup@v3.3",
-                        "dna_r9.4.1_e8_sup@v3.6",
-                        "custom",
-                        "dna_r10.4.1_e8.2_260bps_hac@v4.0.0",
-                        "dna_r10.4.1_e8.2_260bps_sup@v4.0.0",
-                        "dna_r10.4.1_e8.2_400bps_hac",
-                        "dna_r10.4.1_e8.2_400bps_hac@v3.5.1",
-                        "dna_r10.4.1_e8.2_400bps_hac@v3.5.2",
-                        "dna_r10.4.1_e8.2_400bps_hac@v4.0.0",
-                        "dna_r10.4.1_e8.2_400bps_hac@v4.2.0",
-                        "dna_r10.4.1_e8.2_400bps_hac_prom",
-                        "dna_r10.4.1_e8.2_400bps_sup@v3.5.1",
-                        "dna_r10.4.1_e8.2_400bps_sup@v3.5.2",
-                        "dna_r10.4.1_e8.2_400bps_sup@v4.0.0",
-                        "dna_r10.4.1_e8.2_400bps_sup@v4.2.0",
-                        "dna_r9.4.1_450bps_hac",
-                        "dna_r9.4.1_450bps_hac_prom"
-                    ],
-                    "overrides": {
-                        "minknow": {
-                            "hint": "basecallModel",
-                            "hidden": true
                         }
                     }
                 },
@@ -650,6 +602,53 @@
                         "bam",
                         "cram"
                     ]
+                },
+                "override_basecaller_cfg": {
+                    "title": "Basecaller configuration",
+                    "type": "string",
+                    "description": "Name of the model to use for selecting a small variant calling model.",
+                    "help_text": "The workflow will attempt to find the basecaller model from the headers of your input data, providing a value for this option will override the model found in the data. If the model cannot be found in the header, it must be provided with this option as the basecaller model is required for small variant calling. The basecaller model is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. You should select 'custom' to override the basecaller_cfg with clair3_model_path.",
+                    "enum": [
+                        "dna_r10.4.1_e8.2_260bps_fast@v4.1.0",
+                        "dna_r10.4.1_e8.2_260bps_hac@v4.1.0",
+                        "dna_r10.4.1_e8.2_260bps_sup@v4.1.0",
+                        "dna_r10.4.1_e8.2_400bps_fast@v4.1.0",
+                        "dna_r10.4.1_e8.2_400bps_fast@v4.2.0",
+                        "dna_r10.4.1_e8.2_400bps_fast@v4.3.0",
+                        "dna_r10.4.1_e8.2_400bps_fast@v5.0.0",
+                        "dna_r10.4.1_e8.2_400bps_hac@v4.1.0",
+                        "dna_r10.4.1_e8.2_400bps_hac@v4.3.0",
+                        "dna_r10.4.1_e8.2_400bps_hac@v5.0.0",
+                        "dna_r10.4.1_e8.2_400bps_sup@v4.1.0",
+                        "dna_r10.4.1_e8.2_400bps_sup@v4.3.0",
+                        "dna_r10.4.1_e8.2_400bps_sup@v5.0.0",
+                        "dna_r10.4.1_e8.2_apk_sup@v5.0.0",
+                        "dna_r9.4.1_e8_fast@v3.4",
+                        "dna_r9.4.1_e8_hac@v3.3",
+                        "dna_r9.4.1_e8_sup@v3.3",
+                        "dna_r9.4.1_e8_sup@v3.6",
+                        "custom",
+                        "dna_r10.4.1_e8.2_260bps_hac@v4.0.0",
+                        "dna_r10.4.1_e8.2_260bps_sup@v4.0.0",
+                        "dna_r10.4.1_e8.2_400bps_hac",
+                        "dna_r10.4.1_e8.2_400bps_hac@v3.5.1",
+                        "dna_r10.4.1_e8.2_400bps_hac@v3.5.2",
+                        "dna_r10.4.1_e8.2_400bps_hac@v4.0.0",
+                        "dna_r10.4.1_e8.2_400bps_hac@v4.2.0",
+                        "dna_r10.4.1_e8.2_400bps_hac_prom",
+                        "dna_r10.4.1_e8.2_400bps_sup@v3.5.1",
+                        "dna_r10.4.1_e8.2_400bps_sup@v3.5.2",
+                        "dna_r10.4.1_e8.2_400bps_sup@v4.0.0",
+                        "dna_r10.4.1_e8.2_400bps_sup@v4.2.0",
+                        "dna_r9.4.1_450bps_hac",
+                        "dna_r9.4.1_450bps_hac_prom"
+                    ],
+                    "overrides": {
+                        "minknow": {
+                            "hint": "basecallModel",
+                            "hidden": true
+                        }
+                    }
                 }
             }
         },
