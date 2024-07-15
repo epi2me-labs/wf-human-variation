@@ -55,7 +55,7 @@ jq \
     -j \
     --indent 4 \
     --argjson simplex_models "${SIMPLEX_MODELS}" \
-    '(.definitions.input.properties.basecaller_cfg.enum) = $simplex_models' \
+    '(.definitions.advanced_options.properties.override_basecaller_cfg.enum) = $simplex_models' \
     ${TARGET}/nextflow_schema.json > ${TARGET}/nextflow_schema.json.new
 
 echo "# Updated schema generated, you should inspect it before adopting it!"

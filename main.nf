@@ -660,39 +660,44 @@ workflow {
             lookup_table = Channel.fromPath("${projectDir}/data/clair3_models.tsv", checkIfExists: true)
 
             // attempt to pull out basecaller_cfg from metadata
+            def observed_pass_bam = 0
             metamap_basecaller_cfg = pass_bam_channel
                 | map { xam, bai, meta ->
+                    observed_pass_bam++ // keep count of observed BAMs to guard against emitting basecaller_cfg logging later on failed BAM
                     meta["basecall_models"]
                 }
                 | flatten  // squash lists
 
             // check returned basecaller list cardinality
-            // note that ingress handles the case of > 1 quite nicely
             metamap_basecaller_cfg
                 | count
                 | map { int n_models ->
-                    if (n_models == 0){
-                        if (params.basecaller_cfg) {
-                            log.warn "Found zero basecall_model in the input alignment header, falling back to the model provided with --basecaller_cfg: ${params.basecaller_cfg}"
+                    // n_models of 0 may indicate an empty pass_bam_channel, so
+                    // we keep a count of observed_pass_bam to determine whether
+                    // we should handle basecaller_cfg errors
+                    if (n_models == 0 && observed_pass_bam > 0){
+                        if (params.override_basecaller_cfg) {
+                            log.warn "Found zero basecall_model in the input alignment header, falling back to the model provided with --override_basecaller_cfg: ${params.override_basecaller_cfg}"
                         }
                         else {
                             String input_data_err_msg = '''\
                             ################################################################################
                             # INPUT DATA PROBLEM
                             Your input alignment does not indicate the basecall model in the header and you
-                            did not provide an alternative with --basecaller_cfg.
+                            did not provide an alternative with --override_basecaller_cfg.
 
                             wf-human-variation requires the basecall model in order to automatically select
                             an appropriate SNP calling model.
 
                             ## Next steps
                             You must re-run the workflow specifying the basecaller model with the
-                            --basecaller_cfg option.
+                            --override_basecaller_cfg option.
                             ################################################################################
                             '''.stripIndent()
                             error input_data_err_msg
                         }
-                    } else if (n_models > 1){
+                    }
+                    else if (n_models > 1){
                         String input_data_err_msg = '''\
                         ################################################################################
                         # INPUT DATA PROBLEM
@@ -711,11 +716,22 @@ workflow {
                     }
                 }
 
-            // use params.basecaller_cfg as default if nothing could be inferred
+            // use params.override_basecaller_cfg as basecaller_cfg if provided, regardless of what was detected
             // we'll have exploded by now if we have no idea what the config is
-            basecaller_cfg = metamap_basecaller_cfg
-                | ifEmpty(params.basecaller_cfg)
-                | first  // unpack from list
+            if (params.override_basecaller_cfg) {
+                metamap_basecaller_cfg.map {
+                    log.info "Detected basecaller_model: ${it}"
+                    log.warn "Overriding basecaller_model: ${params.override_basecaller_cfg}"
+                }
+                basecaller_cfg = Channel.of(params.override_basecaller_cfg)
+            }
+            else {
+                basecaller_cfg = metamap_basecaller_cfg
+                    | map { log.info "Detected basecaller_model: ${it}"; it }
+                    | ifEmpty(params.override_basecaller_cfg)
+                    | map { log.info "Using basecaller_model: ${it}"; it }
+                    | first  // unpack from list
+            }
 
             clair3_model = lookup_clair3_model(lookup_table, basecaller_cfg).map {
                 log.info "Autoselected Clair3 model: ${it[0]}" // use model name for log message

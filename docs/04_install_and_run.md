@@ -40,19 +40,20 @@ nextflow pull epi2me-labs/wf-human-variation
 A demo dataset is provided for testing of the workflow.
 It can be downloaded and unpacked using the following commands:
 ```
-wget https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo.tar.gz
+wget https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/hg002%2bmods.v1/wf-human-variation-demo.tar.gz
 tar -xzvf wf-human-variation-demo.tar.gz
 ```
 The workflow can then be run with the downloaded demo data using:
 ```
 nextflow run epi2me-labs/wf-human-variation \
 	--bam 'wf-human-variation-demo/demo.bam' \
-	--basecaller_cfg 'dna_r10.4.1_e8.2_400bps_hac_prom' \
-	--mod \
 	--ref 'wf-human-variation-demo/demo.fasta' \
+	--bed 'wf-human-variation-demo/demo.bed' \
 	--sample_name 'DEMO' \
 	--snp \
 	--sv \
+	--mod \
+	--phased \
 	-profile standard
 ```
 
