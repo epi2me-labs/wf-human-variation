@@ -51,6 +51,10 @@ include {
 } from './lib/_ingress.nf'
 
 include {
+    prepare_reference;
+} from './lib/reference.nf'
+
+include {
     refine_with_sv;
     vcfStats;
     output_snp;
@@ -191,19 +195,21 @@ workflow {
     // Trigger gene summary if: gene summary requested, BED provided, and BED compatible
     def create_gene_summary = params.output_gene_summary && params.bed && gene_summary_bed
 
-    // Check ref and decompress if needed
-    ref = null
-    ref_index_fp = null
-    if (params.ref.toLowerCase().endsWith("gz")) {
-        // gzipped ref not supported by some downstream tools (e.g. cram_cache)
-        // easier to just decompress and pass it around rather than confusing the user
-        decompress_ref(file(params.ref))
-        ref = decompress_ref.out.decompressed_ref
-    }
-    else {
-        ref = Channel.fromPath(params.ref, checkIfExists: true)
-        ref_index_fp = file(params.ref + ".fai")
-    }
+    reference = prepare_reference([
+        "input_ref": params.ref,
+        "output_cache": true,
+        "output_mmi": false
+    ])
+    ref = reference.ref
+    ref_index = reference.ref_idx
+    ref_cache = reference.ref_cache
+
+    // canonical ref and BAM channels to pass around to all processes
+    ref_channel = ref
+    | concat(ref_index)
+    | concat(ref_cache)
+    | flatten
+    | buffer(size: 4)
 
     // Otherwise handle (u)BAM/CRAM
     if (!params.bam) {
@@ -220,15 +226,6 @@ workflow {
     // Dummy optional file
     // TODO should be a channel?
     OPTIONAL = file("$projectDir/data/OPTIONAL_FILE")
-
-    // Create ref index if required
-    if (!ref_index_fp || !ref_index_fp.exists()) {
-        index_ref = index_ref_fai(ref)
-        ref_index = index_ref.reference_index
-    }
-    else {
-        ref_index = Channel.of(ref_index_fp)
-    }
 
     Pinguscript.ping_start(nextflow, workflow, params)
 
@@ -262,21 +259,14 @@ workflow {
         genome_build = null
     }
 
-    // Build ref cache for CRAM steps that do not take a reference
-    cram_cache(ref)
-    ref_cache = cram_cache.out.ref_cache
-    ref_path = cram_cache.out.ref_path
-    // canonical ref and BAM channels to pass around to all processes
-    ref_channel = ref.concat(ref_index).concat(ref_cache).concat(ref_path).buffer(size: 4)
-
     // Check for contamination, if MT is present.
     if (params.haplocheck){
         // First, let's get the mitogenome code.
         if (params.mitogenome){
             // Ensure that the given chromosome code is in the reference genome
             mt_code = ref_index
-            | splitCsv(sep: "\t")
-            | map{chrom, size, os1, os2, os3 -> chrom}
+            | splitCsv(sep:'\t', header: false)
+            | map{ it[0] }
             | filter{it == params.mitogenome}
             | ifEmpty{
                 throw new Exception(colors.red + "Mitochondrial genome ${params.mitogenome} not present in the reference." + colors.reset)
@@ -284,8 +274,8 @@ workflow {
         } else {
             default_mt_codes = Channel.of(['chrM', 'Mt', 'MT']) | flatten
             mt_code = ref_index
-            | splitCsv(sep: "\t")
-            | map{chrom, size, os1, os2, os3 -> chrom}
+            | splitCsv(sep:'\t', header: false)
+            | map{ it[0] }
             | cross(default_mt_codes)
             | map{it[0]}
         }
