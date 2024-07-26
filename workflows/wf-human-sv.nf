@@ -135,10 +135,10 @@ workflow variantCall {
     main:
 
         // tandom_repeat bed
-        if(params.tr_bed == null) {
-            tr_bed = optional_file
-        } else {
+        if(params.tr_bed) {
             tr_bed = Channel.fromPath(params.tr_bed, checkIfExists: true)
+        } else {
+            tr_bed = optional_file
         }
 
         if (!genome_build) {
