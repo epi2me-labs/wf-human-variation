@@ -12,7 +12,9 @@ import pysam
 
 def read_bed_file(bed_file):
     """Read BED file, return df."""
-    bed_data = pd.read_csv(bed_file, delim_whitespace=True, header=None)
+    bed_data = pd.read_csv(
+        bed_file, comment='#', delim_whitespace=True, header=None
+    )
     return bed_data
 
 
