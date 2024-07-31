@@ -39,9 +39,15 @@ workflow cnv {
         spectre_bed = cnvs.spectre_bed
         spectre_karyotype = cnvs.spectre_karyotype
 
-        // append '*' to indicate that annotation should be performed on all chr at once
-        vcf_for_annotation = spectre_vcf_bgzipped.map{ it << '*' }
-        spectre_final_vcf = annotate_vcf(vcf_for_annotation, "hg38", "cnv").annot_vcf
+        // check if SnpEff annotations have been requested
+        if (!params.annotation) {
+            spectre_final_vcf = spectre_vcf_bgzipped
+        }
+        else {
+            // append '*' to indicate that annotation should be performed on all chr at once
+            vcf_for_annotation = spectre_vcf_bgzipped.map{ it << '*' }
+            spectre_final_vcf = annotate_vcf(vcf_for_annotation, "hg38", "cnv").annot_vcf
+        }
 
         software_versions_tmp = getVersions()
         software_versions = add_snp_tools_to_versions(software_versions_tmp)
