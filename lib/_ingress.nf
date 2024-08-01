@@ -40,7 +40,8 @@ process minimap2_alignment {
         tuple val(meta), env(has_maps), path("${params.sample_name}.${align_ext}"), path("${params.sample_name}.${align_ext}.${index_ext}"), emit: alignment
     script:
     """
-    samtools bam2fq -@ ${params.ubam_bam2fq_threads} -T 1 ${reads} \
+    samtools reset -x tp,cm,s1,s2,NM,MD,AS,SA,ms,nn,ts,cg,cs,dv,de,rl --no-PG ${reads} -o - \
+        | samtools bam2fq -@ ${params.ubam_bam2fq_threads} -T 1 - \
         | minimap2 -y -t ${params.ubam_map_threads} -ax map-ont --cap-kalloc 100m --cap-sw-mem 50m \
             ${reference} - \
         | samtools sort -@ ${params.ubam_sort_threads} \
