@@ -5,9 +5,9 @@ process filterBenchmarkVcf {
     cpus 2
     memory 4.GB
     input:
-        file calls_vcf
+        tuple val(xam_meta), path(calls_vcf)
     output:
-        tuple path("benchmarkCalls.vcf.gz"), path("benchmarkCalls.vcf.gz.tbi")
+        tuple val(xam_meta), path("benchmarkCalls.vcf.gz"), path("benchmarkCalls.vcf.gz.tbi")
     script:
     """
     zcat $calls_vcf \
@@ -51,7 +51,7 @@ process truvari {
     memory 4.GB
     input:
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
-        tuple path(calls_vcf), path(calls_vcf_tbi)
+        tuple val(xam_meta), path(calls_vcf), path(calls_vcf_tbi)
         tuple path(user_truthset_vcf), path(user_truthset_tbi)
         file include_bed
     output:
@@ -67,8 +67,8 @@ process truvari {
         -b ${tru_vcf_arg} \
         -c $calls_vcf \
         -f ${ref} \
-        -o ${params.sample_name} \
+        -o ${xam_meta.alias} \
         --includebed $include_bed
-    mv ${params.sample_name}/summary.txt ${params.sample_name}.truvari.json
+    mv ${xam_meta.alias}/summary.txt ${xam_meta.alias}.truvari.json
     """
 }

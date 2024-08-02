@@ -68,12 +68,13 @@ process mosdepth {
         val (create_gene_summary)
     output:
         tuple \
-            path("${params.sample_name}.regions.bed.gz"),
-            path("${params.sample_name}.mosdepth.global.dist.txt"),
-            path("${params.sample_name}.thresholds.bed.gz"), emit: mosdepth_tuple
-        path "${params.sample_name}.mosdepth.summary.txt", emit: summary
-        path("${params.sample_name}.per-base.bedgraph.gz"), emit: perbase, optional: true
-        path "${params.sample_name}.gene_summary.tsv", emit: gene_summary, optional: true
+            val(xam_meta),
+            path("${xam_meta.alias}.regions.bed.gz"),
+            path("${xam_meta.alias}.mosdepth.global.dist.txt"),
+            path("${xam_meta.alias}.thresholds.bed.gz"), emit: mosdepth_tuple
+        path "${xam_meta.alias}.mosdepth.summary.txt", emit: summary
+        path("${xam_meta.alias}.per-base.bedgraph.gz"), emit: perbase, optional: true
+        path "${xam_meta.alias}.gene_summary.tsv", emit: gene_summary, optional: true
     script:
         def perbase_args = params.depth_intervals ? "" : "--no-per-base"
         """
@@ -93,12 +94,12 @@ process mosdepth {
         -b cut.bed \
         --thresholds 1,10,15,20,30 \
         ${perbase_args} \
-        ${params.sample_name} \
+        ${xam_meta.alias} \
         $xam
 
         # Rename the output, avoiding ambiguity in the output formatting
-        if [ -e ${params.sample_name}.per-base.bed.gz ]; then
-            mv ${params.sample_name}.per-base.bed.gz ${params.sample_name}.per-base.bedgraph.gz
+        if [ -e ${xam_meta.alias}.per-base.bed.gz ]; then
+            mv ${xam_meta.alias}.per-base.bed.gz ${xam_meta.alias}.per-base.bedgraph.gz
         fi
 
         # If gene summary requested and a BED provided, run mosdepth again without -x to get precise coverage 
@@ -109,13 +110,13 @@ process mosdepth {
             -b ${target_bed} \
             --thresholds 1,10,15,20,30 \
             --no-per-base \
-            ${params.sample_name}.gene \
+            ${xam_meta.alias}.gene \
             $xam
 
-            gunzip -c ${params.sample_name}.gene.thresholds.bed.gz > thresholds.bed
-            gunzip -c ${params.sample_name}.gene.regions.bed.gz  > regions.bed
+            gunzip -c ${xam_meta.alias}.gene.thresholds.bed.gz > thresholds.bed
+            gunzip -c ${xam_meta.alias}.gene.regions.bed.gz  > regions.bed
 
-            workflow-glue generate_gene_summary --mosdepth_threshold thresholds.bed --mosdepth_average regions.bed --output ${params.sample_name}.gene_summary.tsv
+            workflow-glue generate_gene_summary --mosdepth_threshold thresholds.bed --mosdepth_average regions.bed --output ${xam_meta.alias}.gene_summary.tsv
         fi
         """
 }
@@ -130,35 +131,35 @@ process readStats {
         path target_bed
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
-        path "${params.sample_name}.readstats.tsv.gz", emit: read_stats
-        path "${params.sample_name}.flagstat.tsv", emit: flagstat
-        path "${params.sample_name}-histograms/", emit: histograms
-        path "${params.sample_name}.runids.txt", emit: runids
-        path "${params.sample_name}.basecallers.txt", emit: basecallers
+        path "${xam_meta.alias}.readstats.tsv.gz", emit: read_stats
+        path "${xam_meta.alias}.flagstat.tsv", emit: flagstat
+        path "${xam_meta.alias}-histograms/", emit: histograms
+        path "${xam_meta.alias}.runids.txt", emit: runids
+        path "${xam_meta.alias}.basecallers.txt", emit: basecallers
     script:
         def stats_threads = Math.max(task.cpus - 1, 1)
         """
         bamstats \
-            -s ${params.sample_name} \
-            -i ${params.sample_name}.per-file-runids.txt \
-            -l ${params.sample_name}.basecallers.tsv \
-            --histogram ${params.sample_name}-histograms \
+            -s ${xam_meta.alias} \
+            -i ${xam_meta.alias}.per-file-runids.txt \
+            -l ${xam_meta.alias}.basecallers.tsv \
+            --histogram ${xam_meta.alias}-histograms \
             -u \
-            -f ${params.sample_name}.flagstat.tsv \
+            -f ${xam_meta.alias}.flagstat.tsv \
             --threads ${stats_threads} \
-            "${xam}" | gzip > "${params.sample_name}.readstats.tsv.gz"
+            "${xam}" | gzip > "${xam_meta.alias}.readstats.tsv.gz"
         # get unique run IDs
         awk -F '\\t' '
             NR==1 {for (i=1; i<=NF; i++) {ix[\$i] = i}}
             # only print run_id if present
             NR>1 && \$ix["run_id"] != "" {print \$ix["run_id"]}
-        ' ${params.sample_name}.per-file-runids.txt | sort | uniq > ${params.sample_name}.runids.txt
+        ' ${xam_meta.alias}.per-file-runids.txt | sort | uniq > ${xam_meta.alias}.runids.txt
         # get unique basecall models
         awk -F '\\t' '
             NR==1 {for (i=1; i<=NF; i++) {ix[\$i] = i}}
             # only print basecall model if present
             NR>1 && \$ix["basecaller"] != "" {print \$ix["basecaller"]}
-        ' ${params.sample_name}.basecallers.tsv | sort | uniq > ${params.sample_name}.basecallers.txt
+        ' ${xam_meta.alias}.basecallers.tsv | sort | uniq > ${xam_meta.alias}.basecallers.txt
         """
 }
 
@@ -264,24 +265,26 @@ process get_region_coverage {
     memory 4.GB
     input:
         path bed
-        tuple path(regions),
+        tuple val(xam_meta),
+            path(regions),
             path(dists),
             path(thresholds)
 
     output:
         path "${bed.baseName}.filt.bed", emit: filt_bed
         tuple \
-            path("${params.sample_name}.regions.filt.bed.gz"),
-            path("${params.sample_name}.mosdepth.global.dist.txt"),
-            path("${params.sample_name}.thresholds.bed.gz"), emit: mosdepth_tuple
+            val(xam_meta),
+            path("${xam_meta.alias}.regions.filt.bed.gz"),
+            path("${xam_meta.alias}.mosdepth.global.dist.txt"),
+            path("${xam_meta.alias}.thresholds.bed.gz"), emit: mosdepth_tuple
     shell:
     '''
     # Get intervals with average coverage above minimum
-    zcat !{regions} | awk '$NF>=!{params.bam_min_coverage}' | bgzip -c > !{params.sample_name}.regions.filt.bed.gz
+    zcat !{regions} | awk '$NF>=!{params.bam_min_coverage}' | bgzip -c > !{xam_meta.alias}.regions.filt.bed.gz
     
     # Extract original regions with reasonable coverage. We first intersect, sort the kept intervals,
     # merge the adjacent and then sort again.
-    bedtools intersect -a !{bed} -b !{params.sample_name}.regions.filt.bed.gz | \
+    bedtools intersect -a !{bed} -b !{xam_meta.alias}.regions.filt.bed.gz | \
         sort -k1,1 -k2,2n | \
         bedtools merge -i - | \
         sort -k1,1 -k2,2n > !{bed.baseName}.filt.bed
@@ -319,11 +322,11 @@ process failedQCReport  {
         // file for each chromosome. This will display the intervals not in the context of the chromosome (so showing a peak in
         // a small region, and flat everywhere else) but only for the regions selected.
         def genome_wide_depth = params.bed ? "" : "--reference_fai ref.fasta.fai"
-        def report_name = "${params.sample_name}.wf-human-alignment-report.html"
+        def report_name = "${xam_meta.alias}.wf-human-alignment-report.html"
         """
         workflow-glue report_al \\
             --name ${report_name} \\
-            --sample_name ${params.sample_name} \\
+            --sample_name ${xam_meta.alias} \\
             --stats_fn readstats.tsv.gz \\
             --summary_dir summary/ \\
             --hists_dir hists/ \\
@@ -363,11 +366,11 @@ process makeAlignmentReport {
         path "*.html"
 
     script:
-        def report_name = "${params.sample_name}.wf-human-alignment-report.html"
+        def report_name = "${xam_meta.alias}.wf-human-alignment-report.html"
         """
         workflow-glue report_al \\
             --name ${report_name} \\
-            --sample_name "${params.sample_name}" \\
+            --sample_name "${xam_meta.alias}" \\
             --stats_fn readstats.tsv.gz \\
             --summary_dir summary/ \\
             --hists_dir hists/ \\
@@ -416,11 +419,11 @@ process annotate_vcf {
     cpus 1
     memory 6.GB
     input:
-        tuple path("input.vcf.gz"), path("input.vcf.gz.tbi"), val(contig)
+        tuple val(xam_meta), path("input.vcf.gz"), path("input.vcf.gz.tbi"), val(contig)
         val(genome)
         val(output_label)
     output:
-        tuple path("${params.sample_name}.wf_${output_label}*.vcf.gz"), path("${params.sample_name}.wf_${output_label}*.vcf.gz.tbi"), emit: annot_vcf
+        tuple val(xam_meta), path("${xam_meta.alias}.wf_${output_label}*.vcf.gz"), path("${xam_meta.alias}.wf_${output_label}*.vcf.gz.tbi"), emit: annot_vcf
     shell:
     '''
     if [ "!{contig}" == '*' ]; then
@@ -440,8 +443,8 @@ process annotate_vcf {
     # deal with samples which aren't hg19 or hg38
     if [[ "!{genome}" != "hg38" ]] && [[ "!{genome}" != "hg19" ]]; then
         # return the original VCF and index as the outputs
-        cp ${INPUT_FILENAME} !{params.sample_name}.wf_${OUTPUT_LABEL}.vcf.gz
-        cp ${INPUT_FILENAME}.tbi !{params.sample_name}.wf_${OUTPUT_LABEL}.vcf.gz.tbi
+        cp ${INPUT_FILENAME} !{xam_meta.alias}.wf_${OUTPUT_LABEL}.vcf.gz
+        cp ${INPUT_FILENAME}.tbi !{xam_meta.alias}.wf_${OUTPUT_LABEL}.vcf.gz.tbi
     else
         # do some annotation
         if [[ "!{genome}" == "hg38" ]]; then
@@ -454,14 +457,14 @@ process annotate_vcf {
         fi
 
         # Revert back chrMT to chrM
-        snpEff -Xmx!{task.memory.giga - 1}g ann -noStats -noLog $snpeff_db ${INPUT_FILENAME} | sed 's/^chrMT\\t/chrM\\t/' > !{params.sample_name}.intermediate.snpeff_annotated.vcf
+        snpEff -Xmx!{task.memory.giga - 1}g ann -noStats -noLog $snpeff_db ${INPUT_FILENAME} | sed 's/^chrMT\\t/chrM\\t/' > !{xam_meta.alias}.intermediate.snpeff_annotated.vcf
 
         # Add ClinVar annotations
-        SnpSift annotate $clinvar_vcf !{params.sample_name}.intermediate.snpeff_annotated.vcf | bgzip > !{params.sample_name}.wf_${OUTPUT_LABEL}.vcf.gz
-        tabix !{params.sample_name}.wf_${OUTPUT_LABEL}.vcf.gz
+        SnpSift annotate $clinvar_vcf !{xam_meta.alias}.intermediate.snpeff_annotated.vcf | bgzip > !{xam_meta.alias}.wf_${OUTPUT_LABEL}.vcf.gz
+        tabix !{xam_meta.alias}.wf_${OUTPUT_LABEL}.vcf.gz
 
         # tidy up
-        rm !{params.sample_name}.intermediate*
+        rm !{xam_meta.alias}.intermediate*
     fi
     '''
 }
@@ -471,19 +474,19 @@ process sift_clinvar_vcf {
     cpus 1
     memory 3.GB
     input:
-        tuple path("input.vcf.gz"), path("input.vcf.gz.tbi")
+        tuple val(xam_meta), path("input.vcf.gz"), path("input.vcf.gz.tbi")
         val(genome)
         val(output_label)
     output:
-        path("${params.sample_name}.wf_${output_label}_clinvar.vcf"), emit: final_vcf_clinvar
+        path("${xam_meta.alias}.wf_${output_label}_clinvar.vcf"), emit: final_vcf_clinvar
     shell:
     '''
     # deal with samples which aren't hg19 or hg38
     if [[ "!{genome}" != "hg38" ]] && [[ "!{genome}" != "hg19" ]]; then
         # create an empty ClinVar VCF
-        touch !{params.sample_name}.wf_!{output_label}_clinvar.vcf
+        touch !{xam_meta.alias}.wf_!{output_label}_clinvar.vcf
     else
-        bcftools view input.vcf.gz | SnpSift filter "( exists CLNSIG )" > !{params.sample_name}.wf_!{output_label}_clinvar.vcf
+        bcftools view input.vcf.gz | SnpSift filter "( exists CLNSIG )" > !{xam_meta.alias}.wf_!{output_label}_clinvar.vcf
     fi
     '''
 }
@@ -492,15 +495,16 @@ process concat_vcfs {
     cpus 2
     memory 3.GB
     input:
-        path (vcfs_artifacts, stageAs: "vcfs/*")
-        val(prefix)
+        tuple val(xam_meta), path (vcfs_artifacts, stageAs: "vcfs/*")
+        val(output_label)
     output:
-        tuple path ("${prefix}.vcf.gz"), path("${prefix}.vcf.gz.tbi"), emit: final_vcf
+        tuple val(xam_meta), path("${xam_meta.alias}.${output_label}.vcf.gz"), path("${xam_meta.alias}.${output_label}.vcf.gz.tbi"), emit: final_vcf
     script:
         def concat_threads = Math.max(task.cpus - 1, 1)
+        def alias_output_label = "${xam_meta.alias}.${output_label}"
         """
-        bcftools concat --threads ${concat_threads} -O u vcfs/*.vcf.gz | bcftools sort -O z - > "${prefix}.vcf.gz"
-        tabix -p vcf ${prefix}.vcf.gz
+        bcftools concat --threads ${concat_threads} -O u vcfs/*.vcf.gz | bcftools sort -O z - > "${alias_output_label}.vcf.gz"
+        tabix -p vcf ${alias_output_label}.vcf.gz
         """
 }
 
@@ -509,14 +513,14 @@ process haploblocks {
     cpus 1
     memory 8.GB
     input:
-        tuple path(phased_vcf), path(phased_tbi)
+        tuple val(xam_meta), path(phased_vcf), path(phased_tbi)
         val output_label
     output:
-        path "${params.sample_name}.wf_${output_label}.haploblocks.gtf", emit: phase_blocks
+        path "${xam_meta.alias}.wf_${output_label}.haploblocks.gtf", emit: phase_blocks
     script:
         """
         # Prepare correct input file
-        whatshap stats --gtf=${params.sample_name}.wf_${output_label}.haploblocks.gtf ${phased_vcf}
+        whatshap stats --gtf=${xam_meta.alias}.wf_${output_label}.haploblocks.gtf ${phased_vcf}
         """
 }
 
@@ -525,16 +529,16 @@ process bed_filter {
     cpus 1
     memory 4.GB
     input:
-        tuple path(input, stageAs: 'input.gz'), path(input_tbi, stageAs: 'input.gz.tbi')
+        tuple val(xam_meta), path(input, stageAs: 'input.gz'), path(input_tbi, stageAs: 'input.gz.tbi')
         path(bed)
         val(subworkflow)
         val(file_type)
     output:
-        tuple path("${params.sample_name}.wf_${subworkflow}.${file_type}.gz"), path("${params.sample_name}.wf_${subworkflow}.${file_type}.gz.tbi"), emit: filtered
+        tuple val(xam_meta), path("${xam_meta.alias}.wf_${subworkflow}.${file_type}.gz"), path("${xam_meta.alias}.wf_${subworkflow}.${file_type}.gz.tbi"), emit: filtered
     script:
         """
-        bedtools intersect -u -header -a input.gz -b ${bed} | bgzip -c > ${params.sample_name}.wf_${subworkflow}.${file_type}.gz
-        tabix ${params.sample_name}.wf_${subworkflow}.${file_type}.gz
+        bedtools intersect -u -header -a input.gz -b ${bed} | bgzip -c > ${xam_meta.alias}.wf_${subworkflow}.${file_type}.gz
+        tabix ${xam_meta.alias}.wf_${subworkflow}.${file_type}.gz
         """
 }
 
@@ -572,6 +576,7 @@ process combine_metrics_json {
         path "flagstat.tsv"
         path "hists"
         tuple \
+            val(xam_meta),
             path("regions.bed.gz"),
             path("mosdepth.global.dist.txt"),
             path("thresholds.bed.gz")
@@ -579,7 +584,7 @@ process combine_metrics_json {
         path haplocheck, stageAs: "haplocheck/*"
         val(sex)
     output:
-        path "${params.sample_name}.stats.json", emit: json
+        path "${xam_meta.alias}.stats.json", emit: json
     script:
         String input_jsons = jsons.name != 'OPTIONAL_FILE' ? "--jsons ${jsons}" : ""
         // only emit an inferred sex if sex is defined and params.sex is not
@@ -595,8 +600,8 @@ process combine_metrics_json {
             ${haplocheck_arg} \
             ${sex_arg} \
             ${input_jsons} \
-            --metadata "sample_sheet.alias=${params.sample_name}" \
-            --output ${params.sample_name}.stats.json
+            --metadata "sample_sheet.alias=${xam_meta.alias}" \
+            --output ${xam_meta.alias}.stats.json
         """
 }
 
@@ -657,18 +662,18 @@ process haplocheck {
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         val mt_chr
     output:
-        path "${params.sample_name}.haplocheck.tsv"
+        path "${xam_meta.alias}.haplocheck.tsv"
     script:
         """
         # Create the reference genome
         samtools faidx ${ref} ${mt_chr} > mt.fa && samtools faidx mt.fa
 
         # Extract mito-genome reads first
-        samtools view -@${task.cpus - 1} -hb ${xam} ${mt_chr} > ${params.sample_name}
-        samtools index -@${task.cpus} ${params.sample_name}
+        samtools view -@${task.cpus - 1} -hb ${xam} ${mt_chr} > ${xam_meta.alias}
+        samtools index -@${task.cpus} ${xam_meta.alias}
 
         # Count how many reads are mapped to the mitogenome.
-        n_reads=\$( samtools view -c ${params.sample_name} )
+        n_reads=\$( samtools view -c ${xam_meta.alias} )
 
         # Run the commands if there are reads to process.
         # We already checked if the reference has a valid mitogenome.
@@ -682,7 +687,7 @@ process haplocheck {
                 --output mt.vcf.gz \
                 --no-ansi \
                 --threads ${task.cpus} \
-                ${params.sample_name}
+                ${xam_meta.alias}
 
             # Before running haplocheck, count how many sites are in the
             # VCF file. If it is 0, then do not proceed.
@@ -693,16 +698,16 @@ process haplocheck {
 
             # Run haplocheck if there are sites in the VCF file
             if [ \$n_sites -gt 0 ]; then
-                haplocheck --out ${params.sample_name}.haplocheck.tsv mt.vcf.gz
+                haplocheck --out ${xam_meta.alias}.haplocheck.tsv mt.vcf.gz
             # Otherwise, save as NV (no value) as opposed to ND (not determined)
             else
-                echo "Sample\tContamination Status\tContamination Level\tDistance\tSample Coverage" > ${params.sample_name}.haplocheck.tsv
-                echo "${params.sample_name}\tNA\tNV\t0\t0" >> ${params.sample_name}.haplocheck.tsv
+                echo "Sample\tContamination Status\tContamination Level\tDistance\tSample Coverage" > ${xam_meta.alias}.haplocheck.tsv
+                echo "${xam_meta.alias}\tNA\tNV\t0\t0" >> ${xam_meta.alias}.haplocheck.tsv
             fi
         # If no reads are found, create the placeholder.
         else
-            echo "Sample\tContamination Status\tContamination Level\tDistance\tSample Coverage" > ${params.sample_name}.haplocheck.tsv
-            echo "${params.sample_name}\tNA\tNV\t0\t0" >> ${params.sample_name}.haplocheck.tsv
+            echo "Sample\tContamination Status\tContamination Level\tDistance\tSample Coverage" > ${xam_meta.alias}.haplocheck.tsv
+            echo "${xam_meta.alias}\tNA\tNV\t0\t0" >> ${xam_meta.alias}.haplocheck.tsv
         fi
         """
 }

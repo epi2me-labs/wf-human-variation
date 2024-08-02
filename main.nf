@@ -353,7 +353,7 @@ workflow {
         // Define reduction rate
         eval_downsampling(
             mosdepth_input.out.summary,
-            params.bed ? mosdepth_stats.map{it[0]} : OPTIONAL
+            params.bed ? mosdepth_stats.map{it[1]} : OPTIONAL
         )
         eval_downsampling.out.downsampling_ratio
             .splitCsv()
@@ -433,11 +433,11 @@ workflow {
         mosdepth_stats = 
             mosdepth_downsampled.out.mosdepth_tuple
                 .combine(ratio.subset)
-                .map{[it[0], it[1], it[2]]}
+                .map{[it[0], it[1], it[2], it[3]]}
                 .join(
                     mosdepth_input.out.mosdepth_tuple
                         .combine(ratio.ready)
-                        .map{[it[0], it[1], it[2]]}
+                        .map{[it[0], it[1], it[2], it[3]]}
                     , remainder: true
                     )
                 .map{it - null}
@@ -491,7 +491,7 @@ workflow {
             // there are intervals with enough coverage for downstream
             // analyses.
             n_lines = mosdepth_stats
-            | map{ it[0] }
+            | map{ it[1] }
             | countLines()
 
             // Ensure that the data have enough region coverage
@@ -591,7 +591,7 @@ workflow {
             .combine(bam_stats)
             .combine(bam_flag)
             .combine(bam_hists)
-            .combine(mosdepth_stats.map{it[0]})
+            .combine(mosdepth_stats.map{it[1]})
             .combine(mosdepth_summary)
             .combine(ref_channel)
             .combine(software_versions.collect())
@@ -603,7 +603,7 @@ workflow {
             .combine(bam_stats)
             .combine(bam_flag)
             .combine(bam_hists)
-            .combine(mosdepth_stats.map{it[0]})
+            .combine(mosdepth_stats.map{it[1]})
             .combine(mosdepth_summary)
             .combine(ref_channel)
             .combine(software_versions.collect())
@@ -809,11 +809,11 @@ workflow {
                 ref_channel.collect(),
                 clair_vcf.vcf_files.combine(clair_vcf.contigs),
                 snp_refinement_xam | first,
-                sniffles_vcf.collect()
+                sniffles_vcf.map{meta, vcf -> vcf}.collect()
             )
             final_snp_vcf = concat_refined_snp(
-                refined_snps.collect(),
-                "${params.sample_name}.wf_snp"
+                refined_snps.map{ meta, vcf, tbi -> [meta, vcf]}.groupTuple(),
+                "wf_snp"
             )
         } else {
             // If refine_with_sv not requested, passthrough
@@ -840,7 +840,7 @@ workflow {
             annotations = annotate_snp_vcf(
                 final_snp_vcf_filtered.combine(clair_vcf.contigs), genome_build.first(), "snp"
             )
-            final_vcf = concat_snp_vcfs(annotations.collect(), "${params.sample_name}.wf_snp").final_vcf
+            final_vcf = concat_snp_vcfs(annotations.map{ meta, vcf, tbi -> [meta,vcf]}.groupTuple(), "wf_snp").final_vcf
             clinvar_vcf = sift_clinvar_snp_vcf(final_vcf, genome_build, "snp").final_vcf_clinvar
         }
 
@@ -848,7 +848,7 @@ workflow {
         vcf_stats = vcfStats(final_vcf)
 
         // Prepare the report
-        snp_reporting = report_snp(vcf_stats[0], clinvar_vcf)
+        snp_reporting = report_snp(vcf_stats, clinvar_vcf)
         json_snp = snp_reporting.snp_stats_json
         if (params.output_report){
             snp_report = snp_reporting.report
@@ -859,7 +859,7 @@ workflow {
         // Output for SNP
         snp_report
             .concat(clair3_results)
-            .concat(final_vcf)
+            .concat(final_vcf.map{meta, vcf, tbi -> [vcf, tbi]})
             .concat(clinvar_vcf)
             .flatten() | output_snp
     } else {
@@ -972,7 +972,7 @@ workflow {
         | mix(
             bam_stats.flatten(),
             bam_flag.flatten(),
-            mosdepth_stats.flatten(),
+            mosdepth_stats.map{ meta, bed, dist, threshold -> [bed, dist, threshold]}.flatten(),
             mosdepth_summary.flatten(),
             mosdepth_perbase.flatten(),
             mod_stats.flatten(),

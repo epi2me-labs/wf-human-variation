@@ -51,18 +51,22 @@ workflow str {
     str_content = generate_str_content(
       str_content_join,
       str_list
-    ).collect()
+    ).transpose().groupTuple()
+
 
     branched_annotations = annotations.multiMap { chr, vcf, tbi, plot, annot ->
-        stranger_vcfs_and_tbis: [ vcf, tbi ]
+        stranger_vcfs_and_tbis: vcf
         plot_tsv_all: plot
         stranger_annotations: annot
     }
 
     // merge the contig VCFs
+    // bam_channel.xam_meta is per contig (containing sq: and id:) 
+    // so just use meta.alias to combine with the grouped branched_annotation vcfs
     merged_vcf = concat_str_vcfs(
-        branched_annotations.stranger_vcfs_and_tbis.collect(),
-        "${params.sample_name}.wf_str"
+        bam_channel.map{xam, xai, meta ->   ['alias': meta.alias] }.unique().
+        combine(branched_annotations.stranger_vcfs_and_tbis).groupTuple(),
+        "wf_str"
     ).final_vcf
 
     // merge the contig TSVs/CSVs
@@ -96,6 +100,6 @@ workflow str {
     }
 
   emit:
-    merged_vcf.concat(report).concat(branched_merged.straglr).flatten()
+    merged_vcf.map{meta, vcf, tbi -> [vcf, tbi]}.concat(report).concat(branched_merged.straglr).flatten()
 
 }

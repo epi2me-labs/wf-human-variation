@@ -24,7 +24,7 @@ process call_str {
         { grep '${chr}' -Fw ${repeat_bed} || true; } > repeats_subset.bed
         if [[ -s repeats_subset.bed ]]; then
             straglr-genotype --loci repeats_subset.bed \
-                --sample ${params.sample_name} \
+                --sample ${xam_meta.alias} \
                 --tsv ${chr}_straglr.tsv \
                 -v ${chr}_tmp.vcf \
                 --sex ${straglr_sex} \
@@ -74,9 +74,9 @@ process bam_region_filter {
         tuple path(xam), path(xam_idx), val(xam_meta)
         path (repeat_bed)
     output:
-        tuple path("*str_regions.bam"), path("*str_regions.bam.bai"), val(meta), emit: region_bam, optional: true
+        tuple path("*str_regions.bam"), path("*str_regions.bam.bai"), val(sub_meta), emit: region_bam, optional: true
     script:
-        meta = [id: xam_meta.id, sq: xam_meta.sq] // nodef
+        sub_meta = [id: xam_meta.id, sq: xam_meta.sq, alias: xam_meta.alias]
         """
         { grep ${xam_meta.sq} -Fw ${repeat_bed} || true; } > repeats_subset.bed
 
@@ -112,8 +112,9 @@ process generate_str_content {
         tuple val(chr), path(straglr_vcf), path(straglr_tsv), path(annotated_vcf), path(annotated_vcf_tbi), path(stranger_tsv), path(stranger_annotation), path(xam), path(xam_idx), val(xam_meta)
         path (repeat_bed)
     output:
-        path ("*str-content.csv"), optional: true
+        tuple val(sub_meta), path ("*str-content.csv"), optional: true
     script:
+        sub_meta = ["alias": xam_meta.alias]
         """
         workflow-glue generate_str_content \
             --straglr ${straglr_tsv} \
@@ -132,16 +133,16 @@ process merge_tsv {
         path (plot_tsv)
         path (straglr_tsv)
         path (stranger_tsv)
-        path (str_content_csv)
+        tuple val(xam_meta), path(str_content_csv)
     output:
         tuple path ("*plot.tsv"), path ("*straglr.tsv"), path ("*stranger.tsv"), path ("*str-content-all.csv")
     script:
         """
-        awk 'NR == 1 || FNR > 1' ${plot_tsv} >${params.sample_name}_plot.tsv
-        awk 'NR == 1 || FNR > 1' ${stranger_tsv} >${params.sample_name}_stranger.tsv
+        awk 'NR == 1 || FNR > 1' ${plot_tsv} >${xam_meta.alias}_plot.tsv
+        awk 'NR == 1 || FNR > 1' ${stranger_tsv} >${xam_meta.alias}_stranger.tsv
         # Ignore the first line from straglr_tsv as it has a two-line header. Avoid sed altogether
-        awk 'NR == 2 || FNR > 2' ${straglr_tsv} > ${params.sample_name}.wf_str.straglr.tsv
-        awk 'NR == 1 || FNR > 1' ${str_content_csv} > ${params.sample_name}_str-content-all.csv
+        awk 'NR == 2 || FNR > 2' ${straglr_tsv} > ${xam_meta.alias}.wf_str.straglr.tsv
+        awk 'NR == 1 || FNR > 1' ${str_content_csv} > ${xam_meta.alias}_str-content-all.csv
         """
 }
 
@@ -151,7 +152,7 @@ process make_report {
     cpus 1
     memory 16.GB
     input:
-        tuple path(vcf), path(vcf_idx)
+        tuple val(xam_meta), path(vcf), path(vcf_idx)
         path(straglr_tsv)
         path(plot_tsv)
         path(stranger_annotation)
@@ -163,14 +164,14 @@ process make_report {
     output:
         path "*wf-human-str-report.html", emit: html
     script:
-        def report_name = "${params.sample_name}.wf-human-str-report.html"
+        def report_name = "${xam_meta.alias}.wf-human-str-report.html"
         // if params.sex is not provided, assume the workflow inferred it
         String sex_source = params.sex ? "user-provided" : "workflow-inferred"
         """
         workflow-glue report_str \
             -o $report_name \
             --params params.json \
-            --sample_name ${params.sample_name} \
+            --sample_name ${xam_meta.alias} \
             --version versions.txt \
             --vcf ${vcf} \
             --straglr ${straglr_tsv} \

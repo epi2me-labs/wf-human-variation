@@ -15,10 +15,8 @@ workflow cnv {
         genome_build
 
     main:
-        // truncate bam channel to remove meta to keep compat with cnv pipe
-        bam = bam_channel.map{ it -> tuple(it[0], it[1]) }
 
-        cnvs = callCNV(bam, genome_build)
+        cnvs = callCNV(bam_channel, genome_build)
 
         software_versions = getVersions()
         workflow_params = getParams()

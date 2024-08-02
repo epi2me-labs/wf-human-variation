@@ -47,7 +47,7 @@ process make_chunks {
         """
         # CW-2456: save command line to add to VCF file (very long command...)
         mkdir -p clair_output/tmp
-        echo "run_clair3.sh --bam_fn=${xam} ${bedprnt} --ref_fn=${ref} ${vcfprnt} --output=clair_output --platform=ont --sample_name=${params.sample_name} --model_path=${model_path.simpleName} --ctg_name=${params.ctg_name} ${ctg_name} --include_all_ctgs=${params.include_all_ctgs} --chunk_num=0 --chunk_size=5000000 --qual=${params.min_qual} --var_pct_full=${params.var_pct_full} --ref_pct_full=${params.ref_pct_full} ${snp_min_af} ${indel_min_af} --min_contig_size=${params.min_contig_size}" > clair_output/tmp/CMD
+        echo "run_clair3.sh --bam_fn=${xam} ${bedprnt} --ref_fn=${ref} ${vcfprnt} --output=clair_output --platform=ont --sample_name=${xam_meta.alias} --model_path=${model_path.simpleName} --ctg_name=${params.ctg_name} ${ctg_name} --include_all_ctgs=${params.include_all_ctgs} --chunk_num=0 --chunk_size=5000000 --qual=${params.min_qual} --var_pct_full=${params.var_pct_full} --ref_pct_full=${params.ref_pct_full} ${snp_min_af} ${indel_min_af} --min_contig_size=${params.min_contig_size}" > clair_output/tmp/CMD
         # CW-2456: prepare other inputs normally
         python \$(which clair3.py) CheckEnvs \
             --bam_fn ${xam} \
@@ -61,7 +61,7 @@ process make_chunks {
             --include_all_ctgs ${params.include_all_ctgs} \
             --threads 1  \
             --qual ${params.min_qual} \
-            --sampleName ${params.sample_name} \
+            --sampleName ${xam_meta.alias} \
             --var_pct_full ${params.var_pct_full} \
             --ref_pct_full ${params.ref_pct_full} \
             ${snp_min_af} \
@@ -89,7 +89,7 @@ process pileup_variants {
         path "split_bed"
     output:
         // TODO: make this explicit, why is pileup VCF optional?
-        path "pileup_*.vcf", optional: true, emit: pileup_vcf_chunks
+        tuple val(xam_meta), path("pileup_*.vcf"), optional: true, emit: pileup_vcf_chunks
         path "gvcf_tmp_path/*", optional: true, emit: pileup_gvcf_chunks
     script:
         // note: the VCF output here is required to use the contig
@@ -137,11 +137,11 @@ process aggregate_pileup_variants {
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         // these need to be named as original, as program uses info from
         // contigs file to filter
-        path "input_vcfs/*"
+        tuple val(xam_meta), path("input_vcfs/*")
         path contigs
         path command
     output:
-        tuple path("pileup.vcf.gz"), path("pileup.vcf.gz.tbi"), emit: pileup_vcf
+        tuple val(xam_meta), path("pileup.vcf.gz"), path("pileup.vcf.gz.tbi"), emit: pileup_vcf
         path "phase_qual", emit: phase_qual
     shell:
         '''
@@ -149,7 +149,7 @@ process aggregate_pileup_variants {
             --input_dir input_vcfs/ \
             --vcf_fn_prefix pileup \
             --output_fn pileup.vcf \
-            --sampleName !{params.sample_name} \
+            --sampleName !{xam_meta.alias} \
             --ref_fn !{ref} \
             --contigs_fn !{contigs} \
             --cmd_fn !{command}
@@ -171,7 +171,7 @@ process select_het_snps {
     memory 4.GB
     input:
         each contig
-        tuple path("pileup.vcf.gz"), path("pileup.vcf.gz.tbi")
+        tuple val(xam_meta), path("pileup.vcf.gz"), path("pileup.vcf.gz.tbi")
         // this is used implicitely by the program
         // https://github.com/HKU-BAL/Clair3/blob/329d09b39c12b6d8d9097aeb1fe9ec740b9334f6/preprocess/SelectHetSnp.py#L29
         path "split_folder/phase_qual"
@@ -220,11 +220,11 @@ process cat_haplotagged_contigs {
     cpus 4
     memory 15.GB // cat should not need this, but weirdness occasionally strikes
     input:
-        path contig_bams // intermediate input always BAM here
+        tuple val(xam_meta), path(contig_bams) // intermediate input always BAM here
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple val(xam_fmt), val(xai_fmt)
     output:
-        tuple path("${params.sample_name}.haplotagged.${xam_fmt}"), path("${params.sample_name}.haplotagged.${xam_fmt}.${xai_fmt}"), emit: merged_xam
+        tuple path("${xam_meta.alias}.haplotagged.${xam_fmt}"), path("${xam_meta.alias}.haplotagged.${xam_fmt}.${xai_fmt}"), emit: merged_xam
     script:
     def threads = Math.max(task.cpus - 1, 1)
     """
@@ -247,10 +247,10 @@ process cat_haplotagged_contigs {
 
     # cat just cats, if we want bam, we'll have to deal with that ourselves
     if [ "${xam_fmt}" = "cram" ]; then
-        samtools cat -b cat.fofn --no-PG -o - | samtools view --no-PG -@ ${threads} --reference ${ref} -O CRAM --write-index -o "${params.sample_name}.haplotagged.cram##idx##${params.sample_name}.haplotagged.cram.crai"
+        samtools cat -b cat.fofn --no-PG -o - | samtools view --no-PG -@ ${threads} --reference ${ref} -O CRAM --write-index -o "${xam_meta.alias}.haplotagged.cram##idx##${xam_meta.alias}.haplotagged.cram.crai"
     else
-        samtools cat -b cat.fofn --no-PG -@ ${threads} -o "${params.sample_name}.haplotagged.bam"
-        samtools index -@ ${threads} -b "${params.sample_name}.haplotagged.bam"
+        samtools cat -b cat.fofn --no-PG -@ ${threads} -o "${xam_meta.alias}.haplotagged.bam"
+        samtools index -@ ${threads} -b "${xam_meta.alias}.haplotagged.bam"
     fi
     """
 }
@@ -262,7 +262,7 @@ process get_qual_filter {
     cpus 2
     memory 4.GB
     input:
-        tuple path("pileup.vcf.gz"), path("pileup.vcf.gz.tbi")
+        tuple val(xam_meta), path("pileup.vcf.gz"), path("pileup.vcf.gz.tbi")
     output:
         path "output/qual", emit: full_qual
     shell:
@@ -290,12 +290,12 @@ process create_candidates {
     input:
         each contig
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
-        tuple path("pileup.vcf.gz"), path("pileup.vcf.gz.tbi")
+        tuple val(xam_meta), path("pileup.vcf.gz"), path("pileup.vcf.gz.tbi")
         // this is used implicitely by the program
         // https://github.com/HKU-BAL/Clair3/blob/329d09b39c12b6d8d9097aeb1fe9ec740b9334f6/preprocess/SelectCandidates.py#L146
         path "candidate_bed/qual"
     output:
-        tuple val(contig), path("candidate_bed/${contig}.*"), emit: candidate_bed, optional: true
+        tuple val(xam_meta), val(contig), path("candidate_bed/${contig}.*"), emit: candidate_bed, optional: true
     shell:
         // This creates BED files as candidate_bed/<ctg>.0_14 with candidates
         // along with a file the FULL_ALN_FILE_<ctg> listing all of the BED
@@ -328,13 +328,13 @@ process evaluate_candidates {
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
     input:
-        tuple val(contig), path(phased_xam), path(phased_xai), val(phased_meta), path(phased_vcf)
+        tuple val(contig), path(phased_xam), path(phased_xai), val(xam_meta), path(phased_vcf)
         tuple val(contig), path(candidate_bed)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         path(model)
         path(command)
     output:
-        path "output/full_alignment_*.vcf", emit: full_alignment
+        tuple val(xam_meta), path("output/full_alignment_*.vcf"), emit: full_alignment
     script:
         filename = candidate_bed.name
         """
@@ -344,7 +344,7 @@ process evaluate_candidates {
             --chkpnt_fn ${model}/full_alignment \
             --bam_fn ${phased_xam} \
             --call_fn output/full_alignment_${filename}.vcf \
-            --sampleName ${params.sample_name} \
+            --sampleName ${xam_meta.alias} \
             --ref_fn ${ref} \
             --full_aln_regions ${candidate_bed} \
             --ctgName ${contig} \
@@ -371,7 +371,7 @@ process aggregate_full_align_variants {
 
     input:
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
-        path "full_alignment/*"
+        tuple val(xam_meta), path("full_alignment/*")
         path contigs
         path "gvcf_tmp_path/*"
         path command
@@ -383,7 +383,7 @@ process aggregate_full_align_variants {
         pypy $(which clair3.py) SortVcf \
             --input_dir full_alignment \
             --output_fn full_alignment.vcf \
-            --sampleName !{params.sample_name} \
+            --sampleName !{xam_meta.alias} \
             --ref_fn !{ref} \
             --cmd_fn !{command} \
             --contigs_fn !{contigs}
@@ -399,7 +399,7 @@ process aggregate_full_align_variants {
                 --input_dir gvcf_tmp_path \
                 --vcf_fn_suffix .tmp.gvcf \
                 --output_fn non_var.gvcf \
-                --sampleName !{params.sample_name} \
+                --sampleName !{xam_meta.alias} \
                 --ref_fn !{ref} \
                 --cmd_fn !{command} \
                 --contigs_fn !{contigs}
@@ -416,13 +416,13 @@ process merge_pileup_and_full_vars{
     input:
         each contig
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
-        tuple path(pile_up_vcf), path(pile_up_vcf_tbi)
+        tuple val(xam_meta), path(pile_up_vcf), path(pile_up_vcf_tbi)
         tuple path(full_aln_vcf), path(full_aln_vcf_tbi)
         path "non_var.gvcf"
         path "candidate_beds/*"
     output:
-        tuple val(contig), path("output/merge_${contig}.vcf.gz"), path("output/merge_${contig}.vcf.gz.tbi"), emit: merged_vcf
-        path "output/merge_${contig}.gvcf", optional: true, emit: merged_gvcf
+        tuple val(xam_meta), val(contig), path("output/merge_${contig}.vcf.gz"), path("output/merge_${contig}.vcf.gz.tbi"), emit: merged_vcf
+        tuple val(xam_meta), path("output/merge_${contig}.gvcf"), optional: true, emit: merged_gvcf
     shell:
         '''
         mkdir output
@@ -458,12 +458,12 @@ process post_clair_phase_contig {
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
     input:
-        tuple val(contig),
+        tuple val(xam_meta), val(contig),
             path(vcf), path(vcf_tbi),
-            path(xam), path(xam_idx), val(xam_meta),
+            path(xam), path(xam_idx),
             path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
-        tuple val(contig),
+        tuple val(xam_meta),
             path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"),
             emit: vcf
         tuple val(contig),
@@ -515,7 +515,7 @@ process post_clair_contig_haplotag {
             path(xam), path(xam_idx), val(xam_meta),
             path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
-        tuple val(contig), path("${contig}_hp.bam"), path("${contig}_hp.bam.bai"), emit: phased_bam
+        tuple val(xam_meta), val(contig), path("${contig}_hp.bam"), path("${contig}_hp.bam.bai"), emit: phased_bam
     script:
     """
     whatshap haplotag \
@@ -535,17 +535,16 @@ process aggregate_all_variants{
     memory { 8.GB * task.attempt }
     maxRetries 2
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
-
     input:
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
-        path "merge_output/*"
+        tuple val(xam_meta), path("merge_output/*")
         path "merge_outputs_gvcf/*"
-        val(phase_vcf)
+        val phase_vcf
         path contigs
         path command
     output:
-        tuple path("${params.sample_name}.wf_snp.vcf.gz"), path("${params.sample_name}.wf_snp.vcf.gz.tbi"), emit: vcf
-        tuple path("${params.sample_name}.wf_snp.gvcf.gz"), path("${params.sample_name}.wf_snp.gvcf.gz.tbi"), emit: gvcf, optional: true
+        tuple val(xam_meta), path("${xam_meta.alias}.wf_snp.vcf.gz"), path("${xam_meta.alias}.wf_snp.vcf.gz.tbi"), emit: vcf
+        tuple val(xam_meta), path("${xam_meta.alias}.wf_snp.gvcf.gz"), path("${xam_meta.alias}.wf_snp.gvcf.gz.tbi"), emit: gvcf, optional: true
     script:
         def prefix = params.phased || params.str ? "phased" : "merge"
         """
@@ -554,13 +553,13 @@ process aggregate_all_variants{
         pypy \$(which clair3.py) SortVcf \
             --input_dir merge_output \
             --vcf_fn_prefix $prefix \
-            --output_fn ${params.sample_name}.wf_snp.vcf \
-            --sampleName ${params.sample_name} \
+            --output_fn ${xam_meta.alias}.wf_snp.vcf \
+            --sampleName ${xam_meta.alias} \
             --ref_fn ${ref} \
             --cmd_fn ${command} \
             --contigs_fn ${contigs}
 
-        if [ "\$( bgzip -fdc ${params.sample_name}.wf_snp.vcf.gz | grep -v '#' | wc -l )" -eq 0 ]; then
+        if [ "\$( bgzip -fdc ${xam_meta.alias}.wf_snp.vcf.gz | grep -v '#' | wc -l )" -eq 0 ]; then
             echo "[INFO] Exit in all contigs variant merging"
             exit 0
         fi
@@ -572,15 +571,15 @@ process aggregate_all_variants{
                 --vcf_fn_prefix merge \
                 --vcf_fn_suffix .gvcf \
                 --output_fn tmp.gvcf \
-                --sampleName ${params.sample_name} \
+                --sampleName ${xam_meta.alias} \
                 --ref_fn ${ref} \
                 --cmd_fn ${command} \
                 --contigs_fn ${contigs}
 
-                # Reheading samples named "SAMPLE" to params.sample_name. If no 
-                echo "SAMPLE" "${params.sample_name}" > rename.txt
-                bcftools reheader -s rename.txt tmp.gvcf.gz > ${params.sample_name}.wf_snp.gvcf.gz
-                bcftools index -t ${params.sample_name}.wf_snp.gvcf.gz && rm tmp.gvcf.gz rename.txt
+                # Reheading samples named "SAMPLE" to xam_meta.alias.
+                echo "SAMPLE" "${xam_meta.alias}" > rename.txt
+                bcftools reheader -s rename.txt tmp.gvcf.gz > ${xam_meta.alias}.wf_snp.gvcf.gz
+                bcftools index -t ${xam_meta.alias}.wf_snp.gvcf.gz && rm tmp.gvcf.gz rename.txt
         fi
 
         echo "[INFO] Finish calling, output file: merge_output.vcf.gz"
@@ -597,18 +596,18 @@ process refine_with_sv {
 
     input:
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH) 
-        tuple path(clair_vcf, stageAs: 'clair.vcf.gz'), path(clair_tbi, stageAs: 'clair.vcf.gz.tbi'), val(contig)
+        tuple val(xam_meta), path(clair_vcf, stageAs: 'clair.vcf.gz'), path(clair_tbi, stageAs: 'clair.vcf.gz.tbi'), val(contig)
         tuple path(xam), path(xam_idx), val(xam_meta) // this may be a haplotagged_bam or input CRAM 
-        path sniffles_vcf
+        path(sniffles_vcf)
     output:
-        tuple path("${params.sample_name}.${contig}.wf_snp.vcf.gz"), path("${params.sample_name}.${contig}.wf_snp.vcf.gz.tbi"), emit: vcf
+        tuple val(xam_meta), path("${xam_meta.alias}.${contig}.wf_snp.vcf.gz"), path("${xam_meta.alias}.${contig}.wf_snp.vcf.gz.tbi"), emit: vcf
     shell:
         '''
         pypy $(which clair3.py) SwitchZygosityBasedOnSVCalls \\
             --bam_fn !{xam} \\
             --clair3_vcf_input clair.vcf.gz \\
             --sv_vcf_input !{sniffles_vcf} \\
-            --vcf_output "!{params.sample_name}.!{contig}.wf_snp.vcf" \\
+            --vcf_output "!{xam_meta.alias}.!{contig}.wf_snp.vcf" \\
             --threads !{task.cpus} \\
             --ctg_name '!{contig}'
         '''
@@ -622,19 +621,18 @@ process phase_gvcf {
     cpus 2
     memory 4.GB
     input:
-        tuple path('clair3.vcf.gz'), path('clair3.vcf.gz.tbi')
-        tuple path('clair3.gvcf.gz'), path('clair3.gvcf.gz.tbi')
+        tuple val(xam_meta), path('clair3.vcf.gz'), path('clair3.vcf.gz.tbi'), path('clair3.gvcf.gz'), path('clair3.gvcf.gz.tbi')
             
     output:
-        tuple path("${params.sample_name}.wf_snp.gvcf.gz"),
-            path("${params.sample_name}.wf_snp.gvcf.gz.tbi"),
+        tuple path("${xam_meta.alias}.wf_snp.gvcf.gz"),
+            path("${xam_meta.alias}.wf_snp.gvcf.gz.tbi"),
             emit: phased_gvcf
             
     script:
         """
         # Transfer annotation.
-        bcftools annotate --threads ${task.cpus - 1} -O z --annotations clair3.vcf.gz -c FORMAT/GT,FORMAT/PS clair3.gvcf.gz > ${params.sample_name}.wf_snp.gvcf.gz \
-        && tabix -p vcf ${params.sample_name}.wf_snp.gvcf.gz
+        bcftools annotate --threads ${task.cpus - 1} -O z --annotations clair3.vcf.gz -c FORMAT/GT,FORMAT/PS clair3.gvcf.gz > ${xam_meta.alias}.wf_snp.gvcf.gz \
+        && tabix -p vcf ${xam_meta.alias}.wf_snp.gvcf.gz
         """
 }
 
@@ -710,9 +708,9 @@ process vcfStats {
     label "wf_human_snp"
     cpus 2
     input:
-        tuple path(vcf), path(index)
+        tuple val(xam_meta), path(vcf), path(index)
     output:
-        file "variants.stats"
+        tuple val(xam_meta), path("variants.stats")
     """
     bcftools stats --threads ${task.cpus - 1} $vcf > variants.stats
     """
@@ -724,19 +722,19 @@ process makeReport {
     cpus 1
     memory 16.GB
     input:
-        file vcfstats
+        tuple val(xam_meta), path(vcfstats)
         path versions
         path "params.json"
         path clinvar_vcf
     output:
-        path "${params.sample_name}.wf-human-snp-report.html", emit: 'report', optional: true
-        path "${params.sample_name}.snvs.json", emit: 'json'
+        path "${xam_meta.alias}.wf-human-snp-report.html", emit: 'report', optional: true
+        path "${xam_meta.alias}.snvs.json", emit: 'json'
     script:
         def clinvar = clinvar_vcf ?: ""
         def annotation = params.annotation ? "" : "--skip_annotation"
         def generate_html = params.output_report ? "" : "--skip_report"
 
-        report_name = "${params.sample_name}.wf-human-snp-report.html"
+        report_name = "${xam_meta.alias}.wf-human-snp-report.html"
         wfversion = workflow.manifest.version
         if( workflow.commitId ){
             wfversion = workflow.commitId
@@ -747,7 +745,7 @@ process makeReport {
         --versions $versions \
         --params params.json \
         --vcf_stats $vcfstats \
-        --sample_name $params.sample_name \
+        --sample_name $xam_meta.alias \
         --clinvar_vcf $clinvar \
         --workflow_version ${workflow.manifest.version} \
         $annotation $generate_html

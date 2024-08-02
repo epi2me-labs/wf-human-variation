@@ -39,20 +39,20 @@ workflow bam {
         }
 
         if (!params.annotation) {
-            final_vcf = called.vcf.combine(called.vcf_index)
+            final_vcf = called.vcf.join(called.vcf_index)
 
             report = runReport(
-                called.vcf.collect(),
+                called.vcf.groupTuple(),
                 benchmark_result
             )
         }
         else {
             // append '*' to indicate that annotation should be performed on all chr at once
-            vcf_for_annotation = called.vcf.combine(called.vcf_index).map{ it << '*' }
+            vcf_for_annotation = called.vcf.join(called.vcf_index).map{ it << '*' }
             // annotate with SnpEff
             final_vcf = annotate_sv_vcf(vcf_for_annotation, genome_build, "sv").annot_vcf
             report = runReport(
-                final_vcf.map{it[0]},
+                final_vcf.map{meta, vcf, tbi -> [meta, vcf]}.groupTuple(),
                 benchmark_result
             )
         }
@@ -60,10 +60,10 @@ workflow bam {
         // Prepare stuff to emit
         sv_stats_json = report.json
         report = report.html.concat(
-            final_vcf,
+            final_vcf.map{meta, vcf, tbi -> [vcf, tbi]},
             benchmark_result
         )
-
+    
     emit:
         report = report
         sv_stats_json = sv_stats_json
@@ -163,7 +163,7 @@ workflow runReport {
         software_versions = getVersions()
         workflow_params = getParams()
         report(
-            vcf.collect(),
+            vcf,
             eval_json,
             software_versions,
             workflow_params
