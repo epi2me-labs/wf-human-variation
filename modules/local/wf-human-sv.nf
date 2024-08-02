@@ -13,11 +13,11 @@ process sniffles2 {
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         val genome_build
     output:
-        path "*.sniffles.vcf", emit: vcf
-        path "${params.sample_name}.wf_sv.snf", emit: snf
+        tuple val(xam_meta), path("*.sniffles.vcf"), emit: vcf
+        path "${xam_meta.alias}.wf_sv.snf", emit: snf
     publishDir \
         path: "${params.out_dir}",
-        pattern: "${params.sample_name}.wf_sv.snf",
+        pattern: "${xam_meta.alias}.wf_sv.snf",
         mode: 'copy'
     script:
         // if tr_arg is not provided and genome_build is set
@@ -37,20 +37,20 @@ process sniffles2 {
     """
     sniffles \
         --threads $task.cpus \
-        --sample-id ${params.sample_name} \
+        --sample-id ${xam_meta.alias} \
         --output-rnames \
         ${min_sv_len} \
         --cluster-merge-pos $params.cluster_merge_pos \
         --input $xam \
         --reference $ref \
         --input-exclude-flags 2308 \
-        --snf ${params.sample_name}.wf_sv.snf \
+        --snf ${xam_meta.alias}.wf_sv.snf \
         $tr_arg \
         $sniffles_args \
         $phase \
-        --vcf ${params.sample_name}.sniffles.vcf
-    sed '/.:0:0:0:NULL/d' ${params.sample_name}.sniffles.vcf > tmp.vcf
-    mv tmp.vcf ${params.sample_name}.sniffles.vcf
+        --vcf ${xam_meta.alias}.sniffles.vcf
+    sed '/.:0:0:0:NULL/d' ${xam_meta.alias}.sniffles.vcf > tmp.vcf
+    mv tmp.vcf ${xam_meta.alias}.sniffles.vcf
     """
 }
 
@@ -59,12 +59,12 @@ process filterCalls {
     cpus { params.threads < 2 ? 2 : params.threads }
     memory 4.GB
     input:
-        file vcf
+        tuple val(xam_meta), path(vcf)
         path mosdepth_summary // MOSDEPTH_TUPLE
         file target_bed
         val chromosome_codes
     output:
-        path "*.filtered.vcf", emit: vcf
+        tuple val(xam_meta), path("*.filtered.vcf"), emit: vcf
     script:
     String ctgs = chromosome_codes.join(',')
     def ctgs_filter = params.include_all_ctgs ? "" : "--contigs ${ctgs}"
@@ -83,7 +83,7 @@ process filterCalls {
         ${ctgs_filter} > filter.sh
 
     # Run filtering
-    bash filter.sh > ${params.sample_name}.filtered.vcf
+    bash filter.sh > ${xam_meta.alias}.filtered.vcf
     """
 }
 
@@ -95,14 +95,14 @@ process sortVCF {
     cpus 2
     memory 4.GB
     input:
-        file vcf
+        tuple val(xam_meta), path(vcf)
     output:
-        path "${params.sample_name}.wf_sv.vcf.gz", emit: vcf_gz
-        path "${params.sample_name}.wf_sv.vcf.gz.tbi", emit: vcf_tbi
+        tuple val(xam_meta), path("${xam_meta.alias}.wf_sv.vcf.gz"), emit: vcf_gz
+        tuple val(xam_meta), path("${xam_meta.alias}.wf_sv.vcf.gz.tbi"), emit: vcf_tbi
     script:
     """
-    bcftools sort -m 2G -T ./ -O z $vcf > ${params.sample_name}.wf_sv.vcf.gz
-    tabix -p vcf ${params.sample_name}.wf_sv.vcf.gz
+    bcftools sort -m 2G -T ./ -O z $vcf > ${xam_meta.alias}.wf_sv.vcf.gz
+    tabix -p vcf ${xam_meta.alias}.wf_sv.vcf.gz
     """
 }
 
@@ -145,15 +145,15 @@ process report {
     cpus 1
     memory 6.GB
     input:
-        file vcf
+        tuple val(xam_meta), path(vcf)
         file eval_json
         file versions
         path "params.json"
     output:
         path "*report.html", emit: html, optional: true
-        path "${params.sample_name}.svs.json", emit: json
+        path "${xam_meta.alias}.svs.json", emit: json
     script:
-        def report_name = "${params.sample_name}.wf-human-sv-report.html"
+        def report_name = "${xam_meta.alias}.wf-human-sv-report.html"
         def evalResults = eval_json.name != 'OPTIONAL_FILE' ? "--eval_results ${eval_json}" : ""
         def generate_html = params.output_report ? "" : "--skip_report"
     """
@@ -165,7 +165,7 @@ process report {
         --versions $versions \
         --revision ${workflow.revision} \
         --commit ${workflow.commitId} \
-        --output_json "${params.sample_name}.svs.json" \
+        --output_json "${xam_meta.alias}.svs.json" \
         --workflow_version ${workflow.manifest.version} \
         $evalResults $generate_html
     """

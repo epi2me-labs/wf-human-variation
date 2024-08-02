@@ -66,8 +66,9 @@ workflow snp {
         // Run the "pileup" caller on all chunks and collate results
         // > Step 1 
         pileup_variants(chunks, bam_channel, ref, model, bed, cmd_file, split_beds)
+        // group pileup_variants.out.pileup_vcf_chunks by meta key
         aggregate_pileup_variants(
-            ref, pileup_variants.out.pileup_vcf_chunks.collect(),
+            ref, pileup_variants.out.pileup_vcf_chunks.groupTuple(),
             make_chunks.out.contigs_file, cmd_file)
 
         // Filter collated results to produce per-contig SNPs for phasing.
@@ -103,9 +104,9 @@ workflow snp {
         candidate_beds = create_candidates.out.candidate_bed.flatMap {
             x ->
                 // output globs can return a list or single item
-                y = x[1]; if(! (y instanceof java.util.ArrayList)){y = [y]}
+                y = x[2]; if(! (y instanceof java.util.ArrayList)){y = [y]}
                 // effectively duplicate chr for all beds - [chr, bed]
-                y.collect { [x[0], it] } }
+                y.collect { [x[1], it] } }
         // produce something emitting: [[chr, bam, bai, meta, vcf], [chr20, bed], [ref, fai, cache], model]
         bams_beds_and_stuff = phased_bam_and_vcf
             .cross(candidate_beds)
@@ -136,7 +137,7 @@ workflow snp {
         pileup_variants.out.pileup_gvcf_chunks.flatten().collect()
         aggregate_full_align_variants(
             ref,
-            evaluate_candidates.out.full_alignment.collect(),
+            evaluate_candidates.out.full_alignment.groupTuple(),
             make_chunks.out.contigs_file,
             gvcfs,
             cmd_file)
@@ -163,28 +164,31 @@ workflow snp {
         // phased requires haplotagged bam to perform appropriate phasing
         // perform internal phasing only if snp+phase is requested, but not sv.
         // Otherwise use final joint phasing only.
+        // reorg bam channel so it combines with variant channel without duplicate meta
+        reorg_bam_channel = bam_channel.map{ bam, bai, meta -> [meta, bam, bai]}
         if (run_haplotagging) {
             post_clair_phase = merge_pileup_and_full_vars.out.merged_vcf
-                .combine(bam_channel)
+                .combine(reorg_bam_channel, by: 0)
                 .combine(ref) |
                 post_clair_phase_contig
             post_clair_phase.vcf
-                .map { it -> [it[1]] }
+                .map { meta, vcf, tbi -> [meta, vcf] }
                 .set { final_vcfs }
             post_clair_phase.for_tagging | post_clair_contig_haplotag
 
             // intermediate ctg BAMs can flow to STR
             haplotagged_ctg_bams = post_clair_contig_haplotag.out.phased_bam
+            xams_to_cat = haplotagged_ctg_bams.map{ meta, contig, xam, xai -> [meta, xam] }.groupTuple(by: 0)
             // meanwhile cat all the intermediate ctg BAMs to desired XAM format for user output dir
             haplotagged_cat_xam = cat_haplotagged_contigs(
-                haplotagged_ctg_bams.collect{it[1]}, // only need the BAMs themselves
+                xams_to_cat, // only need the BAMs themselves
                 ref,
                 extensions
             )
 
         } else {
             merge_pileup_and_full_vars.out.merged_vcf
-                .map { it -> [it[1]] }
+                .map { meta, contig, vcf, tbi -> [meta, vcf]}
                 .set { final_vcfs }
             // SNP only so we don't need these
             haplotagged_ctg_bams = Channel.empty()
@@ -192,11 +196,11 @@ workflow snp {
         }
 
         // ...then collate final per-contig VCFs for whole genome results
-        gvcfs = merge_pileup_and_full_vars.out.merged_gvcf
+        gvcfs = merge_pileup_and_full_vars.out.merged_gvcf.map{meta, gvcf -> gvcf}
             .ifEmpty(file("$projectDir/data/OPTIONAL_FILE"))
         clair_final = aggregate_all_variants(
             ref,
-            final_vcfs.collect(),
+            final_vcfs.groupTuple(by: 0),
             gvcfs.collect(),
             params.phased,
             make_chunks.out.contigs_file,
@@ -211,22 +215,21 @@ workflow snp {
         // Phase GVCF if requested
         if (params.GVCF && params.phased){
             final_gvcf = phase_gvcf(
-                clair_final.vcf,
-                clair_final.gvcf
+                clair_final.vcf.join(clair_final.gvcf)
             )
         } else if (params.GVCF) {
-            final_gvcf = clair_final.gvcf
+            final_gvcf = clair_final.gvcf.map{meta, gvcf, tbi -> [gvcf, tbi]}
         }
         else {
             final_gvcf = Channel.empty()
         }
 
         // Define clair3 results, adding GVCF if needed
-        clair3_results = haplotagged_cat_xam.concat(clair_final.vcf).concat(final_gvcf).concat(hp_snp_blocks)
+        clair3_results = haplotagged_cat_xam.concat(clair_final.vcf.map{meta, vcf, tbi -> [vcf, tbi]}).concat(final_gvcf).concat(hp_snp_blocks)
 
     emit:
         clair3_results = clair3_results
-        str_bams = haplotagged_ctg_bams.combine(bam_channel.map{it[2]}).map{ sq, xam, xai, meta -> tuple(xam, xai, meta + [sq:sq]) } // intermediate haplotagged contigs used for STR, with meta
+        str_bams = haplotagged_ctg_bams.map{ meta, sq, xam, xai -> tuple(xam, xai, meta + [sq:sq]) } // intermediate haplotagged contigs used for STR, with meta
         vcf_files = clair_final.vcf
         haplotagged_xam = haplotagged_cat_xam.combine(bam_channel.map{it[2]}) // haplotagged XAM with meta appended
         contigs = contigs

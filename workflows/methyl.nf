@@ -28,13 +28,13 @@ process modkit {
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         val options
     output:
-        tuple val('*'), path("${params.sample_name}*bedmethyl.gz"), emit: modkit
+        tuple val(meta), val('*'), path("${meta.alias}*bedmethyl.gz"), emit: modkit
 
     script:
     """
     modkit pileup \\
         ${xam} \\
-        ${params.sample_name}.wf_mods.${meta.sq}.bedmethyl \\
+        ${meta.alias}.wf_mods.${meta.sq}.bedmethyl \\
         --ref ${ref} \\
         --region ${meta.sq} \\
         --interval-size 1000000 \\
@@ -43,7 +43,7 @@ process modkit {
         --threads ${task.cpus} ${options}
     
     # Compress all
-    bgzip ${params.sample_name}.wf_mods.${meta.sq}.bedmethyl
+    bgzip ${meta.alias}.wf_mods.${meta.sq}.bedmethyl
     """
 }
 
@@ -60,9 +60,9 @@ process modkit_phase {
         val options
     // some of the outputs can be optional based on the tagging (they can all be from one hap, either haps, or none)
     output:
-        tuple val('ungrouped'), path("${params.sample_name}/${params.sample_name}*ungrouped.bedmethyl.gz"), emit: modkit_H0, optional: true
-        tuple val('1'), path("${params.sample_name}/${params.sample_name}*1.bedmethyl.gz"), emit: modkit_H1, optional: true
-        tuple val('2'), path("${params.sample_name}/${params.sample_name}*2.bedmethyl.gz"), emit: modkit_H2, optional: true
+        tuple val(meta), val('ungrouped'), path("${meta.alias}/${meta.alias}*ungrouped.bedmethyl.gz"), emit: modkit_H0, optional: true
+        tuple val(meta), val('1'), path("${meta.alias}/${meta.alias}*1.bedmethyl.gz"), emit: modkit_H1, optional: true
+        tuple val(meta), val('2'), path("${meta.alias}/${meta.alias}*2.bedmethyl.gz"), emit: modkit_H2, optional: true
 
     script:
     // CW-2370: modkit saves in a directory when using --partition-tag rather than a single file
@@ -70,24 +70,24 @@ process modkit_phase {
     """
     modkit pileup \\
         ${xam} \\
-        ${params.sample_name} \\
+        ${meta.alias} \\
         --ref ${ref} \\
         --partition-tag HP \\
         --interval-size 1000000 \\
-        --prefix ${params.sample_name}.wf_mods.${meta.sq} \\
+        --prefix ${meta.alias}.wf_mods.${meta.sq} \\
         --log-filepath modkit.log \\
         --region ${meta.sq} \\
         ${meta.probs} \\
         --threads ${task.cpus} ${options}
     
     # Compress all
-    for i in `ls ${params.sample_name}/`; do
+    for i in `ls ${meta.alias}/`; do
         root_name=\$( basename \$i '.bed' )
-        # modkit saves the file as params.sample_name.wf_mods_haplotype.bed
-        # create a new name with the patter params.sample_name.wf_mods.haplotype.bedmethyl
+        # modkit saves the file as meta.alias.wf_mods_haplotype.bed
+        # create a new name with the patter meta.alias.wf_mods.haplotype.bedmethyl
         new_name=\$( echo \${root_name} | sed 's/wf_mods\\.${meta.sq}_/wf_mods\\.${meta.sq}\\./' )
-        mv ${params.sample_name}/\${root_name}.bed ${params.sample_name}/\${new_name}.bedmethyl
-        bgzip ${params.sample_name}/\${new_name}.bedmethyl
+        mv ${meta.alias}/\${root_name}.bed ${meta.alias}/\${new_name}.bedmethyl
+        bgzip ${meta.alias}/\${new_name}.bedmethyl
     done
     """
 }
@@ -97,9 +97,9 @@ process concat_bedmethyl {
     memory 8.GB
 
     input:
-        tuple val(group), path("bedmethyls/*")
+        tuple val(meta), val(group), path("bedmethyls/*")
     output:
-        path "${params.sample_name}.wf_mods.*bedmethyl.gz"
+        path "${meta.alias}.wf_mods.*bedmethyl.gz"
 
     script:
     // Concatenate the bedMethyl, sort them and compress them
@@ -107,7 +107,7 @@ process concat_bedmethyl {
     """
     zcat -f bedmethyls/* | \
         sort -k 1,1 -k2,2n --parallel ${task.cpus} | \
-        bgzip -c -@ ${task.cpus} > ${params.sample_name}.wf_mods.${label}bedmethyl.gz
+        bgzip -c -@ ${task.cpus} > ${meta.alias}.wf_mods.${label}bedmethyl.gz
     """
 }
 
@@ -200,12 +200,14 @@ workflow mod {
             // Concatenate the haplotypes.
             out = modkit_out.modkit_H0 
                 | mix(modkit_out.modkit_H1, modkit_out.modkit_H2)
-                | groupTuple(by: 0)
+                | map{ meta, group, bedmethyl -> [["alias": meta.alias], group, bedmethyl]}
+                | groupTuple(by: [0,1])
                 | concat_bedmethyl
         } else {
             // Run modkit.
             out = modkit(modkit_bam, reference.collect(), modkit_options)
-                | groupTuple(by: 0)
+                | map{ meta, group, bedmethyl -> [["alias": meta.alias], group, bedmethyl]}
+                | groupTuple(by: [0,1])
                 | concat_bedmethyl
         }
     emit:

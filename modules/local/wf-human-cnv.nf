@@ -5,13 +5,13 @@ process callCNV {
     cpus 2
     memory 8.GB
     input:
-        tuple path(vcf), path(vcf_index)
-        path ("readstats/*")
+        tuple val(xam_meta), path(vcf), path(vcf_index)
+        path("readstats/*")
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
-        path ("spectre_output/${params.sample_name}.vcf"), emit: spectre_vcf
-        path ("spectre_output/${params.sample_name}_cnv.bed"), emit: spectre_bed
-        path ("spectre_output/expected_karyotype.json"), emit: spectre_karyotype
+        tuple val(xam_meta), path("spectre_output/${xam_meta.alias}.vcf"), emit: spectre_vcf
+        tuple val(xam_meta), path("spectre_output/${xam_meta.alias}_cnv.bed"), emit: spectre_bed
+        tuple val(xam_meta), path("spectre_output/expected_karyotype.json"), emit: spectre_karyotype
     script:
         """
         spectre CNVCaller \
@@ -19,7 +19,7 @@ process callCNV {
         --threshhold-quantile 10 \
         --dist-proportion 0.3 \
         --coverage readstats/ \
-        --sample-id ${params.sample_name} \
+        --sample-id ${xam_meta.alias} \
         --output-dir spectre_output/ \
         --reference ${ref} \
         --blacklist grch38_blacklist_0.3 \
@@ -32,14 +32,14 @@ process callCNV {
 process bgzip_and_index_vcf {
     cpus 1
     input:
-        path (spectre_vcf)
+        tuple val(xam_meta), path(spectre_vcf)
     output:
-        tuple path("${params.sample_name}.wf_cnv.vcf.gz"), path("${params.sample_name}.wf_cnv.vcf.gz.tbi"), emit: spectre_final_vcf
+        tuple val(xam_meta), path("${xam_meta.alias}.wf_cnv.vcf.gz"), path("${xam_meta.alias}.wf_cnv.vcf.gz.tbi"), emit: spectre_final_vcf
     script:
         """
         bgzip ${spectre_vcf}
-        mv ${spectre_vcf}.gz ${params.sample_name}.wf_cnv.vcf.gz
-        tabix -f -p vcf ${params.sample_name}.wf_cnv.vcf.gz
+        mv ${spectre_vcf}.gz ${xam_meta.alias}.wf_cnv.vcf.gz
+        tabix -f -p vcf ${xam_meta.alias}.wf_cnv.vcf.gz
         """
 }
 
@@ -88,15 +88,15 @@ process makeReport {
     input:
         path "versions/*"
         path "params.json"
-        path cnv_bed
-        path karyotype_json
+        tuple val(xam_meta), path(cnv_bed)
+        tuple val(xam_meta), path(karyotype_json)
     output:
         path("*wf-human-cnv-report.html")
     script:
-        def report_name = "${params.sample_name}.wf-human-cnv-report.html"
+        def report_name = "${xam_meta.alias}.wf-human-cnv-report.html"
         """
         workflow-glue report_cnv_spectre \
-            --sample_id ${params.sample_name} \
+            --sample_id ${xam_meta.alias} \
             --params params.json \
             --versions versions \
             --cnv_bed ${cnv_bed} \

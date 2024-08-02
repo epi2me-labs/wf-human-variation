@@ -23,7 +23,7 @@ workflow cnv {
     main:
         // get mosdepth results for window size 1000
         mosdepth(bam, bed, ref, "1000", false)
-        mosdepth_stats = mosdepth.out.mosdepth_tuple
+        mosdepth_stats = mosdepth.out.mosdepth_tuple.map{ meta, bed, dist, threshold -> [bed, dist, threshold]}
         mosdepth_summary = mosdepth.out.summary
         if (params.depth_intervals) {
             mosdepth_perbase = mosdepth.out.perbase
@@ -59,5 +59,5 @@ workflow cnv {
         }
 
     emit:
-        spectre_final_vcf.concat(report)
+        spectre_final_vcf.map{ meta, vcf, tbi -> [vcf, tbi]}.concat(report)
 }
