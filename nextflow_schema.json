@@ -280,13 +280,6 @@
                 }
             },
             "properties": {
-                "tr_bed": {
-                    "title": "Tandem repeat BED file",
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "Input BED file containing tandem repeat annotations for the reference genome.",
-                    "help_text": "Providing a tandem repeat BED can improve calling in repetitive regions. An appropriate tandem repeat BED can be downloaded for your reference genome [from the Sniffles2 repository](https://github.com/fritzsedlazeck/Sniffles/tree/master/annotations)."
-                },
                 "cluster_merge_pos": {
                     "type": "number",
                     "default": 150,
@@ -324,7 +317,8 @@
                     "type": "boolean",
                     "description": "Benchmark called structural variants.",
                     "help_text": "If this option is selected, automated benchmarking of structural variant calls will be carried out using Truvari.",
-                    "default": false
+                    "default": false,
+                    "hidden": true
                 },
                 "sv_benchmark_vcf": {
                     "type": "string",
@@ -649,6 +643,13 @@
                             "hidden": true
                         }
                     }
+                },
+                "tr_bed": {
+                    "title": "Tandem repeat BED file",
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Input BED file containing tandem repeat annotations for the reference genome.",
+                    "help_text": "Providing a tandem repeat BED can improve calling in repetitive regions. The workflow will attempt to select an appropriate hg19 or hg38 TR BED depending on the genome detected, but this can be overridden with a custom TR BED with this parameter."
                 }
             }
         },

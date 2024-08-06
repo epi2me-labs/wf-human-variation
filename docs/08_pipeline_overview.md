@@ -3,7 +3,8 @@ The workflow is composed of 6 distinct subworkflows, each enabled by a command l
 * [SNP calling](#3-small-variant-calling-with-clair3): `--snp`
 * [SV calling](#4-structural-variant-sv-calling-with-sniffles2): `--sv`
 * [Analysis of modified bases](#5-modified-base-calling-with-modkit): `--mod`
-* [CNV calling](#6-copy-number-variants-cnv-calling-with-qdnaseq): `--cnv`
+* [CNV calling (Spectre)](#6a-copy-number-variants-cnv-calling-with-spectre): `--cnv`
+* [CNV calling (QDNAseq)](#6b-copy-number-variants-cnv-calling-with-qdnaseq): `--cnv --use_qdnaseq`
 * [STR genotyping](#7-short-tandem-repeat-str-genotyping-with-straglr): `--str`
 
 Subworkflows where the relevant option is omitted will not be run.
@@ -42,8 +43,7 @@ If desired, the workflow can perform phasing of structural variants by using the
 
 The workflow allows for calling of SVs using long-read sequencing data with [Sniffles2](https://github.com/fritzsedlazeck/Sniffles).
 The workflow will perform SV calling, filtering and generation of a report.
-Optionally, the workflow can also evaluate calls on HG002 against a truth set (provided the input data was aligned to HG19).
-The SV workflow takes an optional `--tr_bed` option to specify tandem repeats in the reference sequence --- see the [sniffles](https://github.com/fritzsedlazeck/Sniffles) documentation for more information.
+The SV workflow can accept a tandem repeat annotations BED file to improve calling in repetitive regions --- see the [sniffles](https://github.com/fritzsedlazeck/Sniffles) documentation for more information. The workflow will attempt to select an appropriate hg19 or hg38 TR BED but you can override the BED file used with the `--tr_bed` parameter.
 SVs can be phased using `--phased`. However, this will cause the workflow to run SNP analysis, as SV phasing relies on the haplotagged reads generated in this stage.
 
 ### 5. Modified base calling with modkit
