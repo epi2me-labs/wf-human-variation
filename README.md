@@ -20,6 +20,8 @@ The wf-human-variation workflow consolidates the small variant calling from the 
 This pipeline performs the steps of the four pipelines simultaneously and the results are generated and output in the same
 way as they would have been had the pipelines been run separately.
 
+Please note, the tools embedded in individual sub-workflows within wf-human-variation are intended for use with 20x whole-genome Oxford Nanopore Technologies sequencing data (with the exception of QDNAseq, please see [this section](#6b-copy-number-variants-cnv-calling-with-qdnaseq) for more information). Usage outside of this (e.g. with adaptive sampling data, or using lower coverage inputs) may cause the workflow to terminate with an error, or produce unexpected results.
+
 
 
 
@@ -160,20 +162,6 @@ input_reads.bam     ─── input_directory
 | out_dir | string | Directory for output of all workflow results. |  | output |
 
 
-### Structural variant calling options
-
-| Nextflow parameter name  | Type | Description | Help | Default |
-|--------------------------|------|-------------|------|---------|
-| tr_bed | string | Input BED file containing tandem repeat annotations for the reference genome. | Providing a tandem repeat BED can improve calling in repetitive regions. An appropriate tandem repeat BED can be downloaded for your reference genome [from the Sniffles2 repository](https://github.com/fritzsedlazeck/Sniffles/tree/master/annotations). |  |
-
-
-### Structural variant benchmarking options
-
-| Nextflow parameter name  | Type | Description | Help | Default |
-|--------------------------|------|-------------|------|---------|
-| sv_benchmark | boolean | Benchmark called structural variants. | If this option is selected, automated benchmarking of structural variant calls will be carried out using Truvari. | False |
-
-
 ### Copy number variant calling options
 
 | Nextflow parameter name  | Type | Description | Help | Default |
@@ -206,6 +194,7 @@ input_reads.bam     ─── input_directory
 | downsample_coverage_target | number | Average coverage or reads to use for the analyses. | This options will set the target coverage for the downsampling stage, if downsampling has been enabled. | 60 |
 | output_xam_fmt | string | Desired file format of alignment files created by alignment and phasing. | This setting controls the file format of (1) alignment files created by aligning or re-aligning an input BAM and (2) alignment files with haplotag information created during phasing of an input BAM. If using QDNASeq for CNV calling, the setting will be ignored for alignment or realignment as QDNASeq requires BAM input. | cram |
 | override_basecaller_cfg | string | Name of the model to use for selecting a small variant calling model. | The workflow will attempt to find the basecaller model from the headers of your input data, providing a value for this option will override the model found in the data. If the model cannot be found in the header, it must be provided with this option as the basecaller model is required for small variant calling. The basecaller model is used to automatically select the appropriate small variant calling model. The model list shows all models that are compatible for small variant calling with this workflow. You should select 'custom' to override the basecaller_cfg with clair3_model_path. |  |
+| tr_bed | string | Input BED file containing tandem repeat annotations for the reference genome. | Providing a tandem repeat BED can improve calling in repetitive regions. The workflow will attempt to select an appropriate hg19 or hg38 TR BED depending on the genome detected, but this can be overridden with a custom TR BED with this parameter. |  |
 
 
 ### Multiprocessing Options
@@ -266,7 +255,8 @@ The workflow is composed of 6 distinct subworkflows, each enabled by a command l
 * [SNP calling](#3-small-variant-calling-with-clair3): `--snp`
 * [SV calling](#4-structural-variant-sv-calling-with-sniffles2): `--sv`
 * [Analysis of modified bases](#5-modified-base-calling-with-modkit): `--mod`
-* [CNV calling](#6-copy-number-variants-cnv-calling-with-qdnaseq): `--cnv`
+* [CNV calling (Spectre)](#6a-copy-number-variants-cnv-calling-with-spectre): `--cnv`
+* [CNV calling (QDNAseq)](#6b-copy-number-variants-cnv-calling-with-qdnaseq): `--cnv --use_qdnaseq`
 * [STR genotyping](#7-short-tandem-repeat-str-genotyping-with-straglr): `--str`
 
 Subworkflows where the relevant option is omitted will not be run.
@@ -305,8 +295,7 @@ If desired, the workflow can perform phasing of structural variants by using the
 
 The workflow allows for calling of SVs using long-read sequencing data with [Sniffles2](https://github.com/fritzsedlazeck/Sniffles).
 The workflow will perform SV calling, filtering and generation of a report.
-Optionally, the workflow can also evaluate calls on HG002 against a truth set (provided the input data was aligned to HG19).
-The SV workflow takes an optional `--tr_bed` option to specify tandem repeats in the reference sequence --- see the [sniffles](https://github.com/fritzsedlazeck/Sniffles) documentation for more information.
+The SV workflow can accept a tandem repeat annotations BED file to improve calling in repetitive regions --- see the [sniffles](https://github.com/fritzsedlazeck/Sniffles) documentation for more information. The workflow will attempt to select an appropriate hg19 or hg38 TR BED but you can override the BED file used with the `--tr_bed` parameter.
 SVs can be phased using `--phased`. However, this will cause the workflow to run SNP analysis, as SV phasing relies on the haplotagged reads generated in this stage.
 
 ### 5. Modified base calling with modkit
@@ -375,7 +364,6 @@ Some of the sub-workflows in wf-human-variation are restricted to certain genome
 
 + Annotations for `--snp` and `--sv` are generated using [SnpEff](https://pcingola.github.io/SnpEff/). For `--snp`, additional [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) annotations are displayed in the report where available (please note, the report will not display any variants classified as 'Benign' or 'Likely benign', however these variants will be present in the
 output VCF).
-+ Specifying a suitable [tandem repeat BED for your reference](https://raw.githubusercontent.com/fritzsedlazeck/Sniffles/master/annotations/) with `--tr_bed` can improve the accuracy of SV calling.
 + Aggregation of modified calls with `--mod` requires data to be basecalled with a model that includes base modifications, providing the `MM` and `ML` BAM tags
 + CRAM files generated within the workflow cannot be read without the corresponding reference
 + The STR workflow performs genotyping of specific repeats, which can be found [here](https://github.com/epi2me-labs/wf-human-variation/blob/master/data/wf_str_repeats.bed).
