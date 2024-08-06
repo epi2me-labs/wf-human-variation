@@ -621,6 +621,8 @@ process validateIndex {
 }
 
 
+// Sort FOFN for samtools merge to ensure samtools sort breaks ties deterministically.
+// Uses -c to ensure matching RG.IDs across multiple inputs are not unnecessarily modified to avoid collisions.
 process mergeBams {
     label "ingress"
     label "wf_common"
@@ -632,11 +634,12 @@ process mergeBams {
     def merge_threads = Math.max(1, task.cpus - 1)
     """
     samtools merge -@ ${merge_threads} \
-        -b <(find input_bams -name 'reads*.bam') --write-index -o reads.bam##idx##reads.bam.bai
+        -c -b <(find input_bams -name 'reads*.bam' | sort) --write-index -o reads.bam##idx##reads.bam.bai
     """
 }
 
 
+// Sort FOFN for samtools cat to ensure samtools sort breaks ties deterministically.
 process catSortBams {
     label "ingress"
     label "wf_common"
@@ -647,7 +650,7 @@ process catSortBams {
     script:
     def sort_threads = Math.max(1, task.cpus - 2)
     """
-    samtools cat -b <(find input_bams -name 'reads*.bam') \
+    samtools cat -b <(find input_bams -name 'reads*.bam' | sort) \
     | samtools sort - -@ ${sort_threads} --write-index -o reads.bam##idx##reads.bam.bai
     """
 }
