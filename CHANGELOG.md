@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 ### Fixed
-- CNV VCF incorrectly annotated when `--annotation false`.
+- Handling of empty tr_bed parameter (@HudoGriz, #201)
+- CNV VCF incorrectly annotated when `--annotation false`
 - Remove comment lines from user supplied BED, to prevent the workflow crashing due to unrecognised columns
 - 'implausible alignment information' encountered when workflow re-aligns an already aligned BAM.
 
