@@ -94,7 +94,7 @@ def main(args):
         "Sample read N50": n50_str,
         "Sample mean coverage": cov_str
     }
-    sections.at_a_glance(report, sample_names, fields)
+    sections.at_a_glance(report, sample_names, fields, args.using_user_bed)
 
     # Add summary table of the input flagstats
     sections.summary(report, sample_names, len_hist, flagstat_df)
@@ -190,5 +190,10 @@ def argparser():
     parser.add_argument(
         "--workflow_version", required=True,
         help="Workflow version",
+    )
+    parser.add_argument(
+        "--using_user_bed", action='store_true',
+        help="Flag to use when user has provided a BED",
+        default=False
     )
     return parser

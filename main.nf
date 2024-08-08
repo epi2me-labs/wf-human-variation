@@ -461,11 +461,20 @@ workflow {
     // TODO downsampling should be incorporated to ingress to avoid
     //      call to bootleg readStats here
     // Run readStats depending on the downsampling, if requested.
-    if (params.downsample_coverage){
-        readStats(pass_bam_channel, bed, ref_channel)
-    // Otherwise, use input bam
+    // Also check if using_user_bed is true, in which case pass the sanitised 
+    // BED to readStats, rather than the filtered BED
+    if (params.downsample_coverage) {
+        readStats(
+            pass_bam_channel,
+            using_user_bed ? roi_filter_bed : bed,
+            ref_channel
+        )
     } else {
-        readStats(bam_channel, bed, ref_channel)
+        readStats(
+            bam_channel,
+            using_user_bed ? roi_filter_bed : bed,
+            ref_channel
+        )
     }
     bam_stats = readStats.out.read_stats
     bam_flag = readStats.out.flagstat
@@ -596,6 +605,7 @@ workflow {
             .combine(ref_channel)
             .combine(software_versions.collect())
             .combine(workflow_params)
+            .combine(Channel.value(using_user_bed))
             .flatten()
             .collect() | makeAlignmentReport
         // Create failing bam report
@@ -608,6 +618,7 @@ workflow {
             .combine(ref_channel)
             .combine(software_versions.collect())
             .combine(workflow_params)
+            .combine(Channel.value(using_user_bed))
             .flatten()
             .collect() | failedQCReport
     } else {
