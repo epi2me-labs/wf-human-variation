@@ -215,19 +215,23 @@ def depths(report, depth_df, sample_name):
                 EZChart(plt, theme=THEME)
 
 
-def at_a_glance(report, sample_names, values):
+def at_a_glance(report, sample_names, values, use_bed=False):
     """Generate at-a-glance statistics: read n50 and mean coverage."""
     with report.add_section("At a glance", "Description"):
         # at-a-glace stats + intro
-        dom_tags.p(
-            """
+        description_text = """
             This report contains visualisations of statistics that can help in
             understanding the results from the wf-human-variation workflow. Each section
             contains different plots or tables, and in general the results are broken
             down by sample. You can quickly jump to an individual section with the links
             in the header bar.
             """
-        )
+        if use_bed:
+            description_text += (
+                    " Please note, as a BED file has been provided, the statistics "
+                    "will correspond to the regions defined in that file."
+                )
+        dom_tags.p(description_text)
         # Create tabs for each sample
         tabs = Tabs()
         for sample_name in [*sample_names]:

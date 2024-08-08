@@ -139,7 +139,7 @@ process readStats {
     script:
         def stats_threads = Math.max(task.cpus - 1, 1)
         """
-        bamstats \
+        samtools view -b -h -L ${target_bed} ${xam} | bamstats \
             -s ${xam_meta.alias} \
             -i ${xam_meta.alias}.per-file-runids.txt \
             -l ${xam_meta.alias}.basecallers.tsv \
@@ -147,7 +147,7 @@ process readStats {
             -u \
             -f ${xam_meta.alias}.flagstat.tsv \
             --threads ${stats_threads} \
-            "${xam}" | gzip > "${xam_meta.alias}.readstats.tsv.gz"
+            - | gzip > "${xam_meta.alias}.readstats.tsv.gz"
         # get unique run IDs
         awk -F '\\t' '
             NR==1 {for (i=1; i<=NF; i++) {ix[\$i] = i}}
@@ -311,7 +311,8 @@ process failedQCReport  {
             path('ref_cache/'),
             env(REF_PATH),
             path("versions.txt"),
-            path("params.json")
+            path("params.json"),
+            val(using_user_bed)
 
     output:
         path "*.html"
@@ -323,6 +324,7 @@ process failedQCReport  {
         // a small region, and flat everywhere else) but only for the regions selected.
         def genome_wide_depth = params.bed ? "" : "--reference_fai ref.fasta.fai"
         def report_name = "${xam_meta.alias}.wf-human-alignment-report.html"
+        def using_user_bed = using_user_bed ? "--using_user_bed" : ""
         """
         workflow-glue report_al \\
             --name ${report_name} \\
@@ -337,7 +339,8 @@ process failedQCReport  {
             --params params.json \\
             ${genome_wide_depth} \\
             --low_cov ${params.bam_min_coverage} \\
-            --workflow_version ${workflow.manifest.version}
+            --workflow_version ${workflow.manifest.version} \\
+            ${using_user_bed}
         """
 }
 
@@ -360,13 +363,15 @@ process makeAlignmentReport {
             path('ref_cache/'),
             env(REF_PATH),
             path("versions.txt"),
-            path("params.json")
+            path("params.json"),
+            val(using_user_bed)
 
     output:
         path "*.html"
 
     script:
         def report_name = "${xam_meta.alias}.wf-human-alignment-report.html"
+        def using_user_bed = using_user_bed ? "--using_user_bed" : ""
         """
         workflow-glue report_al \\
             --name ${report_name} \\
@@ -380,7 +385,8 @@ process makeAlignmentReport {
             --versions versions.txt \\
             --window_size ${params.depth_window_size} \\
             --params params.json \\
-            --workflow_version ${workflow.manifest.version}
+            --workflow_version ${workflow.manifest.version} \\
+            ${using_user_bed}
         """
 }
 
