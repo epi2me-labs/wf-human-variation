@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CNV VCF incorrectly annotated when `--annotation false`
 - Remove comment lines from user supplied BED, to prevent the workflow crashing due to unrecognised columns
 - 'implausible alignment information' encountered when workflow re-aligns an already aligned BAM.
+- Automated basecaller detection not finding a basecaller model
 ### Changed
 - Alignment statistics are now reported for the regions in a BED file, if one is supplied by the user.
 
