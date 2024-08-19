@@ -7,6 +7,7 @@
 // 1. generate the cram cache, with annex environmental
 //    `REF_PATH` variable
 // 2. generate the minimap2 `.mmi` index, for faster alignment
+Map colors = NfcoreTemplate.logColours(params.monochrome_logs)
 
 // Argument parser
 Map parse_reference(Map arguments) {
