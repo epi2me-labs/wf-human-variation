@@ -120,7 +120,6 @@ process getVersions {
     sniffles --version | head -n 1 | sed 's/ Version //' >> versions.txt
     bcftools --version | head -n 1 | sed 's/ /,/' >> versions.txt
     samtools --version | head -n 1 | sed 's/ /,/' >> versions.txt
-    minimap2 --version | head -n 1 | sed 's/^/minimap2,/' >> versions.txt
     echo `seqtk 2>&1 | head -n 3 | tail -n 1 | cut -d ':' -f 2 | sed 's/ /seqtk,/'` >> versions.txt
     """
 }
