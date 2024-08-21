@@ -392,8 +392,6 @@ process makeAlignmentReport {
 
 
 
-// Create version of bamstats and mosdepth, as
-// well as get parameters for reporting.
 process getVersions {
     cpus 1
     output:
@@ -401,6 +399,7 @@ process getVersions {
     script:
         """
         mosdepth --version | sed 's/ /,/' >> versions.txt
+        minimap2 --version | head -n 1 | sed 's/^/minimap2,/' >> versions.txt
         """
 }
 
