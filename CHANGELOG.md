@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Fixed
 - `ERROR ~ No such variable: colors` when the workflow cannot find the reference file.
+- Incorrect bin size unit in QDNAseq wrapper script help text (@HudoGriz, #209).
 
 ## [v2.3.1]
 ### Fixed

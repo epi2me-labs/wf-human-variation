@@ -20,7 +20,7 @@ p <- add_argument(p, "--cutoffLOSS", help="CN cutoff threshold for loss", defaul
 p <- add_argument(p, "--cutoffGAIN", help="CN cutoff threshold for gain", default=2.5)
 p <- add_argument(p, "--cellularity", help="CGHcall cellularity", default=1.0)
 p <- add_argument(p, "--reference", help="QDNAseq GC/mappability bins reference. Defaults to qdnaseq_hg38", default="hg38")
-p <- add_argument(p, "--binsize", help="bin size in MBp", default=500)
+p <- add_argument(p, "--binsize", help="bin size in KBp", default=500)
 
 argv <- parse_args(p)
 if (argv$cutoff %in% c('none','None','NONE')) {
