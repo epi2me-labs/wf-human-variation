@@ -268,7 +268,7 @@ process get_qual_filter {
     shell:
         '''
         echo "[INFO] 5/7 Select candidates for full-alignment calling"
-        mkdir output
+        mkdir -p output
         bgzip -fdc pileup.vcf.gz | \
         pypy $(which clair3.py) SelectQual \
                 --output_fn output \
@@ -338,7 +338,7 @@ process evaluate_candidates {
     script:
         filename = candidate_bed.name
         """
-        mkdir output
+        mkdir -p output
         echo "[INFO] 6/7 Call low-quality variants using full-alignment model"
         python \$(which clair3.py) CallVariantsFromCffi \
             --chkpnt_fn ${model}/full_alignment \
@@ -425,7 +425,7 @@ process merge_pileup_and_full_vars{
         tuple val(xam_meta), path("output/merge_${contig}.gvcf"), optional: true, emit: merged_gvcf
     shell:
         '''
-        mkdir output
+        mkdir -p output
         echo "[INFO] 7/7 Merge pileup VCF and full-alignment VCF"
         pypy $(which clair3.py) MergeVcf \
             --pileup_vcf_fn !{pile_up_vcf} \
@@ -647,7 +647,7 @@ process hap {
         path "happy"
     shell:
         '''
-        mkdir happy
+        mkdir -p happy
         /opt/hap.py/bin/hap.py \
             truth.vcf \
             clair.vcf.gz \
