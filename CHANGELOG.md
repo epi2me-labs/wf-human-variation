@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ERROR ~ No such variable: colors` when the workflow cannot find the reference file.
 - Incorrect bin size unit in QDNAseq wrapper script help text (@HudoGriz, #209).
 - minimap2 version missing from alignment report.
+- Resume crashing in some processes due to pre-existing directories.
 
 ## [v2.3.1]
 ### Fixed
