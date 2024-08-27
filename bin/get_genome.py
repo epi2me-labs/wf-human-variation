@@ -6,6 +6,11 @@ import os
 import sys
 
 
+HG38_URL = (
+    "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/" +
+    "GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids" +
+    "/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
+)
 CHROMOSOME_SIZES = {
     'hg19': {
         'chr1': '249250621',
@@ -102,8 +107,19 @@ def check_genome(genome_build, str_flag, cnv, use_qdnaseq):
     elif (str_flag or (cnv and not use_qdnaseq)) and genome_build != "hg38":
         bad_genome = True
         extra_msg_context = (
-            f"Detected genome: {genome_build}, but genotyping STRs and calling "
-            "CNVs with Spectre can only be performed when aligned to build 38.\n")
+            "########################################################################\n"
+            "# INPUT DATA PROBLEM\n"
+            "The genome build detected in the BAM is not compatible with this\n"
+            "workflow.\n"
+            f"Detected genome: {genome_build}, but genotyping STRs and calling\n"
+            "CNVs with Spectre can only be performed when aligned to build 38.\n"
+            "To perform STR or CNV calling, you need to run the workflow providing\n"
+            "the following reference genome:\n\n"
+            f"{HG38_URL}\n\n"
+            "Alternatively, disable STR and CNV calling by setting --str false\n"
+            "and --cnv false.\n"
+            "########################################################################\n"
+        )
     return (bad_genome, extra_msg_context)
 
 
@@ -145,9 +161,6 @@ def main():
 
     # explode on bad genome
     if bad_genome:
-        sys.stderr.write(
-            "The genome build detected in the BAM is not compatible with "
-            "this workflow.\n")
         sys.stderr.write(extra_msg_context)
         sys.exit(os.EX_DATAERR)
 
