@@ -135,7 +135,7 @@ process readStats {
         path "${xam_meta.alias}.flagstat.tsv", emit: flagstat
         path "${xam_meta.alias}-histograms/", emit: histograms
         path "${xam_meta.alias}.runids.txt", emit: runids
-        path "${xam_meta.alias}.basecallers.txt", emit: basecallers
+        tuple val(xam_meta), path("${xam_meta.alias}.basecallers.txt"), emit: basecallers
     script:
         def stats_threads = Math.max(task.cpus - 1, 1)
         """
