@@ -165,7 +165,7 @@ docker-run:
               NF_IGNORE_PROCESSES: "modkit_phase,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
               NF_WORKFLOW_OPTS: "--snp true --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimodel.bam --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta --bam_min_coverage 0 --annotation false --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 -c ${CI_PROJECT_NAME}/data/mm2.config"
               ASSERT_NEXTFLOW_FAILURE: "yes"
-              ASSERT_NEXTFLOW_FAILURE_REXP : "Your input data contains reads basecalled with more than one basecaller model"
+              ASSERT_NEXTFLOW_FAILURE_REXP : "# INPUT DATA PROBLEM"
 
         # This process checks the use with multiple modified bases concurrently.
         - if: $MATRIX_NAME == "multimods"
