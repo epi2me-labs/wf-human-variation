@@ -207,6 +207,22 @@
       "mime-type": "text/tsv",
       "optional": true,
       "type": "per-sample"
+    },
+    "reference-fai-index": {
+      "filepath": "{{ ref }}.fai",
+      "title": "FAI index of the reference FASTA file",
+      "description": "FAI Index of the reference FASTA file.",
+      "mime-type": "text/tab-separated-values",
+      "optional": true,
+      "type": "aggregated"
+    },
+    "reference-gzi-index": {
+      "filepath": "{{ ref }}.gzi",
+      "title": "GZI index of the reference FASTA file",
+      "description": "GZI Index of the reference FASTA file.",
+      "mime-type": "application/octet-stream",
+      "optional": true,
+      "type": "aggregated"
     }
   }
 }

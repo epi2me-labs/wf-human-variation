@@ -207,6 +207,7 @@ workflow {
     ref = reference.ref
     ref_index = reference.ref_idx
     ref_cache = reference.ref_cache
+    ref_gzindex = reference.ref_gzidx
 
     // canonical ref and BAM channels to pass around to all processes
     ref_channel = ref

@@ -30,9 +30,6 @@ workflow detect_basecall_model {
         // same model.
         metamap_basecaller_cfg
                 | count
-                | view
-        metamap_basecaller_cfg
-                | count
                 | map { int n_models ->
                     if (n_models == 0){
                         if (params.override_basecaller_cfg) {
