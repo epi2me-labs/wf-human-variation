@@ -7,9 +7,8 @@ import sys
 
 
 HG38_URL = (
-    "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/" +
-    "GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids" +
-    "/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
+    "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/ref/" +
+    "GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
 )
 CHROMOSOME_SIZES = {
     'hg19': {
