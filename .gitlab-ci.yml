@@ -94,7 +94,7 @@ docker-run:
           variables:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-somatic-variation/wf-somatic-variation-demo.tar.gz && \
               tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && \
-              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-reference/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz; echo 'process { withName:minimap2_alignment { memory = '24.GB' } }' > ${CI_PROJECT_NAME}/data/mm2.config"
+              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz; echo 'process { withName:minimap2_alignment { memory = '24.GB' } }' > ${CI_PROJECT_NAME}/data/mm2.config"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "modkit_phase,minimap2_ubam,index_ref_gzi,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf,eval_downsampling,downsampling,modkit"
               NF_WORKFLOW_OPTS: "--snp true --sv true --mod --cnv false --str false \
@@ -113,7 +113,7 @@ docker-run:
           variables:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-somatic-variation/wf-somatic-variation-demo.tar.gz && \
               tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && \
-              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-reference/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz; echo 'process { withName:minimap2_alignment { memory = '24.GB' } }' > ${CI_PROJECT_NAME}/data/mm2.config"
+              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz; echo 'process { withName:minimap2_alignment { memory = '24.GB' } }' > ${CI_PROJECT_NAME}/data/mm2.config"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "modkit_phase,minimap2_ubam,index_ref_gzi,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf,eval_downsampling,downsampling,modkit"
               NF_WORKFLOW_OPTS: "--snp true --sv true --mod --cnv false --str false \
@@ -287,7 +287,7 @@ docker-run:
           variables:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-somatic-variation/wf-somatic-variation-demo.tar.gz && \
               tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && \
-              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-reference/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz"
+              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "minimap2_ubam,index_ref_gzi,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf,eval_downsampling,downsampling,modkit"
               NF_WORKFLOW_OPTS: "--snp false --sv false --mod --cnv false --str false --bed ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo.bed --bam ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo_normal.bam --ref ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 --bam_min_coverage 0.00001 --phased --annotation false --modkit_threads 4 --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_sup@v4.0.0"
@@ -296,7 +296,7 @@ docker-run:
           variables:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-somatic-variation/wf-somatic-variation-demo.tar.gz && \
               tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && \
-              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-reference/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz"
+              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "minimap2_ubam,index_ref_gzi,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf,eval_downsampling,downsampling,modkit_phase"
               NF_WORKFLOW_OPTS: "--snp false --sv false --mod --cnv false --str false --bed ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo.bed --bam ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo_normal.bam --ref ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 --bam_min_coverage 0.00001 --annotation false --modkit_threads 4 --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_sup@v4.0.0"
