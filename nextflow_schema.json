@@ -299,12 +299,6 @@
                     "description": "Minimum structural variant size called by Sniffles2.",
                     "hidden": true,
                     "minimum": 30
-                },
-                "sniffles_args": {
-                    "type": "string",
-                    "description": "Additional command line arguments to pass to the Sniffles2 process",
-                    "hidden": true,
-                    "help_text": "The additional command line arguments will be passed directly to Sniffles2; ensure to use the right commands for the version and from command line provide them as follow: `--sniffles_args=\"--non-germline\"`."
                 }
             }
         },
@@ -497,13 +491,6 @@
                     "default": false,
                     "description": "Require modkit to call strand-aware modifications.",
                     "help_text": "By default strand calls are collapsed (strand reported as '.'). Enabling this will force stranding to be considered when calling modifications, creating one output per modification per strand and the report will be tabulated by both modification and strand."
-                },
-                "modkit_args": {
-                    "title": "Modkit additional arguments",
-                    "type": "string",
-                    "description": "The additional options for modkit.",
-                    "hidden": true,
-                    "help_text": "This is an advanced option to allow running modkit with custom settings. The arguments specified in this option will fully override all options set by the workflow. To provide custom arguments to `modkit` from command line proceed as follow: `--modkit_args=\"--preset traditional\"`"
                 }
             }
         },
@@ -603,6 +590,19 @@
                         "bam",
                         "cram"
                     ]
+                },
+                "modkit_args": {
+                    "title": "Modkit additional arguments",
+                    "type": "string",
+                    "description": "The additional options for modkit.",
+                    "hidden": false,
+                    "help_text": "This is an advanced option to allow running modkit with custom settings. The arguments specified in this option will fully override all options set by the workflow. To provide custom arguments to [modkit pileup](https://nanoporetech.github.io/modkit/advanced_usage.html#pileup) from command line proceed as follows: `--modkit_args=\"--preset traditional\"`"
+                },
+                "sniffles_args": {
+                    "type": "string",
+                    "description": "Additional command line arguments to pass to the Sniffles2 process",
+                    "hidden": false,
+                    "help_text": "The additional command line arguments will be passed directly to [Sniffles2](https://github.com/fritzsedlazeck/Sniffles/tree/v2.0.7); ensure to use the right commands for the version and from command line provide them as follows: `--sniffles_args=\"--non-germline\"`."
                 },
                 "override_basecaller_cfg": {
                     "title": "Basecaller configuration",
