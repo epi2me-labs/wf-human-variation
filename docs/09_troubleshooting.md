@@ -6,4 +6,6 @@ output VCF).
 + By default, SNPs and SVs will be called on chromosomes 1-22, X, Y and MT; to call sites on other sequences enable the `--include_all_ctgs` option.
 + While designed to work on human genomes, the workflow can be run on non-human species by setting `--cnv false --str false --annotation false --include_all_ctgs true`.
 + Ensure that the provided reference and BED files use the same chromosome coding (for example, that they both have the `chr` prefix, or they both to not have it).
-+ If unaligned reads were provided, the workflow will output a CRAM file (or BAM if the user runs the `--cnv` option) containing the alignments used to make the downstream variant calls
++ If unaligned reads were provided, the workflow will output a CRAM file (or BAM if the user runs the `--cnv` option) containing the alignments used to make the downstream variant calls.
++ Renaming, moving or deleting the input BAM, reference genome or the output directory from the location provided at runtime will cause IGV not to load.
++ The workflow expects either an uncompressed or [`bgzip`](https://www.htslib.org/doc/bgzip.html)-compressed reference. If the user provides a reference compressed not with `bgzip`, the workflow will run to completion, but won't be able to generate the necessary indexes to visualize the outputs in IGV.

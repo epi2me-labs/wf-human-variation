@@ -76,7 +76,7 @@ process gz_faidx {
     input:
         path(ref)
     output:
-        tuple path("${ref}.fai"), path("${ref}.gzi")
+        tuple path(ref), path("${ref}.fai"), path("${ref}.gzi")
     script:
     """
     samtools faidx ${ref}
@@ -142,8 +142,9 @@ workflow prepare_reference {
             // Check whether the input gzref is indexed. If so, pass these as indexes.
             // Otherwise, generate the gzip + fai indexes for the compressed reference.
             if (file(input_fai_index).exists() && file(input_gzi_index).exists()){
-                gzindexes = Channel.fromPath(input_fai_index)
+                gzindexes = Channel.fromPath(margs.input_ref)
                 | mix(
+                    Channel.fromPath(input_fai_index),
                     Channel.fromPath(input_gzi_index)
                 )
             } else {

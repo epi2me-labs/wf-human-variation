@@ -52,6 +52,7 @@ docker-run:
                 "missing-ref",
                 "two-models",
                 "all_phased",
+                "all_phased_igv",
                 "all_unphased",
                 "snp_sv_mod_unphased",
                 "multibam",
@@ -141,6 +142,14 @@ docker-run:
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
               NF_WORKFLOW_OPTS: "--snp true --sv true --mod true --cnv true --str true --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta --bam_min_coverage 0 --annotation false --phased"
+
+        # This process tests all subworkflows, and also requests phasing.
+        - if: $MATRIX_NAME == "all_phased_igv"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_PROCESS_FILES: "workflows/methyl.nf"
+              NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--igv --snp true --sv true --mod true --cnv true --str true --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta --bam_min_coverage 0 --annotation false --phased"
 
         # This process tests all subworkflows, but without phasing.
         - if: $MATRIX_NAME == "all_unphased"
