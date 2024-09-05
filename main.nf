@@ -55,6 +55,10 @@ include {
 } from './lib/_ingress.nf'
 
 include {
+    igv
+} from './lib/igv.nf'
+
+include {
     prepare_reference;
 } from './lib/reference.nf'
 
@@ -208,7 +212,6 @@ workflow {
     ref_index = reference.ref_idx
     ref_cache = reference.ref_cache
     ref_gzindex = reference.ref_gzidx
-
     // canonical ref and BAM channels to pass around to all processes
     ref_channel = ref
     | concat(ref_index)
@@ -706,9 +709,11 @@ workflow {
         artifacts = results_sv.report.flatten()
         sniffles_vcf = results_sv.sniffles_vcf
         json_sv = results_sv.sv_stats_json
+        sv_vcf = results_sv.for_phasing
         output_sv(artifacts)
     } else {
         json_sv = Channel.empty()
+        sv_vcf = Channel.empty()
         sniffles_vcf = Channel.fromPath("${projectDir}/data/OPTIONAL_FILE", checkIfExists: true)
     }
 
@@ -717,7 +722,7 @@ workflow {
     if (run_snp){
         // Channel of results.
         // We drop the raw .vcf(.tbi) file from Clair3 in it to then add back the files in the 
-        // final_vcf channel, allowing for the latest file to be emitted.
+        // snp_vcf channel, allowing for the latest file to be emitted.
         // Channel structure is
         /*  [
         *   [CRAM, CRAI]
@@ -770,7 +775,7 @@ workflow {
 
         // Run annotation, when requested.
         if (!params.annotation) {
-            final_vcf = final_snp_vcf_filtered
+            snp_vcf = final_snp_vcf_filtered
             // no ClinVar VCF, pass empty VCF to makeReport
             clinvar_vcf = Channel.fromPath("${projectDir}/data/empty_clinvar.vcf")
         }
@@ -780,12 +785,12 @@ workflow {
             annotations = annotate_snp_vcf(
                 final_snp_vcf_filtered.combine(clair_vcf.contigs), genome_build.first(), "snp"
             )
-            final_vcf = concat_snp_vcfs(annotations.map{ meta, vcf, tbi -> [meta,vcf]}.groupTuple(), "wf_snp").final_vcf
-            clinvar_vcf = sift_clinvar_snp_vcf(final_vcf, genome_build, "snp").final_vcf_clinvar
+            snp_vcf = concat_snp_vcfs(annotations.map{ meta, vcf, tbi -> [meta,vcf]}.groupTuple(), "wf_snp").final_vcf
+            clinvar_vcf = sift_clinvar_snp_vcf(snp_vcf, genome_build, "snp").final_vcf_clinvar
         }
 
         // Run vcf statistics on the final VCF file
-        vcf_stats = vcfStats(final_vcf)
+        vcf_stats = vcfStats(snp_vcf)
 
         // Prepare the report
         snp_reporting = report_snp(vcf_stats, clinvar_vcf)
@@ -799,11 +804,12 @@ workflow {
         // Output for SNP
         snp_report
             .concat(clair3_results)
-            .concat(final_vcf.map{meta, vcf, tbi -> [vcf, tbi]})
+            .concat(snp_vcf.map{meta, vcf, tbi -> [vcf, tbi]})
             .concat(clinvar_vcf)
             .flatten() | output_snp
     } else {
         json_snp = Channel.empty()
+        snp_vcf = Channel.empty()
     }
 
     // wf-human-mod
@@ -868,7 +874,10 @@ workflow {
                 bed
             )
         }
-        output_cnv(results_cnv)
+        cnv_vcf = results_cnv.cnv_vcf
+        output_cnv(results_cnv.output)
+    } else {
+        cnv_vcf = Channel.empty()
     }
 
     // wf-human-str
@@ -882,7 +891,10 @@ workflow {
           bam_stats,
           sex
         )
-        output_str(results_str)
+        str_vcf = results_str.str_vcf
+        output_str(results_str.output)
+    } else {
+        str_vcf = Channel.empty()
     }
 
     // Combine into a final JSON of analyses stats
@@ -904,11 +916,48 @@ workflow {
         sex,
     )
 
+    // Prepare IGV viewer
+    if (params.igv){
+        // Define output files
+        igv_out = ref_channel
+            // Add gzipped reference indexes
+            | combine(ref_gzindex | ifEmpty([null, null, null]))
+            | map {
+                fasta, fai, cache, path_env, gzref, gzfai, gzi ->
+                if (gzref){
+                    [gzref, gzfai, gzi]
+                } else {
+                    [fasta, fai]
+                }
+            }
+            | mix(
+                snp_vcf | map { meta, vcf, tbi -> [vcf, tbi] },
+                sv_vcf | map { meta, vcf, tbi -> [vcf, tbi] },
+                str_vcf | map { meta, vcf, tbi -> [vcf, tbi] },
+                cnv_vcf | map { meta, vcf, tbi -> [vcf, tbi] }
+            )
+            | igv
+    } else {
+        igv_out = Channel.empty()
+    }
+
     publish_artifact(
         // emit bams with the "to_align" meta tag
         // but only if haplotagging is not on
         bam_channel
         | filter( { it[2].to_align && !run_haplotagging} )
+        // Emit fasta or fai if they were changed from the input
+        // (i.e. decompressed for fasta, generated for the fai)
+        | mix(
+            ref_channel
+            | map {
+                fasta, fai, cache, path_env -> [fasta, fai]
+            }
+            | flatten
+            | filter{
+                it.toString().startsWith("${workflow.workDir}")
+            }
+        )
         | mix(
             bam_stats.flatten(),
             bam_flag.flatten(),
@@ -920,7 +969,8 @@ workflow {
             report_fail.flatten(),
             final_json.flatten(),
             coverage_summary.flatten(),
-            hap_check.flatten()
+            hap_check.flatten(),
+            igv_out.flatten()
         )
         | filter{it.name != 'OPTIONAL_FILE'}
     )

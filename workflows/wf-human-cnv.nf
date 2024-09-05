@@ -59,5 +59,6 @@ workflow cnv {
         }
 
     emit:
-        spectre_final_vcf.map{ meta, vcf, tbi -> [vcf, tbi]}.concat(report)
+        output = spectre_final_vcf.map{ meta, vcf, tbi -> [vcf, tbi]}.concat(report)
+        cnv_vcf = spectre_final_vcf
 }

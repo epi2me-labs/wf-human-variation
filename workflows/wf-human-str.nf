@@ -100,6 +100,7 @@ workflow str {
     }
 
   emit:
-    merged_vcf.map{meta, vcf, tbi -> [vcf, tbi]}.concat(report).concat(branched_merged.straglr).flatten()
+    output = merged_vcf.map{meta, vcf, tbi -> [vcf, tbi]}.concat(report).concat(branched_merged.straglr).flatten()
+    str_vcf = merged_vcf.collect()
 
 }

@@ -29,5 +29,6 @@ workflow cnv {
         }
 
     emit:
-        cnvs.cnv_vcf.concat(report)
+        output = cnvs.cnv_vcf.concat(report)
+        cnv_vcf = cnvs.cnv_vcf
 }
