@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resume crashing in some processes due to pre-existing directories.
 - Expose additional arguments for specific tools.
 - Excessive memory usage for sample_probs process when using --mod leading to exit code 137.
+- `aggregate_pileup_variants` and `aggregate_full_align_variants` processes occasionally crashing with exit code 137.
 
 ## [v2.3.1]
 ### Fixed
