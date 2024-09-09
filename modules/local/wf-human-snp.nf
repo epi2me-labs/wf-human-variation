@@ -3,6 +3,7 @@ import groovy.json.JsonBuilder
 def longphase_memory = [8.GB, 32.GB, 56.GB]
 def whatshap_memory = [4.GB, 8.GB, 12.GB]
 def haptag_memory = [4.GB, 8.GB, 12.GB]
+def aggregate_memory = [4.GB, 8.GB, 16.GB]
 
 // As of Clair3 v1.0.6, set `--min_snp_af` and `--min_indel_af` to 0 with `--vcf_fn`.
 def snp_min_af = params.vcf_fn ? "--snp_min_af 0.0": "--snp_min_af ${params.snp_min_af}"
@@ -129,7 +130,7 @@ process aggregate_pileup_variants {
     // to use for phasing.
     label "wf_human_snp"
     cpus 2
-    memory { 4.GB * task.attempt }
+    memory { aggregate_memory[task.attempt - 1] }
     maxRetries 2
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
@@ -365,7 +366,7 @@ process aggregate_full_align_variants {
     // Sort and merge all "full alignment" variants
     label "wf_human_snp"
     cpus 2
-    memory { 4.GB * task.attempt }
+    memory { aggregate_memory[task.attempt - 1] }
     maxRetries 2
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
