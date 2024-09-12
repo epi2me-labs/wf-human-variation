@@ -4,6 +4,7 @@
 import json
 import sys
 
+from bokeh.models import HoverTool, Title
 from dominate.tags import a, h4, p
 from ezcharts.components.ezchart import EZChart
 from ezcharts.components.reports.labs import LabsReport
@@ -194,16 +195,16 @@ def sv_size_plots(vcf_data, max_size=5000):
                     # Add deletion plot
                     plt = histplot(data=indels, bins=bins, stat='count')
                     # override excharts axisLabel interval
-                    plt.xAxis = dict(
-                        name='Length',
-                        axisLabel=dict(
-                            interval="auto",
-                            rotate=30
-                        ),
-                        max=max_size,
-                        min=-max_size
-                        )
-                    plt.title = {"text": "Indels size distribution"}
+                    plt._fig.add_layout(
+                        Title(text="Indels size distribution", text_font_size="1.5em"),
+                        'above'
+                    )
+                    plt._fig.xaxis.axis_label = 'Length'
+                    plt._fig.x_range.start = -max_size
+                    plt._fig.x_range.end = max_size
+                    # Add tooltips
+                    hover = plt._fig.select(dict(type=HoverTool))
+                    hover.tooltips = [("Number of variants", "@top")]
                     EZChart(plt, 'epi2melabs')
                     p("The plot shows Indels with |length| < 5Kb.")
                 else:

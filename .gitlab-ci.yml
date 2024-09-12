@@ -49,6 +49,8 @@ docker-run:
     parallel:
         matrix:
             - MATRIX_NAME: [
+                "str-usersex",
+                "str-infersex",
                 "missing-ref",
                 "two-models",
                 "all_phased",
@@ -73,8 +75,6 @@ docker-run:
                 "wf-human-snp_svrefine",
                 "wf-human-sv",
                 "wf-human-sv-phase",
-                "str-usersex",
-                "str-infersex",
                 "wf-human-cnv-spectre",
                 "wf-human-phase_all",
                 "wf-human-phase_all_lp",

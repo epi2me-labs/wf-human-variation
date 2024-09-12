@@ -5,6 +5,7 @@ import json
 import os
 import sys
 
+from bokeh.models import HoverTool
 from dominate.tags import a, h6, p
 from ezcharts.components.bcfstats import load_bcfstats
 from ezcharts.components.clinvar import load_clinvar_vcf
@@ -227,6 +228,9 @@ def main(args):
             else:
                 sizes = indel_sizes(bcfstats['IDD'])
                 plt = barplot(data=sizes, x="nlength", y="count", color=Colors.cerulean)
+                # Add tooltips
+                hover = plt._fig.select(dict(type=HoverTool))
+                hover.tooltips = [("Number of variants", "@top")]
                 EZChart(plt, 'epi2melabs')
 
     # write report

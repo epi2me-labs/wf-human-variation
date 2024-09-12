@@ -2,7 +2,7 @@
 """Plot STRs."""
 
 from bokeh.models import BoxZoomTool, ColumnDataSource, HoverTool
-from bokeh.models import PanTool, Range1d, ResetTool, WheelZoomTool
+from bokeh.models import PanTool, Range1d, ResetTool, Title, WheelZoomTool
 from dominate.tags import b, code, h3, p, span, table, tbody, td, th, thead, tr
 from ezcharts.components import fastcat
 from ezcharts.components.ezchart import EZChart
@@ -11,7 +11,6 @@ from ezcharts.components.theme import LAB_head_resources
 from ezcharts.layout.snippets import Grid, Tabs
 from ezcharts.plots import BokehPlot
 from ezcharts.plots.distribution import histplot
-from ezcharts.plots.distribution import MakeRectangles
 from natsort import natsorted
 import pandas as pd
 from .util import wf_parser  # noqa: ABS101
@@ -91,50 +90,37 @@ def argparser():
     return parser
 
 
-def add_triangle(plt, x_pos, idx):
-    """Draw triangle."""
-    plt.add_series(dict(
-        type='line',
-        datasetIndex=idx,
-        markPoint={
-            'data': [{
-                'symbol': 'triangle',
-                'coord': [x_pos, 0],
-                'symbolSize': [20, 20],
-                'symbolOffset': [0, 15],
-                'itemStyle': {
-                    'color': 'rgb(255, 255, 255)',
-                    'borderColor': 'rgb(0, 0, 0)',
-                    'borderWidth': 1.5
-                }
-            }]
-        }
-    ))
+def add_line(plt, x_pos, heigth):
+    """Draw vertical line."""
+    plt._fig.line(
+        [x_pos, x_pos],
+        [0, heigth],
+        line_width=2,
+        line_dash='dashed',
+        color='rgba(0, 0, 0, 0.4)'
+    )
 
 
-def add_rectangle(plt, x_start, x_end, height, idx, rectangle):
+def add_rectangle(plt, x_start, x_end, height, rectangle):
     """Draw rectangle."""
     if rectangle == 'normal':
         colour = 'rgba(144, 198, 231, 0.4)'
     elif rectangle == 'pathogenic':
         colour = 'rgba(239, 65, 53, 0.4)'
-    plt.add_dataset(dict(
-        source=[[x_start, x_end, height]],
-        dimensions=['x_starts', 'ends', 'heights']
-    ))
-    plt.add_series(dict(
-        type='custom',
-        name=rectangle+" range",
-        renderItem=MakeRectangles(),
-        datasetIndex=idx,
-        encode={
-            'x': ['x_starts', 'ends'],
-            'y': ['heights']
-        },
-        itemStyle={
-            'color': colour},
-        clip=True
-    ))
+    # X/Y values in bokeh rect point to the central position on the
+    # axis of the figure.
+    plt._fig.rect(
+        x=(x_end+x_start)/2,
+        y=0 + height/2,
+        width=x_end-x_start,
+        height=height,
+        legend_label=rectangle,
+        fill_color=colour,
+        line_color=colour
+    )
+
+    plt._fig.legend.location = "top"
+    plt._fig.legend.orientation = "horizontal"
 
 
 def parse_vcf(fname, info_cols=None, nrows=None):
@@ -204,17 +190,22 @@ def histogram_with_mean_and_median(
         raise ValueError("`series` must be `pd.Series`.")
 
     plt = histplot(data=series, bins=bins)
-    plt.title = dict(
-        text=title,
-        subtext=(
-            f"Mean: {series.mean().round(round_digits)}. "
-            f"Median: {series.median().round(round_digits)}"
-        ),
+    subtext = (
+        f"Mean: {series.mean().round(round_digits)}. " +
+        f"Median: {series.median().round(round_digits)}"
+    )
+    plt._fig.add_layout(
+        Title(text=subtext, text_font_size="0.8em"),
+        'above'
+    )
+    plt._fig.add_layout(
+        Title(text=title, text_font_size="1.5em"),
+        'above'
     )
     if x_axis_name is not None:
-        plt.xAxis.name = x_axis_name
+        plt._fig.xaxis.axis_label = x_axis_name
     if y_axis_name is not None:
-        plt.yAxis.name = y_axis_name
+        plt._fig.yaxis.axis_label = y_axis_name
     return plt
 
 
@@ -223,38 +214,25 @@ def create_str_histogram(
         cn1, cn2, disease):
     """Create a histogram of STR results for a given repeat."""
     h3(disease + ' (' + repeat + ')')
+    df = hist_data[hist_data['VARID'] == repeat]['copy_number']
+    plt = histplot(
+        data=df,
+        x='copy_number',
+        binwidth=1
+    )
+    histogram_data = plt._fig.renderers[0].data_source.to_df()
 
-    plt = histplot(data=hist_data[hist_data['VARID'] == repeat]
-                   ['copy_number'].values, binwidth=1)
-    histogram_data = plt.dataset[0].source
     max_cols = histogram_data.max(axis=0)
-    max_rectangle_height = max_cols[2]
+    max_rectangle_height = max_cols.top
 
-    xaxis = {
-        'name': "Repeat number",
-        'nameGap': '30',
-        'nameLocation': 'middle',
-        'nameTextStyle': {'fontSize': '14', 'fontStyle': 'bold'},
-        'min': '0',
-        'max': pathologic_max
-    }
-
-    yaxis = {
-        'name': "Number of supporting reads",
-        'nameGap': '30',
-        'nameLocation': 'middle',
-        'nameTextStyle': {'fontSize': '14', 'fontStyle': 'bold'},
-        'max': max_rectangle_height
-    }
-
-    plt.xAxis = xaxis
-    plt.yAxis = yaxis
+    plt._fig.xaxis.axis_label = "Repeat number"
+    plt._fig.yaxis.axis_label = "Number of supporting reads"
 
     add_rectangle(
-        plt, 0, normal_max, max_rectangle_height, 1, 'normal'
+        plt, 0, normal_max, max_rectangle_height, 'normal'
     )
     add_rectangle(
-        plt, pathologic_min, pathologic_max, max_rectangle_height, 2,
+        plt, pathologic_min, pathologic_max, max_rectangle_height,
         'pathogenic'
     )
 
@@ -265,8 +243,14 @@ def create_str_histogram(
             {"name": "pathogenic range"},
         ]}
 
-    add_triangle(plt, cn1, 3)
-    add_triangle(plt, cn2, 4)
+    # add_triangle(plt, cn1)
+    # add_triangle(plt, cn2)
+    add_line(plt, cn1, max_rectangle_height)
+    add_line(plt, cn2, max_rectangle_height)
+
+    # Remove hover
+    hover = plt._fig.select(dict(type=HoverTool))
+    hover.tooltips = None
 
     EZChart(plt, theme='epi2melabs')
 
@@ -456,7 +440,7 @@ def make_report(
             """
             The tabs below contain short tandem repeat (STR) expansion plots for each
             repeat genotyped in the sample. The coloured boxes denote the normal and
-            pathogenic ranges of repeat numbers, and the triangles denote the median
+            pathogenic ranges of repeat numbers, and the dashed lines denote the median
             number of repeats in each allele.
             """
         )
@@ -693,7 +677,10 @@ def make_report(
             )
 
             plt = fastcat.read_length_plot(read_lengths)
-            plt.xAxis.max = max_read_length_to_show
+            plt._fig.x_range.end = max_read_length_to_show
+            # Add tooltips
+            hover = plt._fig.select(dict(type=HoverTool))
+            hover.tooltips = [("Number of reads", "@top")]
             EZChart(plt, theme='epi2melabs')
 
             plt = histogram_with_mean_and_median(
@@ -702,6 +689,9 @@ def make_report(
                 x_axis_name="Quality",
                 y_axis_name="Number of reads"
             )
+            # Add tooltips
+            hover = plt._fig.select(dict(type=HoverTool))
+            hover.tooltips = [("Number of reads", "@top")]
             EZChart(plt, theme='epi2melabs')
 
     return report
