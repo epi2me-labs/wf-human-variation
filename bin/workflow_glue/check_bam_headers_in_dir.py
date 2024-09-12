@@ -29,7 +29,13 @@ def main(args):
     for xam_file in target_files:
         # get the `@SQ` and `@HD` lines in the header
         with pysam.AlignmentFile(xam_file, check_sq=False) as f:
-            sq_lines = f.header.get("SQ")
+            # compare only the SN/LN/M5 elements of SQ to avoid labelling XAM with
+            # same reference but different SQ.UR as mixed_header (see CW-4842)
+            sq_lines = [{
+                "SN": sq["SN"],
+                "LN": sq["LN"],
+                "M5": sq.get("M5"),
+            } for sq in f.header.get("SQ", [])]
             hd_lines = f.header.get("HD")
         # Check if it is sorted.
         # When there is more than one BAM, merging/sorting

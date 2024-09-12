@@ -15,6 +15,7 @@ process getParams {
 }
 
 process configure_igv {
+    publishDir "${params.out_dir}/", mode: 'copy', pattern: 'igv.json', enabled: params.containsKey("igv") && params.igv
     label "wf_common"
     cpus 1
     memory "2 GB"

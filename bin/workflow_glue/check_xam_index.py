@@ -14,12 +14,12 @@ def validate_xam_index(xam_file):
     Invalid indexes will fail the call with a ValueError:
     ValueError: fetch called on bamfile without index
     """
-    alignments = pysam.AlignmentFile(xam_file, check_sq=False)
-    try:
-        alignments.fetch()
-        has_valid_index = True
-    except ValueError:
-        has_valid_index = False
+    with pysam.AlignmentFile(xam_file, check_sq=False) as alignments:
+        try:
+            alignments.fetch()
+            has_valid_index = True
+        except ValueError:
+            has_valid_index = False
     return has_valid_index
 
 

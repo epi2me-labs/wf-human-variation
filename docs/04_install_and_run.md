@@ -9,7 +9,7 @@ therefore Nextflow will need to be
 installed before attempting to run the workflow.
 
 The workflow can currently be run using either
-[Docker](https://www.docker.com/products/docker-desktop
+[Docker](https://www.docker.com/products/docker-desktop)
 or [Singularity](https://docs.sylabs.io/guides/3.0/user-guide/index.html)
 to provide isolation of the required software.
 Both methods are automated out-of-the-box provided

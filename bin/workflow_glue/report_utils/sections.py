@@ -1,6 +1,7 @@
 """Sections for ezcharts report."""
 import os
 
+from bokeh.models import HoverTool, Title
 import pandas as pd
 
 import dominate.tags as dom_tags  # noqa: I100,I202
@@ -206,12 +207,17 @@ def depths(report, depth_df, sample_name):
                     x="total_mean_pos",
                     y="depth",
                     hue="chrom",
+                    linewidth=1,
+                    marker=False
                 )
-                plt.title = {"text": "Coverage along reference"}
-                plt.xAxis.name = "Position along reference"
-                plt.yAxis.name = "Sequencing depth"
-                for s in plt.series:
-                    s.showSymbol = False
+                plt._fig.add_layout(
+                    Title(text="Coverage along reference", text_font_size="1.5em"),
+                    'above'
+                )
+                plt._fig.xaxis.axis_label = "Position along reference"
+                plt._fig.yaxis.axis_label = "Sequencing depth"
+                hover = plt._fig.select(dict(type=HoverTool))
+                hover.tooltips = [("Depth", "@y")]
                 EZChart(plt, theme=THEME)
 
 
