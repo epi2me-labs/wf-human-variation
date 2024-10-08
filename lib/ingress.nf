@@ -329,15 +329,19 @@ def xam_ingress(Map arguments)
         //  - too many aligned files to safely and quickly merge (`samtools merge` opens
         //    all files at the same time and some machines might have low limits for
         //    open file descriptors)
-        // * to_merge: flatMap > sort > group > merge
+        // * to_sortmerge: flatMap > sort > group > merge
+        // * to_merge: flatMap > group > merge
         //  - between 1 and `N_OPEN_FILES_LIMIT` aligned files
-        no_files: n_files == 0
+        no_files: \
+            n_files == 0
         indexed: \
             n_files == 1 && (meta["is_unaligned"] || meta["is_sorted"]) && meta["src_xai"]
         to_index: \
             n_files == 1 && (meta["is_unaligned"] || meta["is_sorted"]) && !meta["src_xai"]
         to_catsort: \
             (n_files == 1) || (n_files > N_OPEN_FILES_LIMIT) || meta["is_unaligned"]
+        to_sortmerge: \
+            !meta["is_sorted"]
         to_merge: true
     }
 
@@ -345,6 +349,7 @@ def xam_ingress(Map arguments)
         // only run samtools fastq on samples with at least one file
         ch_to_fastq = ch_result.indexed.mix(
             ch_result.to_index,
+            ch_result.to_sortmerge,
             ch_result.to_merge,
             ch_result.to_catsort
         )
@@ -385,10 +390,13 @@ def xam_ingress(Map arguments)
     }
 
     // deal with samples with few-enough files for `samtools merge` first
-    ch_merged = ch_result.to_merge
+    // we'll sort any unsorted files before merge
+    ch_merged = ch_result.to_sortmerge
     | flatMap { meta, paths -> paths.collect { [meta, it] } }
     | sortBam
+    | map { meta, bam, bai -> [meta, bam] }  // drop index as merge does not need it
     | groupTuple
+    | mix(ch_result.to_merge)
     | mergeBams
     | map{
         meta, bam, bai ->
@@ -650,12 +658,13 @@ process validateIndex {
 
 // Sort FOFN for samtools merge to ensure samtools sort breaks ties deterministically.
 // Uses -c to ensure matching RG.IDs across multiple inputs are not unnecessarily modified to avoid collisions.
+// Note that samtools merge does not use the indexes so we do not provide them
 process mergeBams {
     label "ingress"
     label "wf_common"
     cpus 3
     memory "4 GB"
-    input: tuple val(meta), path("input_bams/reads*.bam"), path("input_bams/reads*.bam.bai")
+    input: tuple val(meta), path("input_bams/reads*.bam")
     output: tuple val(meta), path("reads.bam"), path("reads.bam.bai")
     script:
     def merge_threads = Math.max(1, task.cpus - 1)
