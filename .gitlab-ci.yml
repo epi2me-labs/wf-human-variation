@@ -425,7 +425,7 @@ aws-run:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/snp_demo/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
               NF_PROCESS_FILES: "modules/local/wf-human-cnv-qdnaseq.nf"
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --use_qdnaseq --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --bin_size 500 --bam_min_coverage 0.00001 --downsample_coverage --downsample_coverage_target 1000"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --use_qdnaseq --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --bin_size 500 --bam_min_coverage 0.00001 --downsample_coverage --downsample_coverage_target 1000 --igv"
 
         - if: $MATRIX_NAME == "wf-human-cnv-ubam-to-bam"
           variables:

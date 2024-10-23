@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ClinVar version in SnpEff container updated to version 20241009.
 ### Fixed
 - Collections of sorted XAM files eligible for merge will no longer be needlessly re-sorted before merge.
+- Invalid method invocation when using QDNAseq with IGV output enabled.
 
 ## [v2.4.1]
 ### Changed

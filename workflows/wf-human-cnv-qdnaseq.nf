@@ -29,6 +29,6 @@ workflow cnv {
         }
 
     emit:
-        output = cnvs.cnv_vcf.concat(report)
+        output = cnvs.cnv_vcf.map{ meta, vcf, tbi -> [vcf, tbi] }.concat(report)
         cnv_vcf = cnvs.cnv_vcf
 }
