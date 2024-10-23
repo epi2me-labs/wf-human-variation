@@ -18,7 +18,7 @@ process callCNV {
         val(genome_build)
     output:
         tuple val(xam_meta), path("${xam_meta.alias}_combined.bed"), path("${xam_meta.alias}*"), path("${xam_meta.alias}_noise_plot.png"), path("${xam_meta.alias}_isobar_plot.png"), emit: cnv_output
-        tuple path("${xam_meta.alias}.wf_cnv.vcf.gz"), path("${xam_meta.alias}.wf_cnv.vcf.gz.tbi"), emit: cnv_vcf
+        tuple val(xam_meta), path("${xam_meta.alias}.wf_cnv.vcf.gz"), path("${xam_meta.alias}.wf_cnv.vcf.gz.tbi"), emit: cnv_vcf
     script:
         """
         run_qdnaseq.r --bam ${bam} --out_prefix ${xam_meta.alias} --binsize ${params.qdnaseq_bin_size} --reference ${genome_build}
