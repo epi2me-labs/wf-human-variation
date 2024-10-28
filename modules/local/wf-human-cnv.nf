@@ -13,19 +13,18 @@ process callCNV {
         tuple val(xam_meta), path("spectre_output/${xam_meta.alias}_cnv.bed"), emit: spectre_bed
         tuple val(xam_meta), path("spectre_output/expected_karyotype.json"), emit: spectre_karyotype
     script:
+        def spectre_args = params.spectre_args ?: ''
         """
         spectre CNVCaller \
         --bin-size 1000 \
-        --threshhold-quantile 10 \
-        --dist-proportion 0.3 \
         --coverage readstats/ \
         --sample-id ${xam_meta.alias} \
         --output-dir spectre_output/ \
         --reference ${ref} \
         --blacklist grch38_blacklist_0.3 \
-        --min-cnv-len 80000 \
         --snv ${vcf} \
-        --metadata grch38_metadata
+        --metadata grch38_metadata \
+        $spectre_args
         """
 }
 
