@@ -604,6 +604,13 @@
                     "hidden": false,
                     "help_text": "The additional command line arguments will be passed directly to [Sniffles2](https://github.com/fritzsedlazeck/Sniffles/tree/v2.0.7); ensure to use the right commands for the version and from command line provide them as follows: `--sniffles_args=\"--non-germline\"`."
                 },
+                "spectre_args": {
+                    "title": "Spectre additional arguments",
+                    "type": "string",
+                    "description": "Additional command line arguments to pass to the Spectre process",
+                    "hidden": false,
+                    "help_text": "The additional command line arguments will be passed directly to [Spectre](https://github.com/epi2me-labs/ont-spectre); from the command line provide them as follows: `--spectre_args=\"--min-cnv-len 80000\"`."
+                },
                 "override_basecaller_cfg": {
                     "title": "Basecaller configuration",
                     "type": "string",

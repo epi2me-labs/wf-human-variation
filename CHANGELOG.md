@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Reconciled workflow with wf-template v5.3.0
 - ClinVar version in SnpEff container updated to version 20241009.
+### Added
+- `--spectre_args` may be used to provide custom arguments to the Spectre process.
 ### Fixed
 - Collections of sorted XAM files eligible for merge will no longer be needlessly re-sorted before merge.
 - Invalid method invocation when using QDNAseq with IGV output enabled.
