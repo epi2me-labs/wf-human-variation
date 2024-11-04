@@ -25,6 +25,12 @@
                         "minknow": {
                             "default": true,
                             "title": "Structural variants"
+                        },
+                        "geneyx": {
+                            "default": true
+                        },
+                        "fabric": {
+                            "default": true
                         }
                     }
                 },
@@ -38,6 +44,12 @@
                         "minknow": {
                             "default": true,
                             "title": "Single nucleotide polymorphisms"
+                        },
+                        "geneyx": {
+                            "default": true
+                        },
+                        "fabric": {
+                            "default": true
                         }
                     }
                 },
@@ -77,6 +89,26 @@
                         "minknow": {
                             "title": "Methylation",
                             "default": true
+                        },
+                        "geneyx": {
+                            "default": true
+                        },
+                        "fabric": {
+                            "default": true
+                        }
+                    }
+                },
+                "partner": {
+                    "title": "Partner integration",
+                    "type": "string",
+                    "description": "Prepare outputs for tertiary analyses with partners.",
+                    "hidden": true,
+                    "overrides": {
+                        "geneyx": {
+                            "default": "geneyx"
+                        },
+                        "fabric": {
+                            "default": "fabric"
                         }
                     }
                 }

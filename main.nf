@@ -15,6 +15,8 @@ include { cnv as cnv_spectre } from './workflows/wf-human-cnv'
 
 include { cnv as cnv_qdnaseq } from './workflows/wf-human-cnv-qdnaseq'
 
+include { partners } from './workflows/partners'
+
 include {
     index_ref_gzi;
     index_ref_fai;
@@ -163,7 +165,9 @@ workflow {
 
     // Trigger haplotagging
     def run_haplotagging = params.str || params.phased
-
+    
+    // Combine data for partners
+    def run_partners = params.partner?: false
     // Trigger CRAM to BAM conversion (for qdnaseq)
     // This will:
     // - cause downsampling to always be emitted as BAM
@@ -915,6 +919,18 @@ workflow {
         hap_check,
         sex,
     )
+
+    // If the workflow is set to run for the partner, then execute the merging
+    if (run_partners){
+        partners(
+            snp_vcf,
+            sv_vcf,
+            cnv_vcf,
+            str_vcf,
+            pass_bam_channel,
+            run_haplotagging
+        )
+    }
 
     // Prepare IGV viewer
     if (params.igv){
