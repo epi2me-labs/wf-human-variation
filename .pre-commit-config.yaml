@@ -11,7 +11,7 @@ repos:
           - epi2melabs==0.0.57
       - id: build_models
         name: build_models
-        entry: datamodel-codegen --strict-nullable --base-class workflow_glue.results_schema_helpers.BaseModel --use-schema-description --disable-timestamp --input results_schema.yml --input-file-type openapi --output bin/workflow_glue/results_schema.py
+        entry: datamodel-codegen --strict-nullable --base-class workflow_glue.results_schema_helpers.BaseModel --use-subclass-enum --use-schema-description --disable-timestamp --input results_schema.yml --input-file-type openapi --output bin/workflow_glue/results_schema.py
         language: python
         files: 'results_schema.yml'
         pass_filenames: false
