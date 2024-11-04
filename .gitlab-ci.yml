@@ -49,6 +49,16 @@ docker-run:
     parallel:
         matrix:
             - MATRIX_NAME: [
+                "partners-geneyx",
+                "partners-fabric",
+                "partners-snp",
+                "partners-sv",
+                "partners-str",
+                "partners-cnv",
+                "partners-snp-sv",
+                "partners-sv-str",
+                "partners-sv-cnv",
+                "partners-cnv-str",
                 "str-usersex",
                 "str-infersex",
                 "missing-ref",
@@ -143,6 +153,124 @@ docker-run:
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
               NF_WORKFLOW_OPTS: "--snp true --sv true --mod true --cnv true --str true --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta --bam_min_coverage 0 --annotation false --phased"
+
+        # This process tests the partners integration.
+        - if: $MATRIX_NAME == "partners-geneyx"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp true --sv true --mod false --cnv true --str true \
+                --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam \
+                --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta \
+                --bam_min_coverage 0 \
+                --annotation false \
+                --phased \
+                --partner geneyx"
+        # This process tests the partners integration.
+        - if: $MATRIX_NAME == "partners-fabric"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp true --sv true --mod false --cnv true --str true \
+                --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam \
+                --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta \
+                --bam_min_coverage 0 \
+                --annotation false \
+                --phased \
+                --partner fabric"
+        - if: $MATRIX_NAME == "partners-snp"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport,filterCalls,output_sv,report,sniffles2,sortVCF"
+              NF_WORKFLOW_OPTS: "--snp true --sv false --mod false --cnv false --str false \
+                --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam \
+                --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta \
+                --bam_min_coverage 0 \
+                --annotation false \
+                --phased \
+                --partner geneyx"
+        - if: $MATRIX_NAME == "partners-sv"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp false --sv true --mod false --cnv false --str false \
+                --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam \
+                --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta \
+                --bam_min_coverage 0 \
+                --annotation false \
+                --phased \
+                --partner geneyx"
+        - if: $MATRIX_NAME == "partners-str"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -qO ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-str/demo_data.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && wget -qO ${CI_PROJECT_NAME}/data/r1041_e82_400bps_sup_g615.tar.gz https://cdn.oxfordnanoportal.com/software/analysis/models/clair3/r1041_e82_400bps_sup_g615.tar.gz && tar -xvf ${CI_PROJECT_NAME}/data/r1041_e82_400bps_sup_g615.tar.gz -C ${CI_PROJECT_NAME}/data"
+              NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport,filterCalls,output_sv,report,sniffles2,sortVCF"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv false --str true \
+                --bam ${CI_PROJECT_NAME}/data/demo_data/demo.bam \
+                --ref ${CI_PROJECT_NAME}/data/demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz \
+                --bam_min_coverage 0 \
+                --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v5.0.0 \
+                --annotation false \
+                --phased \
+                --partner geneyx"
+        - if: $MATRIX_NAME == "partners-cnv"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-spectre/spectre_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport,refine_with_sv,makeAlignmentReport,filterCalls,output_sv,report,sniffles2,sortVCF"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv true --str false \
+                --bam ${CI_PROJECT_NAME}/data/spectre_demo/demo.bam \
+                --ref ${CI_PROJECT_NAME}/data/spectre_demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fasta \
+                --bam_min_coverage 0 \
+                --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v5.0.0 \
+                --annotation false \
+                --phased \
+                --partner geneyx"
+        - if: $MATRIX_NAME == "partners-snp-sv"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp true --sv true --mod false --cnv false --str false \
+                --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam \
+                --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta \
+                --bam_min_coverage 0 \
+                --annotation false \
+                --phased \
+                --partner geneyx"
+        - if: $MATRIX_NAME == "partners-sv-str"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-spectre/spectre_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp false --sv true --mod false --cnv false --str true \
+                --bam ${CI_PROJECT_NAME}/data/spectre_demo/demo.bam \
+                --ref ${CI_PROJECT_NAME}/data/spectre_demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fasta \
+                --bam_min_coverage 0 \
+                --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v5.0.0 \
+                --annotation false \
+                --phased \
+                --partner geneyx"
+        - if: $MATRIX_NAME == "partners-sv-cnv"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-spectre/spectre_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp false --sv true --mod false --cnv false --str true \
+                --bam ${CI_PROJECT_NAME}/data/spectre_demo/demo.bam \
+                --ref ${CI_PROJECT_NAME}/data/spectre_demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fasta \
+                --bam_min_coverage 0 \
+                --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v5.0.0 \
+                --annotation false \
+                --phased \
+                --partner geneyx"
+        - if: $MATRIX_NAME == "partners-cnv-str"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-spectre/spectre_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport,filterCalls,output_sv,report,sniffles2,sortVCF"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv true --str true \
+                --bam ${CI_PROJECT_NAME}/data/spectre_demo/demo.bam \
+                --ref ${CI_PROJECT_NAME}/data/spectre_demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fasta \
+                --bam_min_coverage 0 \
+                --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v5.0.0 \
+                --annotation false \
+                --phased \
+                --partner geneyx"
 
         # This process tests all subworkflows, and also requests phasing.
         - if: $MATRIX_NAME == "all_phased_igv"
