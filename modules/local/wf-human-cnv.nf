@@ -8,10 +8,11 @@ process callCNV {
         tuple val(xam_meta), path(vcf), path(vcf_index)
         path("readstats/*")
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
+        val(genome_build)
     output:
         tuple val(xam_meta), path("spectre_output/${xam_meta.alias}.vcf"), emit: spectre_vcf
         tuple val(xam_meta), path("spectre_output/${xam_meta.alias}_cnv.bed"), emit: spectre_bed
-        tuple val(xam_meta), path("spectre_output/expected_karyotype.json"), emit: spectre_karyotype
+        tuple val(xam_meta), path("spectre_output/predicted_karyotype.txt"), emit: spectre_karyotype
     script:
         def spectre_args = params.spectre_args ?: ''
         """
@@ -21,9 +22,9 @@ process callCNV {
         --sample-id ${xam_meta.alias} \
         --output-dir spectre_output/ \
         --reference ${ref} \
-        --blacklist grch38_blacklist_0.3 \
+        --blacklist ${genome_build}_blacklist_v1.0 \
         --snv ${vcf} \
-        --metadata grch38_metadata \
+        --metadata ${genome_build}_metadata \
         $spectre_args
         """
 }
@@ -88,7 +89,7 @@ process makeReport {
         path "versions/*"
         path "params.json"
         tuple val(xam_meta), path(cnv_bed)
-        tuple val(xam_meta), path(karyotype_json)
+        tuple val(xam_meta), path(karyotype)
     output:
         path("*wf-human-cnv-report.html")
     script:
@@ -99,7 +100,7 @@ process makeReport {
             --params params.json \
             --versions versions \
             --cnv_bed ${cnv_bed} \
-            --karyotype_json ${karyotype_json} \
+            --karyotype ${karyotype} \
             -o $report_name \
             --workflow_version ${workflow.manifest.version}
         """

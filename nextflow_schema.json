@@ -57,7 +57,7 @@
                     "title": "CNV: Copy number variants",
                     "type": "boolean",
                     "description": "Call for copy number variants.",
-                    "help_text": "If this option is selected, copy number variant calling will be carried out with either Spectre (default) or QDNAseq. To use QDNAseq instead of Spectre, use the option `--use_qdnaseq`. Spectre is only compatible with genome build hg38, and if QDNAseq is used, it is only compatible with genome builds hg37 and hg38.",
+                    "help_text": "If this option is selected, copy number variant calling will be carried out with either Spectre (default) or QDNAseq. To use QDNAseq instead of Spectre, use the option --use_qdnaseq.",
                     "default": false,
                     "overrides": {
                         "minknow": {
@@ -484,7 +484,7 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Use QDNAseq for CNV calling.",
-                    "help_text": "Set this to true to use QDNASeq for CNV calling instead of Spectre. QDNAseq is better suited to shorter reads such as those generated from adaptive sampling experiments."
+                    "help_text": "Set this to true to use QDNAseq for CNV calling instead of Spectre. QDNAseq is better suited to shorter reads such as those generated from adaptive sampling experiments."
                 },
                 "qdnaseq_bin_size": {
                     "type": "integer",
@@ -617,7 +617,7 @@
                     "type": "string",
                     "default": "cram",
                     "description": "Desired file format of alignment files created by alignment and phasing.",
-                    "help_text": "This setting controls the file format of (1) alignment files created by aligning or re-aligning an input BAM and (2) alignment files with haplotag information created during phasing of an input BAM. If using QDNASeq for CNV calling, the setting will be ignored for alignment or realignment as QDNASeq requires BAM input.",
+                    "help_text": "This setting controls the file format of (1) alignment files created by aligning or re-aligning an input BAM and (2) alignment files with haplotag information created during phasing of an input BAM. If using QDNAseq for CNV calling, the setting will be ignored for alignment or realignment as QDNAseq requires BAM input.",
                     "enum": [
                         "bam",
                         "cram"

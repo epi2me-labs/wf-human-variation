@@ -20,6 +20,7 @@ workflow cnv {
         ref
         clair3_vcf
         bed
+        genome_build
     main:
         // get mosdepth results for window size 1000
         mosdepth(bam, bed, ref, "1000", false)
@@ -33,7 +34,7 @@ workflow cnv {
 
         mosdepth_all = mosdepth_stats.concat(mosdepth_summary).concat(mosdepth_perbase).collect()
         
-        cnvs = callCNV(clair3_vcf, mosdepth_all, ref)
+        cnvs = callCNV(clair3_vcf, mosdepth_all, ref, genome_build)
         spectre_vcf = cnvs.spectre_vcf
         spectre_vcf_bgzipped = bgzip_and_index_vcf(spectre_vcf)
         spectre_bed = cnvs.spectre_bed

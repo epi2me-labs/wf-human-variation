@@ -255,7 +255,7 @@ workflow {
     //   based on the genome build should be activated only by this boolean
     def enforce_genome_build = \
         // always check genome build for CNV and STR subworkflows
-        // getGenome will take care of checking which build is required for the CNV flavours
+        // getGenome will take care of checking which build is required for STR
         (params.cnv || params.str) \
         // or if annotating, check genome build when using SNP, SV or phasing
         // as SnpEff annotations are only provided for hg19 and hg38
@@ -875,7 +875,8 @@ workflow {
                 pass_bam_channel,
                 ref_channel,
                 clair_vcf.vcf_files,
-                bed
+                bed,
+                genome_build
             )
         }
         cnv_vcf = results_cnv.cnv_vcf

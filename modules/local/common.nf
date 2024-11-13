@@ -203,15 +203,14 @@ process getGenome {
      script:
         // set flags for subworkflows that have genome build restrictions
         def str_arg = params.str ? "--str" : ""
-        def cnv_arg = params.cnv ? "--cnv" : ""
-        def qdnaseq_arg = params.use_qdnaseq ? "--use_qdnaseq" : ""
         """
         # use view -H rather than idxstats, as idxstats will still cause a scan of the whole CRAM (https://github.com/samtools/samtools/issues/303)
         samtools view -H ${xam} --no-PG | grep '^@SQ' | sed -nE 's,.*SN:([^[:space:]]*).*LN:([^[:space:]]*).*,\\1\\t\\2,p' > ${xam}_genome.txt
-        get_genome.py --chr_counts ${xam}_genome.txt -o output.txt ${str_arg} ${cnv_arg} ${qdnaseq_arg}
+        get_genome.py --chr_counts ${xam}_genome.txt -o output.txt ${str_arg}
         genome_build=`cat output.txt`
         """
 }
+
 
 process eval_downsampling {
     label "wf_common"
