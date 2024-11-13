@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 ### Changed
-- Reconciled workflow with wf-template v5.3.0
+- Reconciled workflow with wf-template v5.3.1
+- Update Spectre to v0.3.2, which includes support for calling CNVs in hg19 data.
 - ClinVar version in SnpEff container updated to version 20241103.
 ### Added
 - `--spectre_args` may be used to provide custom arguments to the Spectre process.

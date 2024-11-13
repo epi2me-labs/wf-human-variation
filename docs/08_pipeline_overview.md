@@ -56,7 +56,7 @@ Haplotype-resolved aggregated counts of modified bases can be obtained with the 
 
 ### 6a. Copy number variants (CNV) calling with Spectre
 
-CNV calling is performed using an ONT implementation of [Spectre](https://github.com/epi2me-labs/ont-spectre/) using the `--cnv` flag. Spectre is the default CNV caller in the workflow and is compatible with hg38/GRCh38. The output of this workflow is a VCF of CNV calls annotated with SnpEff. Advanced users may wish to override default parameters using `--spectre_args`, e.g. `--spectre_args "--min-cnv-len 100000"`, however we don't recommend setting this to less than N50 * 5 to avoid false positive calls.
+CNV calling is performed using an ONT implementation of [Spectre](https://github.com/epi2me-labs/ont-spectre/) using the `--cnv` flag. Spectre is the default CNV caller in the workflow and is compatible with genome builds hg19/GRCh37 or hg38/GRCh38. The output of this workflow is a VCF of CNV calls annotated with SnpEff. Advanced users may wish to override default parameters using `--spectre_args`, e.g. `--spectre_args "--min-cnv-len 100000"`. We don't recommend setting `--min-cnv-len` to less than N50 * 5 to avoid false positive calls.
 
 ### 6b. Copy number variants (CNV) calling with QDNASeq
 
@@ -98,7 +98,7 @@ Some of the sub-workflows in wf-human-variation are restricted to certain genome
 
 |    Genome    | `--snp`  | `--sv`  | `--mod` | `--cnv` | `--cnv --use_qdnaseq` | `--str` | `--annotation false` | `--include_all_ctgs` |
 |--------------|----------|---------|---------|---------|-----------------------|---------|----------------------|----------------------|
-| hg19/GRCh37  | &check;  | &check; | &check; |         |        &check;        |         |         \*           |                      |
+| hg19/GRCh37  | &check;  | &check; | &check; | &check; |        &check;        |         |         \*           |                      |
 | hg38/GRCh38  | &check;  | &check; | &check; | &check; |        &check;        | &check; |         \*           |                      |
 | Other human  | &check;  | &check; | &check; |         |                       |         |       &check;        |                      |
 | Non human    | &check;  | &check; | &check; |         |                       |         |       &check;        |       &check;        |

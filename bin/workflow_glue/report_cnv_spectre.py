@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """Plot Spectre CNVs."""
 
-import json
-
 from dominate.tags import a, p
 from ezcharts.components.reports.labs import LabsReport
 from ezcharts.components.theme import LAB_head_resources
@@ -44,8 +42,8 @@ def argparser():
         help="Workflow version",
     )
     parser.add_argument(
-        "--karyotype_json",
-        help="JSON file containing karyotype"
+        "--karyotype",
+        help="Text file containing karyotype"
     )
     parser.add_argument(
         '-o', '--output', required=True, dest="output_report",
@@ -61,16 +59,12 @@ def make_report(params, versions, cnv_df, args):
         WORKFLOW_NAME, params, versions, args.workflow_version,
         head_resources=[*LAB_head_resources])
 
-    karyotype = generate_karyotype(args.karyotype_json)
-
-    with report.add_section(
-            'Introduction', 'Intro'):
-        spectre_url = "https://github.com/fritzsedlazeck/Spectre/tree/ont-dev"
-        p(
-            "This report contains CNVs detected using an ",
-            a("ONT fork of Spectre", href=spectre_url),
-            ", as part of the wf-human-variation workflow."
-        )
+    with open(args.karyotype) as karyotype_file:
+        line = karyotype_file.readline().rstrip()
+        if line:
+            karyotype = line
+        else:
+            karyotype = "Not applicable"
 
     if not cnv_df.empty:
         # get the totals
@@ -79,15 +73,26 @@ def make_report(params, versions, cnv_df, args):
         total_dups = type_counts.get('DUP', 0)
         total_dels = type_counts.get('DEL', 0)
 
-        with report.main_content:
+        spectre_url = "https://github.com/nanoporetech/ont-spectre"
+
+        with report.add_section('At a glance', 'Summary'):
+            p(
+                "This section displays a summary of the CNVs detected using an ",
+                a("ONT implementation of Spectre", href=spectre_url),
+                ", as part of the wf-human-variation workflow."
+            )
             Stats(
                 columns=4,
                 items=[
-                    (karyotype, 'Predicted karyotype'),
+                    (karyotype, 'Predicted karyotype*'),
                     (total_cnv, 'Total no. of CNVs'),
                     (total_dups, 'Total no. of duplications'),
                     (total_dels, 'Total no. of deletions')
                 ])
+
+            p("""*The predicted karyotype is "Not applicable" if chromosomes X and
+                Y are absent from the input data or have insufficient coverage.
+                """)
 
         with report.add_section(
                 'Spectre CNV calls', 'Spectre CNV calls'):
@@ -132,20 +137,6 @@ def make_report(params, versions, cnv_df, args):
     return report
 
 
-def generate_karyotype(json_path):
-    """Convert karyotype JSON to string."""
-    with open(json_path, 'r') as json_file:
-        data = json.load(json_file)
-
-    count_x = data.get("X", 0)
-    count_y = data.get("Y", 0)
-
-    # construct string
-    karyotype = "X" * count_x + "Y" * count_y
-
-    return karyotype
-
-
 def main(args):
     """Run the entry point."""
     # read CNV BED into df
@@ -153,7 +144,9 @@ def main(args):
         cnv_df = pd.read_csv(args.cnv_bed, delim_whitespace=True, header=None)
         cnv_df.columns = ['chr', 'start', 'end', 'type', 'size', 'call']
 
-        filtered_df = cnv_df[cnv_df['chr'].isin(CHROMOSOMES)]
+        # hg19 chromosomes are read in as integers, so convert to string to ensure
+        # filtering is successful
+        filtered_df = cnv_df[cnv_df['chr'].astype(str).isin(CHROMOSOMES)]
     except pd.errors.EmptyDataError:
         filtered_df = pd.DataFrame()
 

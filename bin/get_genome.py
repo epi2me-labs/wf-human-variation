@@ -97,27 +97,35 @@ def get_genome(sizes):
     return ""
 
 
-def check_genome(genome_build, str_flag, cnv, use_qdnaseq):
+def check_genome(genome_build, str_flag):
     """Determine if genome is suitable for this workflow."""
     bad_genome = False
-    extra_msg_context = ""
+    extra_msg_context = (
+        "#####################################################################\n"
+        "# INPUT DATA PROBLEM\n"
+        "The genome build detected in the BAM is not compatible with this\n"
+        "workflow as it does not appear to be hg19/GRCh37 or hg38/GRCh38.\n"
+        "If you are trying to run this workflow with non-human data, please\n"
+        "consult the 'Genome compatibility and running the workflow on\n"
+        "non-human genomes' section of the README.\n"
+        "####################################################################\n"
+    )
     if not genome_build:
         bad_genome = True
-    elif (str_flag or (cnv and not use_qdnaseq)) and genome_build != "hg38":
+    elif str_flag and genome_build != "hg38":
         bad_genome = True
         extra_msg_context = (
-            "########################################################################\n"
+            "#####################################################################\n"
             "# INPUT DATA PROBLEM\n"
             "The genome build detected in the BAM is not compatible with this\n"
             "workflow.\n"
-            f"Detected genome: {genome_build}, but genotyping STRs and calling\n"
-            "CNVs with Spectre can only be performed when aligned to build 38.\n"
-            "To perform STR or CNV calling, you need to run the workflow providing\n"
-            "the following reference genome:\n\n"
+            f"Detected genome: {genome_build}, but genotyping STRs can only be\n"
+            "performed when aligned to build 38.\n"
+            "To perform STR calling, you need to run the workflow providing the\n"
+            "following reference genome to the --ref parameter:\n\n"
             f"{HG38_URL}\n\n"
-            "Alternatively, disable STR and CNV calling by setting --str false\n"
-            "and --cnv false.\n"
-            "########################################################################\n"
+            "Alternatively, disable STR calling by setting --str false.\n"
+            "####################################################################\n"
         )
     return (bad_genome, extra_msg_context)
 
@@ -139,24 +147,12 @@ def main():
         default=False,
         help="STR flag"
     )
-    parser.add_argument(
-        '--cnv',  action='store_true',
-        default=False,
-        help="CNV flag"
-    )
-    parser.add_argument(
-        '--use_qdnaseq',  action='store_true',
-        default=False,
-        help="QDNAseq flag"
-    )
     args = parser.parse_args()
 
     all_sizes = chromosome_sizes(args.chr_counts)
 
     genome_build = get_genome(all_sizes)
-    bad_genome, extra_msg_context = check_genome(
-        genome_build, args.str_, args.cnv, args.use_qdnaseq
-    )
+    bad_genome, extra_msg_context = check_genome(genome_build, args.str_)
 
     # explode on bad genome
     if bad_genome:
