@@ -56,7 +56,7 @@ process decompress_ref {
 
 //NOTE grep MOSDEPTH_TUPLE if changing output tuple
 process mosdepth {
-    cpus 2
+    cpus 4
     memory {4.GB * task.attempt}
     maxRetries 2
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
@@ -124,7 +124,7 @@ process mosdepth {
 
 process readStats {
     label "wf_common"
-    cpus 4
+    cpus 8
     memory 4.GB
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
@@ -137,16 +137,16 @@ process readStats {
         path "${xam_meta.alias}.runids.txt", emit: runids
         tuple val(xam_meta), path("${xam_meta.alias}.basecallers.txt"), emit: basecallers
     script:
-        def stats_threads = Math.max(task.cpus - 1, 1)
+        def view_threads = Math.max(task.cpus - 2, 1)
         """
-        samtools view -b -h -L ${target_bed} ${xam} | bamstats \
+        samtools view --threads ${view_threads} -u -h -L ${target_bed} ${xam} | bamstats \
             -s ${xam_meta.alias} \
             -i ${xam_meta.alias}.per-file-runids.txt \
             -l ${xam_meta.alias}.basecallers.tsv \
             --histogram ${xam_meta.alias}-histograms \
             -u \
             -f ${xam_meta.alias}.flagstat.tsv \
-            --threads ${stats_threads} \
+            --threads 2 \
             - | gzip > "${xam_meta.alias}.readstats.tsv.gz"
         # get unique run IDs
         awk -F '\\t' '
@@ -168,7 +168,7 @@ process readStats {
 // This is the only way to publish files from a workflow whilst
 // decoupling the publish from the process steps.
 process publish_artifact {
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "*"
+    publishDir "${params.out_dir}", mode: 'symlink', pattern: "*"
     input:
         file fname
     output:
@@ -616,7 +616,7 @@ process combine_metrics_json {
 // decoupling the publish from the process steps.
 process output_cnv {
     // publish inputs to output directory
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "*"
+    publishDir "${params.out_dir}", mode: 'symlink', pattern: "*"
     input:
         path fname
     output:
