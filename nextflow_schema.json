@@ -243,7 +243,12 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Perform phasing.",
-                    "help_text": "This option enables phasing of SV, SNP and modifications, depending on which sub-workflow has been chosen; see [README](README.md#9-phasing-variants) for more details."
+                    "help_text": "This option enables phasing of SV, SNP and modifications, depending on which sub-workflow has been chosen; see [README](README.md#9-phasing-variants) for more details.",
+                    "overrides": {
+                        "minknow": {
+                            "default": true
+                        }
+                    }
                 },
                 "include_all_ctgs": {
                     "type": "boolean",
@@ -252,7 +257,7 @@
                     "help_text": "Enabling this option will call for variants on all contigs of the input reference sequence. Typically this option is not required as standard human reference sequences contain decoy and unplaced contigs that are usually omitted for the purpose of variant calling. This option might be useful for non-standard reference sequence databases.",
                     "overrides": {
                         "minknow": {
-                            "title": "Include all contigs"
+                            "hidden": true
                         }
                     }
                 },
@@ -260,7 +265,12 @@
                     "type": "boolean",
                     "default": false,
                     "description": "If set to true, the workflow will generate gene-level coverage summaries.",
-                    "help_text": "If set to true, a 4-column BED file must be supplied, where column 4 is the gene label. The workflow will generate a list of all genes in the BED and their percentage coverage at a range of thresholds (1x, 10x, 15x, 20x, and 30x), as well as the average coverage of each gene."
+                    "help_text": "If set to true, a 4-column BED file must be supplied, where column 4 is the gene label. The workflow will generate a list of all genes in the BED and their percentage coverage at a range of thresholds (1x, 10x, 15x, 20x, and 30x), as well as the average coverage of each gene.",
+                    "overrides": {
+                        "minknow": {
+                            "hidden": true
+                        }
+                    }
                 },
                 "output_report": {
                     "type": "boolean",
@@ -548,7 +558,7 @@
                     ],
                     "overrides": {
                         "minknow": {
-                            "title": "Sex (XX or XY) to be passed to Straglr-genotype."
+                            "hidden": true
                         }
                     }
                 }
