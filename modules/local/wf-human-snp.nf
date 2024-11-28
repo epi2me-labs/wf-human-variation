@@ -452,7 +452,7 @@ process merge_pileup_and_full_vars{
 process post_clair_phase_contig {
     // Phase VCF for a contig
     // CW-2383: now uses base image to allow phasing of both snps and indels
-    cpus 4
+    cpus { params.use_longphase ? 4 : 1}
     // Define memory from phasing tool and number of attempt
     memory { params.use_longphase ? longphase_memory[task.attempt - 1] : whatshap_memory[task.attempt - 1] }
     maxRetries 2
