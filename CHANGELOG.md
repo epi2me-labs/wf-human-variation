@@ -4,12 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [v2.5.0]
 ### Changed
-- Reconciled workflow with wf-template v5.3.1
+- Reconciled workflow with wf-template v5.3.2
 - Update Spectre to v0.3.2, which includes support for calling CNVs in hg19 data.
 - ClinVar version in SnpEff container updated to version 20241103.
 - Hidden additional options in MinKNOW for a simplified user experience.
+- Improved performance of readStats process by updating to bamstats 0.19.1.
 ### Added
 - `--spectre_args` may be used to provide custom arguments to the Spectre process.
 ### Fixed
