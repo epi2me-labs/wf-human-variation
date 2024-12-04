@@ -297,7 +297,12 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Visualize outputs in the EPI2ME IGV visualizer.",
-                    "help_text": "Enabling this option will visualize the alignments and VCF files in the EPI2ME desktop app IGV visualizer."
+                    "help_text": "Enabling this option will visualize the alignments and VCF files in the EPI2ME desktop app IGV visualizer.",
+                    "overrides": {
+                        "minknow": {
+                            "hidden": true
+                        }
+                    }
                 },
                 "out_dir": {
                     "title": "Output directory",
