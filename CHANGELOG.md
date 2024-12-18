@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
-- Reconciled workflow with wf-template v5.3.3
+- Reconciled workflow with wf-template v5.3.4
 
 ## [v2.5.1]
 - Hidden additional options in MinKNOW for a simplified user experience.
