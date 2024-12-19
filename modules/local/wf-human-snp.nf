@@ -216,6 +216,13 @@ process phase_contig {
         """
 }
 
+// the goal here is to avoid an expensive sort by catting instead. we achieve this
+// by organising a file of file names of all the contigs to match the order the
+// contigs are observed in the first input BAM. we can safely assume all input BAM
+// will have the same SQ lines as ingress enforces this.
+// we will also add back sequences from contigs that were not selected for analysis
+// (eg. decoys) and unaligned reads. the file output from this process will be the
+// "final" XAM provided to the user.
 process cat_haplotagged_contigs {
     label "wf_human_snp"
     cpus 4
@@ -239,12 +246,18 @@ process cat_haplotagged_contigs {
     while read sq; do
         if [ -f "\${sq}_hp.bam" ]; then
             echo "\${sq}_hp.bam" >> cat.fofn
+        elif [ -f "\${sq}_nohp.bam" ]; then
+            echo "\${sq}_nohp.bam" >> cat.fofn
         fi
     done < seq_list.txt
     if [ ! -s cat.fofn ]; then
         echo "No haplotagged inputs to cat? Are the input file names staged correctly?"
         exit 70 # EX_SOFTWARE
     fi
+
+    # we'll add back unaligned reads at the end of the new output file
+    # this file is always mixed in, even if empty
+    echo "unaligned.bam" >> cat.fofn
 
     # cat just cats, if we want bam, we'll have to deal with that ourselves
     if [ "${xam_fmt}" = "cram" ]; then

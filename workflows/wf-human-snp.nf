@@ -21,8 +21,9 @@ include {
     makeReport;
 } from "../modules/local/wf-human-snp.nf"
 
-include { 
-    haploblocks as haploblocks_snp
+include {
+    haploblocks as haploblocks_snp;
+    extract_not_haplotagged_contigs;
 } from '../modules/local/common.nf'
 
 // workflow module
@@ -178,10 +179,34 @@ workflow snp {
 
             // intermediate ctg BAMs can flow to STR
             haplotagged_ctg_bams = post_clair_contig_haplotag.out.phased_bam
-            xams_to_cat = haplotagged_ctg_bams.map{ meta, contig, xam, xai -> [meta, xam] }.groupTuple(by: 0)
-            // meanwhile cat all the intermediate ctg BAMs to desired XAM format for user output dir
+
+            // get a file of sequence names for all SQ that were haplotagged by post_clair_contig_haplotag
+            haplotagged_fosn = \
+                haplotagged_ctg_bams.map{ meta, contig, xam, xai -> contig }
+                | collectFile(name: "haplotagged.fosn", newLine: true, sort: false)
+            // we'll take this file of haplotagged contigs and pull out a
+            //  subset BAM for each SQ in the input XAM that does not appear
+            //  as well as a bonus BAM for unaligned reads. we'll mix this
+            //  with the haplotagged contig BAMs below to make sure the final
+            //  XAM we emit to the user has all of their input reads.
+            // on the workflow's intended use for 30x WGS and analysis of all
+            //  chr, extracting all the decoys and unaligned reads is reasonably
+            //  inexpensive. a small BED with high coverage may be less appropriate.
+            nothaplotagged_ctg_bams = \
+                extract_not_haplotagged_contigs(bam_channel, haplotagged_fosn)
+                | transpose  // squish to meet the expected shape for haplotagged_ctg_bams
+
+            xams_to_cat = \
+                // drop contig and xai to make it easier to groupTuple this to a simple shape for cat_haplotagged_contigs
+                haplotagged_ctg_bams.map{ meta, contig, xam, xai -> [meta, xam] }
+                // extract additional xams_to_cat -- we'll be missing decoys and unaligned here
+                | mix(nothaplotagged_ctg_bams)
+                // produce a channel of the shape, [meta [chr1.bam, ..., chrN.bam, decoyA.bam, ..., decoyZ.bam, unaligned.bam]]
+                | groupTuple(by: 0)
+
+            // cat all the intermediate ctg BAMs to desired XAM format for user output dir
             haplotagged_cat_xam = cat_haplotagged_contigs(
-                xams_to_cat, // only need the BAMs themselves
+                xams_to_cat,
                 ref,
                 extensions
             )
