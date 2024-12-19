@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Haplotagged XAM will now include all input reads (including unmapped reads), rather than only reads aligned to phased contigs.
 - Reconciled workflow with wf-template v5.3.4.
+- Decreased RAM requirement for SNP evaluate_candidates to increase throughput of tasks.
 ### Fixed
 - Incorrect median quality score reported in stats.json.
 
