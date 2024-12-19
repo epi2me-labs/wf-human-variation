@@ -4,9 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v2.6.0]
 ### Changed
-- Reconciled workflow with wf-template v5.3.4
+- Haplotagged XAM will now include all input reads (including unmapped reads), rather than only reads aligned to phased contigs.
+- Reconciled workflow with wf-template v5.3.4.
+### Fixed
+- Incorrect median quality score reported in stats.json.
 
 ## [v2.5.1]
 - Hidden additional options in MinKNOW for a simplified user experience.
