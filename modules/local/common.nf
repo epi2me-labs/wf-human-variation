@@ -722,6 +722,7 @@ process extract_not_haplotagged_contigs {
     cpus 8
     memory 8.GB
     input:
+        tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
         tuple path(xam), path(xam_idx), val(xam_meta)
         path("haplotagged_sq.fosn")
     output:
@@ -732,7 +733,7 @@ process extract_not_haplotagged_contigs {
     mkdir -p output
 
     # create file of sequence names by extracting all SQ SN 
-    samtools view -H --no-PG '${xam}' | grep '^@SQ' | sed -nE 's,.*SN:([^[:space:]]*).*,\\1,p' > all_sq.fosn
+    samtools view -r '${ref}' -H --no-PG '${xam}' | grep '^@SQ' | sed -nE 's,.*SN:([^[:space:]]*).*,\\1,p' > all_sq.fosn
 
     # pull out contigs that do not appear in the haplotagged fofn
     # sort haplotagged contig list here (dont leave it to nextflow collectfile)
@@ -741,14 +742,14 @@ process extract_not_haplotagged_contigs {
     if [ -s unhaplotagged_sq.fosn ]; then
         while read sq; do
             echo "Extracting \${sq}"
-            samtools view ${xam} "\${sq}" -@ ${extra_view_threads} --no-PG -o "output/\${sq}_nohp.bam"
+            samtools view -r '${ref}' ${xam} "\${sq}" -@ ${extra_view_threads} --no-PG -o "output/\${sq}_nohp.bam"
         done < unhaplotagged_sq.fosn
     fi
 
     # bonus bam: pull out unaligned - this file will always be created
     # use '*' region rather than -f4 for speeds
     echo "Extracting *"
-    samtools view ${xam} '*' -@ ${extra_view_threads} --no-PG -o output/unaligned.bam
+    samtools view -r '${ref}' ${xam} '*' -@ ${extra_view_threads} --no-PG -o output/unaligned.bam
     """
 }
 
