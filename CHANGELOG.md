@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+### Fixed
+- Failed to populate references during extract_not_haplotagged_contigs when running offline.
+
 ## [v2.6.0]
 ### Changed
 - Haplotagged XAM will now include all input reads (including unmapped reads), rather than only reads aligned to phased contigs.
