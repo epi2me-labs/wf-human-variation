@@ -193,7 +193,7 @@ workflow snp {
             //  chr, extracting all the decoys and unaligned reads is reasonably
             //  inexpensive. a small BED with high coverage may be less appropriate.
             nothaplotagged_ctg_bams = \
-                extract_not_haplotagged_contigs(bam_channel, haplotagged_fosn)
+                extract_not_haplotagged_contigs(ref, bam_channel, haplotagged_fosn)
                 | transpose  // squish to meet the expected shape for haplotagged_ctg_bams
 
             xams_to_cat = \
