@@ -4,7 +4,6 @@ include {
     callCNV;
     getVersions;
     add_snp_tools_to_versions;
-    getParams;
     bgzip_and_index_vcf;
     makeReport
 } from "../modules/local/wf-human-cnv.nf"
@@ -21,6 +20,7 @@ workflow cnv {
         clair3_vcf
         bed
         genome_build
+        workflow_params
     main:
         // get mosdepth results for window size 1000
         mosdepth(bam, bed, ref, "1000", false)
@@ -52,7 +52,6 @@ workflow cnv {
 
         software_versions_tmp = getVersions()
         software_versions = add_snp_tools_to_versions(software_versions_tmp)
-        workflow_params = getParams()
         if (params.output_report){
             report = makeReport(software_versions.collect(), workflow_params, spectre_bed, spectre_karyotype)
         } else {

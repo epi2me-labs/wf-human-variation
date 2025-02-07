@@ -10,7 +10,6 @@ include {
     generate_str_content;
     make_report;
     getVersions;
-    getParams
 } from "../modules/local/wf-human-str.nf"
 
 // workflow module
@@ -20,6 +19,7 @@ workflow str {
     ref_channel
     read_stats
     sex
+    workflow_params
 
   main:
     // turn ref channel into value channel so it can be used more than once
@@ -33,7 +33,6 @@ workflow str {
     annotations = annotate_repeat_expansions(str_vcf_and_tsv, variant_catalogue_hg38)
 
     software_versions = getVersions()
-    workflow_params = getParams()
 
     // subset contig BAM to include only STR regions
     // ignore those contigs which aren't in repeats BED so this output is optional

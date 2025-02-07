@@ -30,7 +30,6 @@ include {
     get_region_coverage;
     failedQCReport; 
     makeAlignmentReport; 
-    getParams; 
     getVersions;
     getGenome; 
     eval_downsampling;
@@ -46,6 +45,10 @@ include {
     infer_sex;
     haplocheck;
 } from './modules/local/common'
+
+include {
+    getParams;
+} from './lib/common.nf'
 
 include {
     detect_basecall_model
@@ -708,7 +711,8 @@ workflow {
             mosdepth_input.out.summary,
             OPTIONAL,
             genome_build,
-            chromosome_codes
+            chromosome_codes,
+            workflow_params
         )
         artifacts = results_sv.report.flatten()
         sniffles_vcf = results_sv.sniffles_vcf
@@ -797,7 +801,7 @@ workflow {
         vcf_stats = vcfStats(snp_vcf)
 
         // Prepare the report
-        snp_reporting = report_snp(vcf_stats, clinvar_vcf)
+        snp_reporting = report_snp(vcf_stats, clinvar_vcf, workflow_params)
         json_snp = snp_reporting.snp_stats_json
         if (params.output_report){
             snp_report = snp_reporting.report
@@ -867,7 +871,8 @@ workflow {
             results_cnv = cnv_qdnaseq(
                 pass_bam_channel,
                 bam_stats,
-                genome_build
+                genome_build,
+                workflow_params
             )
         // cnv calling with spectre
         } else {
@@ -876,7 +881,8 @@ workflow {
                 ref_channel,
                 clair_vcf.vcf_files,
                 bed,
-                genome_build
+                genome_build,
+                workflow_params
             )
         }
         cnv_vcf = results_cnv.cnv_vcf
@@ -894,7 +900,8 @@ workflow {
           bam_channel_str,
           ref_channel,
           bam_stats,
-          sex
+          sex,
+          workflow_params
         )
         str_vcf = results_str.str_vcf
         output_str(results_str.output)

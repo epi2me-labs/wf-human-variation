@@ -5,7 +5,6 @@ include {
     filterCalls;
     sortVCF;
     getVersions;
-    getParams;
     report;
 } from "../modules/local/wf-human-sv.nf"
 include {
@@ -27,6 +26,7 @@ workflow bam {
         optional_file
         genome_build
         chromosome_codes
+        workflow_params
     main:
         called = variantCall(bam_channel, reference, target, mosdepth_stats, optional_file, genome_build, chromosome_codes)
 
@@ -43,7 +43,8 @@ workflow bam {
 
             report = runReport(
                 called.vcf.groupTuple(),
-                benchmark_result
+                benchmark_result,
+                workflow_params
             )
         }
         else {
@@ -53,7 +54,8 @@ workflow bam {
             final_vcf = annotate_sv_vcf(vcf_for_annotation, genome_build, "sv").annot_vcf
             report = runReport(
                 final_vcf.map{meta, vcf, tbi -> [meta, vcf]}.groupTuple(),
-                benchmark_result
+                benchmark_result,
+                workflow_params
             )
         }
 
@@ -159,9 +161,9 @@ workflow runReport {
     take:
         vcf
         eval_json
+        workflow_params
     main:
         software_versions = getVersions()
-        workflow_params = getParams()
         report(
             vcf,
             eval_json,
