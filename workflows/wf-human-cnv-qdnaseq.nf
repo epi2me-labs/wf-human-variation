@@ -2,7 +2,6 @@ import groovy.json.JsonBuilder
 
 include {
     getVersions;
-    getParams;
     callCNV;
     makeReport
 } from "../modules/local/wf-human-cnv-qdnaseq.nf"
@@ -13,13 +12,13 @@ workflow cnv {
         bam_channel
         read_stats
         genome_build
+        workflow_params
 
     main:
 
         cnvs = callCNV(bam_channel, genome_build)
 
         software_versions = getVersions()
-        workflow_params = getParams()
 
 
         if (params.output_report){

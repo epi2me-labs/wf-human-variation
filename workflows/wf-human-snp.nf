@@ -16,7 +16,6 @@ include {
     aggregate_all_variants;
     phase_gvcf;
     hap;
-    getParams;
     getVersions;
     makeReport;
 } from "../modules/local/wf-human-snp.nf"
@@ -266,12 +265,12 @@ workflow report_snp {
     take:
         vcf_stats
         clinvar_vcf
+        workflow_params
 
     main:
 
         // reporting
         software_versions = getVersions()
-        workflow_params = getParams()
 
         // Create report
         makeReport(

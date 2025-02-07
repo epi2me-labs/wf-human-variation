@@ -201,20 +201,6 @@ process getVersions {
 }
 
 
-process getParams {
-    label "wf_human_str"
-    cpus 1
-    output:
-        path "params.json"
-    script:
-        def paramsJSON = new JsonBuilder(params).toPrettyString()
-        """
-        # Output nextflow params object to JSON
-        echo '$paramsJSON' > params.json
-        """
-}
-
-
 // See https://github.com/nextflow-io/nextflow/issues/1636
 // This is the only way to publish files from a workflow whilst
 // decoupling the publish from the process steps.

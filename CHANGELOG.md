@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Failed to populate references during extract_not_haplotagged_contigs when running offline.
 - Typo in README and log where `override_basecaller_cfg` was mistakenly referred to as `override_basecall_cfg` (@flokraft85, #240).
+### Removed
+- Duplicate `getParams` processes in subworkflows.
 
 ## [v2.6.0]
 ### Changed
