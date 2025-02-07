@@ -62,7 +62,7 @@ workflow detect_basecall_model {
                             ${workflow.manifest.name} input BAM(s) should be basecalled with a one
                             model.
 
-                            The workflow will proceed with the model provided by `--override_basecall_cfg`.
+                            The workflow will proceed with the model provided by `--override_basecaller_cfg`.
                             ################################################################################
                             """.stripIndent()
                             log.info input_data_warn_msg
