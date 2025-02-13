@@ -9,7 +9,7 @@ process callCNV {
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     // publish everything except the cnv_vcf to qdna_seq directory
     publishDir = [
-        path: { "${params.out_dir}/qdna_seq" },
+        path: { "${params.outdirNonPhi}/qdna_seq" },
         mode: 'copy',
         saveAs: { filename -> filename.toString() ==~ /.*vcf\.gz.*/ ? null : filename }
     ]

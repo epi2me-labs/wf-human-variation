@@ -1188,7 +1188,7 @@ def get_sample_sheet(Path sample_sheet, ArrayList required_sample_types) {
  * @return: string (optional)
  */
 process validate_sample_sheet {
-    publishDir params.out_dir, mode: 'copy', overwrite: true
+    publishDir params.outdirNonPhi, mode: 'copy', overwrite: true
     cpus 1
     label "ingress"
     label "wf_common"

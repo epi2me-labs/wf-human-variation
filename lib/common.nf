@@ -2,7 +2,7 @@ import groovy.json.JsonBuilder
 
 process getParams {
     label "wf_common"
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "params.json"
+    publishDir "${params.outdirNonPhi}", mode: 'copy', pattern: "params.json"
     cache false
     cpus 1
     memory "2 GB"
@@ -17,7 +17,7 @@ process getParams {
 }
 
 process configure_igv {
-    publishDir "${params.out_dir}/", mode: 'copy', pattern: 'igv.json', enabled: params.containsKey("igv") && params.igv
+    publishDir "${params.outdirNonPhi}/", mode: 'copy', pattern: 'igv.json', enabled: params.containsKey("igv") && params.igv
     label "wf_common"
     cpus 1
     memory "2 GB"

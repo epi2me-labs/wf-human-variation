@@ -221,7 +221,7 @@ process getParams {
 process output_str {
     // publish inputs to output directory
     label "wf_human_str"
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "*"
+    publishDir "${params.outdirNonPhi}", mode: 'copy', pattern: "*"
     input:
         path fname
     output:

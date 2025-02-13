@@ -168,7 +168,7 @@ process readStats {
 // This is the only way to publish files from a workflow whilst
 // decoupling the publish from the process steps.
 process publish_artifact {
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "*"
+    publishDir "${params.outdirNonPhi}", mode: 'copy', pattern: "*"
     input:
         file fname
     output:
@@ -615,7 +615,7 @@ process combine_metrics_json {
 // decoupling the publish from the process steps.
 process output_cnv {
     // publish inputs to output directory
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "*"
+    publishDir "${params.outdirNonPhi}", mode: 'copy', pattern: "*"
     input:
         path fname
     output:

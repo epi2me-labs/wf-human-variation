@@ -16,7 +16,7 @@ process sniffles2 {
         tuple val(xam_meta), path("*.sniffles.vcf"), emit: vcf
         path "${xam_meta.alias}.wf_sv.snf", emit: snf
     publishDir \
-        path: "${params.out_dir}",
+        path: "${params.outdirNonPhi}",
         pattern: "${xam_meta.alias}.wf_sv.snf",
         mode: 'copy'
     script:
@@ -176,7 +176,7 @@ process report {
 process output_sv {
     // publish inputs to output directory
     label "wf_human_sv"
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "*"
+    publishDir "${params.outdirNonPhi}", mode: 'copy', pattern: "*"
     input:
         path fname
     output:

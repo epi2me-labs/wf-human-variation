@@ -682,7 +682,7 @@ process hap {
 process output_snp {
     // publish inputs to output directory
     label "wf_human_snp"
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "*"
+    publishDir "${params.outdirNonPhi}", mode: 'copy', pattern: "*"
     input:
         file fname
     output:

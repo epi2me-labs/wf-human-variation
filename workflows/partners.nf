@@ -1,6 +1,6 @@
 // Combine VCFs for Geneyx
 process publish_geneyx {
-    publishDir "${params.out_dir}/integrations/geneyx/", mode: 'copy', pattern: "*"
+    publishDir "${params.outdirNonPhi}/integrations/geneyx/", mode: 'copy', pattern: "*"
     cpus 2
 
     input:
@@ -36,7 +36,7 @@ process publish_geneyx {
 }
 
 process publish_fabric {
-    publishDir "${params.out_dir}/integrations/fabric/", mode: 'copy', pattern: "*"
+    publishDir "${params.outdirNonPhi}/integrations/fabric/", mode: 'copy', pattern: "*"
     cpus 2
 
     input:

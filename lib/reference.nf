@@ -48,7 +48,7 @@ process faidx {
     // IGV configuration, but only by internal processes together with the decompressed
     // FASTA file. To avoid unnecessary emissions, we enable only if the input file is
     // decompressed.
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "*", enabled: !params.ref.toLowerCase().endsWith("gz")
+    publishDir "${params.outdirNonPhi}", mode: 'copy', pattern: "*", enabled: !params.ref.toLowerCase().endsWith("gz")
     label "wf_common"
     cpus 1
     memory 4.GB
@@ -64,7 +64,7 @@ process faidx {
 
 // Process to create the faidx indexes for a gzipped reference
 process gz_faidx {
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "*"
+    publishDir "${params.outdirNonPhi}", mode: 'copy', pattern: "*"
     label "wf_common"
     cpus 1
     memory 4.GB
