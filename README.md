@@ -1,6 +1,6 @@
 # Human variation workflow
 
-SNV, SV and CNV calling, modified base calling, and STR genotyping of human samples.
+Human SNV, SV, CNV, genotyping STR and modified base calling.
 
 
 
