@@ -794,7 +794,9 @@ workflow {
                 final_snp_vcf_filtered.combine(clair_vcf.contigs), genome_build.first(), "snp"
             )
             snp_vcf = concat_snp_vcfs(annotations.map{ meta, vcf, tbi -> [meta,vcf]}.groupTuple(), "wf_snp").final_vcf
-            clinvar_vcf = sift_clinvar_snp_vcf(snp_vcf, genome_build, "snp").final_vcf_clinvar
+            
+            sift_clinvar_snp_vcf(snp_vcf, genome_build, "snp")
+            clinvar_vcf = sift_clinvar_snp_vcf.out.final_vcf_clinvar.map{ vcf, tbi -> vcf }
         }
 
         // Run vcf statistics on the final VCF file
@@ -813,7 +815,6 @@ workflow {
         snp_report
             .concat(clair3_results)
             .concat(snp_vcf.map{meta, vcf, tbi -> [vcf, tbi]})
-            .concat(clinvar_vcf)
             .flatten() | output_snp
     } else {
         json_snp = Channel.empty()
