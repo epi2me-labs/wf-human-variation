@@ -461,6 +461,7 @@ process annotate_vcf {
 }
 
 process sift_clinvar_vcf {
+    publishDir "${params.out_dir}", mode: 'copy', pattern: "*clinvar.vcf*"
     label "snpeff_annotation"
     cpus 1
     memory 3.GB
@@ -469,7 +470,7 @@ process sift_clinvar_vcf {
         val(genome)
         val(output_label)
     output:
-        path("${xam_meta.alias}.wf_${output_label}_clinvar.vcf"), emit: final_vcf_clinvar
+        tuple path("${xam_meta.alias}.wf_${output_label}_clinvar.vcf.gz"), path("${xam_meta.alias}.wf_${output_label}_clinvar.vcf.gz.tbi"), emit: final_vcf_clinvar
     shell:
     '''
     # deal with samples which aren't hg19 or hg38
@@ -479,6 +480,8 @@ process sift_clinvar_vcf {
     else
         bcftools view input.vcf.gz | SnpSift filter "( exists CLNSIG )" > !{xam_meta.alias}.wf_!{output_label}_clinvar.vcf
     fi
+    bgzip !{xam_meta.alias}.wf_!{output_label}_clinvar.vcf
+    tabix -p vcf !{xam_meta.alias}.wf_!{output_label}_clinvar.vcf.gz
     '''
 }
 

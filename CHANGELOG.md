@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Changed
 - Updated alignment to use the high quality long read preset (-x lr:hq) to reduce mapping time.
+- ClinVar output VCF file from the SNP subworkflow is compressed and indexed.
 ### Fixed
 - Failed to populate references during extract_not_haplotagged_contigs when running offline.
 - Typo in README and log where `override_basecaller_cfg` was mistakenly referred to as `override_basecall_cfg` (@flokraft85, #240).

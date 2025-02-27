@@ -80,6 +80,14 @@
       "optional": true,
       "type": "per-sample"
     },
+    "clinvar-vcf": {
+      "filepath": "{{ alias }}.wf_snp_clinvar.vcf.gz",
+      "title": "ClinVar variant VCF",
+      "description": "VCF file with ClinVar annotations.",
+      "mime-type": "application/gzip",
+      "optional": true,
+      "type": "per-sample"
+    },
     "mod-bedmethyl": {
       "filepath": "{{ alias }}.wf_mods.bedmethyl.gz",
       "title": "Modified bases BEDMethyl",
