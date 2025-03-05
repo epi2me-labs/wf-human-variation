@@ -47,7 +47,7 @@ workflow cnv {
         else {
             // append '*' to indicate that annotation should be performed on all chr at once
             vcf_for_annotation = spectre_vcf_bgzipped.map{ it << '*' }
-            spectre_final_vcf = annotate_vcf(vcf_for_annotation, "hg38", "cnv").annot_vcf
+            spectre_final_vcf = annotate_vcf(vcf_for_annotation, genome_build, "cnv").annot_vcf
         }
 
         software_versions_tmp = getVersions()
