@@ -1,7 +1,10 @@
-"""The odd helper function."""
+"""The odd helper function.
 
+Be careful what you place in here. This file is imported into all glue.
+"""
 import argparse
 import logging
+
 
 _log_name = None
 

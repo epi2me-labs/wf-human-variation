@@ -37,7 +37,7 @@ process minimap2_alignment {
         tuple val(align_ext), val(index_ext) // either [bam, bai] or [cram, crai]
 
     output:
-        tuple val(meta), env(has_maps), path("${params.sample_name}.${align_ext}"), path("${params.sample_name}.${align_ext}.${index_ext}"), emit: alignment
+        tuple val(meta), env(has_maps), path("${meta.alias}.${align_ext}"), path("${meta.alias}.${align_ext}.${index_ext}"), emit: alignment
     script:
     """
     samtools reset -x tp,cm,s1,s2,NM,MD,AS,SA,ms,nn,ts,cg,cs,dv,de,rl --no-PG ${reads} -o - \
@@ -45,11 +45,11 @@ process minimap2_alignment {
         | minimap2 -y -t ${params.ubam_map_threads} -a -x lr:hq --cap-kalloc 100m --cap-sw-mem 50m \
             ${reference} - \
         | samtools sort -@ ${params.ubam_sort_threads} \
-            --write-index -o ${params.sample_name}.${align_ext}##idx##${params.sample_name}.${align_ext}.${index_ext} \
+            --write-index -o ${meta.alias}.${align_ext}##idx##${meta.alias}.${align_ext}.${index_ext} \
             -O ${align_ext} --reference ${reference} -
 
     # Check that the first line is not unmapped
-    REF_PATH=${reference} workflow-glue check_mapped_reads --xam ${params.sample_name}.${align_ext} > env.vars
+    REF_PATH=${reference} workflow-glue check_mapped_reads --xam ${meta.alias}.${align_ext} > env.vars
     source env.vars
     """
 }
@@ -102,6 +102,7 @@ workflow ingress {
             "sample":params.sample_name,
             "sample_sheet":null,
             "analyse_unclassified":true,
+            "analyse_fail": false,
             "keep_unaligned": true,
             "stats": false,
             "watch_path": false

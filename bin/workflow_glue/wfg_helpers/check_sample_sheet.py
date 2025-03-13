@@ -5,7 +5,7 @@ import os
 import re
 import sys
 
-from .util import get_named_logger, wf_parser  # noqa: ABS101
+from ..util import get_named_logger, wf_parser  # noqa: ABS101
 
 
 # Some Excel users save their CSV as UTF-8 (and occasionally for a reason beyond my
@@ -104,6 +104,13 @@ def main(args):
     for barcode in barcodes:
         if not re.match(r'^barcode\d\d+$', barcode):
             sys.stdout.write("values in 'barcode' column are incorrect format")
+            sys.exit()
+
+    # check aliases are correct format
+    # for now we have decided they may not start with "barcode"
+    for alias in aliases:
+        if alias.startswith("barcode"):
+            sys.stdout.write("values in 'alias' column must not begin with 'barcode'")
             sys.exit()
 
     # check barcodes are all the same length

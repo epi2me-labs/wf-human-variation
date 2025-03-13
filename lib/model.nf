@@ -15,7 +15,7 @@ workflow detect_basecall_model {
                 def models = bc.splitText().collect { it.strip() }
                 [xam, xai, meta + [basecall_models: models]]
             }
-    
+
         // attempt to pull out basecaller_cfg from metadata, keeping unique values
         metamap_basecaller_cfg = bam_channel
             | map { xam, bai, meta ->

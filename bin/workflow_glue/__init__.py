@@ -2,6 +2,7 @@
 import argparse
 import glob
 import importlib
+import itertools
 import os
 import sys
 
@@ -11,13 +12,22 @@ from .util import _log_level, get_main_logger  # noqa: ABS101
 __version__ = "0.0.1"
 _package_name = "workflow_glue"
 
+HELPERS = "wfg_helpers"
+
 
 def get_components(allowed_components=None):
     """Find a list of workflow command scripts."""
     logger = get_main_logger(_package_name)
-    path = os.path.dirname(os.path.abspath(__file__))
+
+    # gather all python files in the current directory and the wfg_helpers
+    home_path = os.path.dirname(os.path.abspath(__file__))
+    standard_lib = os.path.join(home_path, HELPERS)
+    globs = itertools.chain.from_iterable((
+        glob.glob(os.path.join(path, "*.py"))
+        for path in (home_path, standard_lib)))
+
     components = dict()
-    for fname in glob.glob(os.path.join(path, "*.py")):
+    for fname in globs:
         name = os.path.splitext(os.path.basename(fname))[0]
         if name in ("__init__", "util"):
             continue
@@ -26,7 +36,10 @@ def get_components(allowed_components=None):
 
         # leniently attempt to import module
         try:
-            mod = importlib.import_module(f"{_package_name}.{name}")
+            if HELPERS in fname:
+                mod = importlib.import_module(f"{_package_name}.{HELPERS}.{name}")
+            else:
+                mod = importlib.import_module(f"{_package_name}.{name}")
         except ModuleNotFoundError as e:
             # if imports cannot be satisifed, refuse to add the component
             # rather than exploding

@@ -5,7 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
+This version does not impact accuracy.
+This version does not impact performance, save for an improvement to alignment speed using the high quality long read minimap2 preset.
+Users may wish to adopt this version to test the workflow's ability to ingress individual samples from MinKNOW experiment folders.
 ### Changed
+- Workflow can analyse a single sample from a MinKNOW experiment folder.
+    - Users must both set the experiment folder using --bam, and set the desired sample name to analyse from the experiment directory with --sample_name.
+- To avoid misspelled parameters not having the intended effect, unexpected parameters will now cause the workflow to error.
+    - Users must remove unexpected parameters described by the error from their workflow command.
+- Analysis outputs of a single BAM file, or single folder of BAM files will no longer be prefixed with SAMPLE and will instead use part of the input BAM file name or BAM folder, respectively.
+    - To maintain previous behaviour, users may set `--sample_name SAMPLE`.
 - Updated alignment to use the high quality long read preset (-x lr:hq) to reduce mapping time.
 - ClinVar output VCF file from the SNP subworkflow is compressed and indexed.
 ### Fixed
