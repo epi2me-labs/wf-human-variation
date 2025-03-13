@@ -150,8 +150,8 @@ input_reads.bam     ─── input_directory
 
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
-| sample_name | string | Sample name to be displayed in workflow outputs. |  | SAMPLE |
-| bam | string | BAM or unaligned BAM (uBAM) files for the sample to use in the analysis. | This accepts one of two cases: (i) the path to a single BAM file; (ii) the path to a top-level directory containing BAM files. A sample name can be supplied with `--sample`. |  |
+| sample_name | string | Sample name to be displayed in workflow outputs. | When providing a MinKNOW experiment folder, the sample name must match one of the sample sub-folders in the input folder to specify which sample to analyse. |  |
+| bam | string | BAM or unaligned BAM (uBAM) files for the sample to use in the analysis. | This accepts one of three cases: (i) the path to a single BAM file; (ii) the path to a folder containing BAM files; (iii) the path to a MinKNOW experiment folder containing sub-folders for each sample in the experiment. For cases (i) and (ii) an optional sample name can be supplied with `--sample`. For case (iii), a sample name must be provided to select the sample for analysis from the experiment folder. |  |
 | ref | string | Path to a reference FASTA file. | Reference against which to compare reads for variant calling. |  |
 | bam_min_coverage | number | Minimum read coverage required to run analysis. |  | 20 |
 | bed | string | An optional BED file enumerating regions to process for variant calling. |  |  |

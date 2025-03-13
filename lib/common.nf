@@ -9,7 +9,7 @@ process getParams {
     output:
         path "params.json"
     script:
-        def paramsJSON = new JsonBuilder(params).toPrettyString()
+        def paramsJSON = new JsonBuilder(params).toPrettyString().replaceAll("'", "'\\\\''")
     """
     # Output nextflow params object to JSON
     echo '$paramsJSON' > params.json

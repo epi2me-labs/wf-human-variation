@@ -52,9 +52,10 @@ the PG header. This script is a little overkill but attempts to be robust
 with handling PG collisions and more obviously encapsulates reheadering
 behaviour, and leaves some room to do more clever things as necessary.
 """
+from shutil import copyfileobj
 import sys
 
-from .util import wf_parser  # noqa: ABS101
+from ..util import wf_parser  # noqa: ABS101
 
 
 class SamHeader:
@@ -106,15 +107,12 @@ class SamHeader:
         if record_type in ["@HD", "@CO", "@SQ"]:
             return record_type, record_data
         elif record_type in ["@RG", "@PG"]:
-            allowed_keys = {
-                "@RG": ["ID", "BC", "CN", "DS", "DT", "FO", "KS", "LB", "PG", "PI", "PL", "PM", "PU", "SM"],  # noqa:E501
-                "@PG": ["ID", "PN", "CL", "PP", "DS", "VN"]
-            }
             for field in record_data.strip().split('\t'):
                 k, v = field.split(':', 1)
-                if k not in allowed_keys[record_type]:
-                    raise Exception(f"{record_type} with bad key '{k}': {record_data}")
-                record[k] = v
+                if len(k) == 2 and k[0].isalpha() and k[1].isalnum():
+                    record[k] = v
+                else:
+                    raise Exception(f"{record_type} with invalid tag: '{k}'")
             if "ID" not in record:
                 raise Exception(f"{record_type} with no ID: {record_data}")
             return record_type, record
@@ -273,9 +271,29 @@ def reheader_samstream(header_in, stream_in, stream_out, args):
             break
         sh.add_line(line)
 
-    # Pass through the rest of the alignments
-    for line in stream_in:
-        stream_out.write(line)
+    # Pass through the rest of the alignments.
+    # I toyed with a few ways of doing this:
+    #   - A trivial iter over the input file was slow. presumably as we incurred some
+    #     overhead calling read() and write() and decoding more than other methods.
+    #   - os.read/write avoids dealing with higher level python read/write but requires
+    #     file descriptors which rules out non-file-like objects. this made testing more
+    #     annoying as StringIO does not have a file descriptor. we could have mocked fds
+    #     but i was not happy with the discrepancy between real and test execution.
+    #   - copyfileobj with the stream_in.buffer would also avoid some of the higher
+    #     level text handling but would require all tests to provide inputs that have
+    #     an underlying binary buffer. it was also not possible to seek the buffer to
+    #     the position of the text stream as we've used next() to iterate over the
+    #     header lines, fixing this would have required rewriting of the header
+    #     handling or keeping track of the position in the stream ourselves which
+    #     just seemed unncessary overkill given how we expect this program to be used.
+    # copyfileobj on the text streams is more efficient than merely iterating the file
+    # and dumping the lines out and seems to do the job. this keeps the code and tests
+    # simple with minimal additional cost to performance. i anticipate any overhead of
+    # this program will be dwarfed by that of minimap2/samtools sort anyway.
+    # increasing the buffer size gave worse performance in my limited testing so we
+    # leave it as the default here.
+    copyfileobj(stream_in, stream_out)
+
     # If there were no alignments, we won't have hit the != @ case in the first stdin,
     # and we won't have written the header out. Write a header if we haven't already.
     if not wrote_header:

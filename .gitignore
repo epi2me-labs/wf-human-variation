@@ -5,3 +5,4 @@ template-workflow
 .*.swo
 *.pyc
 *.pyo
+.DS_store

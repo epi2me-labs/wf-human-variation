@@ -155,9 +155,8 @@
             "properties": {
                 "sample_name": {
                     "type": "string",
-                    "default": "SAMPLE",
                     "description": "Sample name to be displayed in workflow outputs.",
-                    "help_text": "",
+                    "help_text": "When providing a MinKNOW experiment folder, the sample name must match one of the sample sub-folders in the input folder to specify which sample to analyse.",
                     "overrides": {
                         "minknow": {
                             "hint": "sampleId",
@@ -170,7 +169,7 @@
                     "type": "string",
                     "format": "path",
                     "description": "BAM or unaligned BAM (uBAM) files for the sample to use in the analysis.",
-                    "help_text": "This accepts one of two cases: (i) the path to a single BAM file; (ii) the path to a top-level directory containing BAM files. A sample name can be supplied with `--sample`.",
+                    "help_text": "This accepts one of three cases: (i) the path to a single BAM file; (ii) the path to a folder containing BAM files; (iii) the path to a MinKNOW experiment folder containing sub-folders for each sample in the experiment. For cases (i) and (ii) an optional sample name can be supplied with `--sample`. For case (iii), a sample name must be provided to select the sample for analysis from the experiment folder.",
                     "overrides": {
                         "minknow": {
                             "hint": "bamOutputDirectory",
@@ -785,6 +784,10 @@
                     "default": false,
                     "description": "Display version and exit.",
                     "fa_icon": "fas fa-question-circle",
+                    "hidden": true
+                },
+                "store_dir": {
+                    "type": "string",
                     "hidden": true
                 }
             }

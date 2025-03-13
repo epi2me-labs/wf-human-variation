@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import sys
 
-from .util import get_named_logger, wf_parser  # noqa: ABS101
+from ..util import get_named_logger, wf_parser  # noqa: ABS101
 
 
 # Common variables

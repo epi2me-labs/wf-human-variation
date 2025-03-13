@@ -11,7 +11,7 @@ variables:
                         get_genome,aggregate_all_variants,aggregate_full_align_variants,aggregate_pileup_variants,create_candidates,\
                         evaluate_candidates,get_qual_filter,makeReport,make_chunks,merge_pileup_and_full_vars,output_snp,phase_contig,\
                         pileup_variants,post_clair_phase_contig,select_het_snps,vcfStats,phase_gvcf"
-    NF_WORKFLOW_OPTS: "--snp --sv --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --clair3_model_path ${CI_PROJECT_NAME}/data/snp_demo/ont_r104_e81_sup_g5015 --phased --annotation_threads 4 --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom"
+    NF_WORKFLOW_OPTS: "--snp --sv --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --clair3_model_path ${CI_PROJECT_NAME}/data/snp_demo/ont_r104_e81_sup_g5015 --phased --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom"
     CI_FLAVOUR: "new"
     PYTEST_CONTAINER_CONFIG_KEY: "e2l_base_tag"
 
@@ -68,6 +68,8 @@ docker-run:
                 "all_unphased",
                 "snp_sv_mod_unphased",
                 "multibam",
+                "multibam-ingress-case4-fail",
+                "multibam-ingress-case4-sample_name",
                 "haplocheck_contaminated",
                 "multimods",
                 "multimods_realign",
@@ -137,6 +139,49 @@ docker-run:
               --annotation false --modkit_threads 4 \
               --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_sup@v4.0.0 \
               -c ${CI_PROJECT_NAME}/data/mm2.config"
+
+        # This takes the multibam, and uses the two samples to check that the samples explode
+        - if: $MATRIX_NAME == "multibam-ingress-case4-fail"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-somatic-variation/wf-somatic-variation-demo.tar.gz && \
+              tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && \
+              rm -f ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/*bam && \
+              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz; echo 'process { withName:minimap2_alignment { memory = '24.GB' } }' > ${CI_PROJECT_NAME}/data/mm2.config"
+              NF_PROCESS_FILES: "workflows/methyl.nf"
+              NF_IGNORE_PROCESSES: "modkit_phase,minimap2_ubam,index_ref_gzi,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf,eval_downsampling,downsampling,modkit"
+              NF_WORKFLOW_OPTS: "--snp true --sv true --mod --cnv false --str false \
+              --bed ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo.bed \
+              --bam ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/ \
+              --ref ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz \
+              --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 --bam_min_coverage 0 \
+              --annotation false --modkit_threads 4 \
+              --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_sup@v4.0.0 \
+              -c ${CI_PROJECT_NAME}/data/mm2.config"
+              ASSERT_NEXTFLOW_FAILURE: "1"
+              ASSERT_NEXTFLOW_FAILURE_REXP: "Sample sheet or sample name must be provided."
+
+        # This takes the multibam, and uses --sample_name to force one of them to be analysed
+        - if: $MATRIX_NAME == "multibam-ingress-case4-sample_name"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-somatic-variation/wf-somatic-variation-demo.tar.gz && \
+              tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && \
+              rm -f ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/*bam && \
+              mkdir -p f ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/20240213_0951_0-AN-DN__abcde123/bam_pass/normal2/ && \
+              mv ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/20240213_0951_0-AN-DN__abcde123/bam_pass/normal/*2.bam* ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/20240213_0951_0-AN-DN__abcde123/bam_pass/normal2/ && \
+              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz; echo 'process { withName:minimap2_alignment { memory = '24.GB' } }' > ${CI_PROJECT_NAME}/data/mm2.config"
+              NF_PROCESS_FILES: "workflows/methyl.nf"
+              NF_IGNORE_PROCESSES: "modkit_phase,minimap2_ubam,index_ref_gzi,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf,eval_downsampling,downsampling,modkit"
+              NF_WORKFLOW_OPTS: "--snp true --sv true --mod --cnv false --str false \
+              --bed ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/demo.bed \
+              --bam ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/ \
+              --ref ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz \
+              --sample_name 20240213_0951_0-AN-DN__abcde123 --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 --bam_min_coverage 0 \
+              --annotation false --modkit_threads 4 \
+              --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_sup@v4.0.0 \
+              -c ${CI_PROJECT_NAME}/data/mm2.config"
+              # Ensure that we have indeed only processed the 7154 reads provided in the chosen sample
+              AFTER_NEXTFLOW_CMD: >
+                grep '"Reads mapped": 7154' wf-human-variation/20240213_0951_0-AN-DN__abcde123.stats.json
 
         # This uses BAM with reads on chr6, chr20 and chrM. The chrM reads come from both HG001 and HG002, and should
         # result contaminated at the haplocheck stage.
@@ -364,7 +409,7 @@ docker-run:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom --phased --bam_min_coverage 0.00001 --annotation_threads 4"
+              NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom --phased --bam_min_coverage 0.00001"
 
         - if: $MATRIX_NAME == "wf-human-snp_modelint_unphase"
           variables:
@@ -372,14 +417,14 @@ docker-run:
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "hap,phase_contig_haplotag,post_clair_phase_contig,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,
                                     getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport,post_clair_contig_haplotag,phase_gvcf"
-              NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom --bam_min_coverage 0.00001 --annotation_threads 4"
+              NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom --bam_min_coverage 0.00001"
 
         - if: $MATRIX_NAME == "wf-human-snp_modelext"
           variables:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "phase_gvcf,hap,lookup_clair3_model,phase_contig,phase_contig_haplotag,cat_haplotagged_contigs,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --clair3_model_path ${CI_PROJECT_NAME}/data/snp_demo/ont_r104_e81_sup_g5015 --phased --bam_min_coverage 0.00001 --annotation_threads 4"
+              NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --clair3_model_path ${CI_PROJECT_NAME}/data/snp_demo/ont_r104_e81_sup_g5015 --phased --bam_min_coverage 0.00001"
 
         - if: $MATRIX_NAME == "wf-human-snp_covblock"
           variables:
@@ -399,21 +444,21 @@ docker-run:
                                     get_genome,aggregate_all_variants,aggregate_full_align_variants,aggregate_pileup_variants,create_candidates,\
                                     evaluate_candidates,get_qual_filter,makeReport,make_chunks,merge_pileup_and_full_vars,output_snp,phase_contig,\
                                     pileup_variants,post_clair_phase_contig,select_het_snps,vcfStats,phase_gvcf"
-              NF_WORKFLOW_OPTS: "--snp --sv --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --clair3_model_path ${CI_PROJECT_NAME}/data/snp_demo/ont_r104_e81_sup_g5015 --phased --annotation_threads 4 --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom"
+              NF_WORKFLOW_OPTS: "--snp --sv --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --clair3_model_path ${CI_PROJECT_NAME}/data/snp_demo/ont_r104_e81_sup_g5015 --phased --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom"
 
         - if: $MATRIX_NAME == "wf-human-sv"
           variables:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-sv/demo_data.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
               NF_PROCESS_FILES: "modules/local/wf-human-sv.nf"
               NF_IGNORE_PROCESSES: "getAllChromosomesBed,minimap2_alignment,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf"
-              NF_WORKFLOW_OPTS: "--snp false --sv --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/demo_data/test.bam --ref ${CI_PROJECT_NAME}/data/demo_data/chr20_human_g1k_v37_part.fasta.gz --bed ${CI_PROJECT_NAME}/data/demo_data/target.bed --tr_bed ${CI_PROJECT_NAME}/data/demo_data/human_hs37d5.trf.bed --bam_min_coverage 0.00001 --annotation_threads 4"
+              NF_WORKFLOW_OPTS: "--snp false --sv --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/demo_data/test.bam --ref ${CI_PROJECT_NAME}/data/demo_data/chr20_human_g1k_v37_part.fasta.gz --bed ${CI_PROJECT_NAME}/data/demo_data/target.bed --tr_bed ${CI_PROJECT_NAME}/data/demo_data/human_hs37d5.trf.bed --bam_min_coverage 0.00001"
 
         - if: $MATRIX_NAME == "wf-human-sv-phase"
           variables:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
               NF_PROCESS_FILES: "modules/local/wf-human-sv.nf"
               NF_IGNORE_PROCESSES: "getAllChromosomesBed,minimap2_alignment,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf"
-              NF_WORKFLOW_OPTS: "--mod false --cnv false --str false --sv true --snp true --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --clair3_model_path ${CI_PROJECT_NAME}/data/snp_demo/ont_r104_e81_sup_g5015 --annotation_threads 4 --phased"
+              NF_WORKFLOW_OPTS: "--mod false --cnv false --str false --sv true --snp true --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --clair3_model_path ${CI_PROJECT_NAME}/data/snp_demo/ont_r104_e81_sup_g5015 --phased"
 
         - if: $MATRIX_NAME == "wf-human-cnv-spectre"
           variables:
@@ -461,7 +506,7 @@ docker-run:
               NF_IGNORE_PROCESSES: "minimap2_ubam,index_ref_gzi,getGenome,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,eval_downsampling,downsampling,compress_bed,modkit_phase,annotate_vcf"
               NF_WORKFLOW_OPTS: "--snp false --sv false --mod --annotation false --bam ${CI_PROJECT_NAME}/data/demo_data/demo.bam --ref ${CI_PROJECT_NAME}/data/demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz \
               --sample_name HOOT --ubam_map_threads 2 --ubam_sort_threads 1 \
-              --ubam_bam2fq_threads 1 --bam_min_coverage 0 --skip_annotation \
+              --ubam_bam2fq_threads 1 --bam_min_coverage 0 \
               --downsample_coverage --downsample_coverage_target 10 --modkit_threads 4"
 
         - if: $MATRIX_NAME == "str-usersex"
@@ -562,21 +607,21 @@ aws-run:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/snp_demo/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
               NF_PROCESS_FILES: "modules/local/wf-human-cnv-qdnaseq.nf"
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --use_qdnaseq --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --bin_size 500 --bam_min_coverage 0.00001 --downsample_coverage --downsample_coverage_target 20"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --use_qdnaseq --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --qdnaseq_bin_size 500 --bam_min_coverage 0.00001 --downsample_coverage --downsample_coverage_target 20"
 
         - if: $MATRIX_NAME == "wf-human-cnv-skip-downsample"
           variables:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/snp_demo/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
               NF_PROCESS_FILES: "modules/local/wf-human-cnv-qdnaseq.nf"
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --use_qdnaseq --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --bin_size 500 --bam_min_coverage 0.00001 --downsample_coverage --downsample_coverage_target 1000 --igv"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --use_qdnaseq --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --qdnaseq_bin_size 500 --bam_min_coverage 0.00001 --downsample_coverage --downsample_coverage_target 1000 --igv"
 
         - if: $MATRIX_NAME == "wf-human-cnv-ubam-to-bam"
           variables:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-cnv/demo_data.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
               NF_PROCESS_FILES: "modules/local/wf-human-cnv-qdnaseq.nf"
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --use_qdnaseq --str false --bam ${CI_PROJECT_NAME}/data/demo_data/test.ubam --ref ${CI_PROJECT_NAME}/data/demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz --bin_size 500 --bam_min_coverage 0.00001"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --use_qdnaseq --str false --bam ${CI_PROJECT_NAME}/data/demo_data/test.ubam --ref ${CI_PROJECT_NAME}/data/demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz --qdnaseq_bin_size 500 --bam_min_coverage 0.00001"
 
 macos-run:
   # Let's avoid those ARM64 runners for now

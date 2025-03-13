@@ -9,14 +9,6 @@ repos:
         pass_filenames: false
         additional_dependencies:
           - epi2melabs==0.0.57
-      - id: build_models
-        name: build_models
-        entry: datamodel-codegen --strict-nullable --base-class workflow_glue.results_schema_helpers.BaseModel --use-subclass-enum --use-schema-description --disable-timestamp --input results_schema.yml --input-file-type openapi --output bin/workflow_glue/results_schema.py
-        language: python
-        files: 'results_schema.yml'
-        pass_filenames: false
-        additional_dependencies:
-          - datamodel-code-generator
   - repo: https://github.com/pycqa/flake8
     rev: 5.0.4
     hooks:
@@ -37,5 +29,5 @@ repos:
             "--import-order-style=google",
             "--statistics",
             "--max-line-length=88",
-            "--extend-exclude=bin/workflow_glue/results_schema.py",
+            "--per-file-ignores=bin/workflow_glue/models/*:NT001",
         ]

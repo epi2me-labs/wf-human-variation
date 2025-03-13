@@ -5,7 +5,7 @@ import sys
 
 import pandas as pd
 
-from .util import get_named_logger, wf_parser  # noqa: ABS101
+from ..util import get_named_logger, wf_parser  # noqa: ABS101
 
 
 def main(args):
