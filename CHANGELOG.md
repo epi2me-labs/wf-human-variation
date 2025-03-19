@@ -23,6 +23,7 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
 - Spectre VCFs hardcoded to use GRCh38/hg38 annotations from SnpEff, even when the sample's genome build was GRCh37/hg19, resulting in annotation errors.
 ### Removed
 - Duplicate `getParams` processes in subworkflows.
+- Spurious OPTIONAL_FILE file in output directory.
 
 ## [v2.6.0]
 ### Changed

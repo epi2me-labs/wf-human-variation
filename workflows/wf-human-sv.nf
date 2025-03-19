@@ -32,10 +32,10 @@ workflow bam {
 
         // benchmark
         if (params.sv_benchmark) {
-            benchmark_result = runBenchmark(called.vcf, reference, target)
+            maybe_benchmark_result = runBenchmark(called.vcf, reference, target)
         }
         else {
-            benchmark_result = Channel.fromPath(optional_file)
+            maybe_benchmark_result = Channel.empty()
         }
 
         if (!params.annotation) {
@@ -43,7 +43,7 @@ workflow bam {
 
             report = runReport(
                 called.vcf.groupTuple(),
-                benchmark_result,
+                maybe_benchmark_result.ifEmpty(optional_file),
                 workflow_params
             )
         }
@@ -54,7 +54,7 @@ workflow bam {
             final_vcf = annotate_sv_vcf(vcf_for_annotation, genome_build, "sv").annot_vcf
             report = runReport(
                 final_vcf.map{meta, vcf, tbi -> [meta, vcf]}.groupTuple(),
-                benchmark_result,
+                maybe_benchmark_result.ifEmpty(optional_file),
                 workflow_params
             )
         }
@@ -63,7 +63,7 @@ workflow bam {
         sv_stats_json = report.json
         report = report.html.concat(
             final_vcf.map{meta, vcf, tbi -> [vcf, tbi]},
-            benchmark_result
+            maybe_benchmark_result
         )
     
     emit:
