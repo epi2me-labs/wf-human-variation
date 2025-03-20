@@ -602,12 +602,13 @@ process aggregate_all_variants{
 }
 
 
+// observed refine_with_sv exiting 1 (rather than 137) when cgroups kill the samtools process forked from clair3.py
 process refine_with_sv {
     label "wf_human_snp"
     cpus 4
     memory { 8.GB * task.attempt - 1.GB }
     maxRetries 1
-    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
+    errorStrategy = {task.exitStatus in [1,137,140] ? 'retry' : 'finish'}
 
     input:
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH) 
@@ -616,16 +617,17 @@ process refine_with_sv {
         path(sniffles_vcf)
     output:
         tuple val(xam_meta), path("${xam_meta.alias}.${contig}.wf_snp.vcf.gz"), path("${xam_meta.alias}.${contig}.wf_snp.vcf.gz.tbi"), emit: vcf
-    shell:
-        '''
-        pypy $(which clair3.py) SwitchZygosityBasedOnSVCalls \\
-            --bam_fn !{xam} \\
-            --clair3_vcf_input clair.vcf.gz \\
-            --sv_vcf_input !{sniffles_vcf} \\
-            --vcf_output "!{xam_meta.alias}.!{contig}.wf_snp.vcf" \\
-            --threads !{task.cpus} \\
-            --ctg_name '!{contig}'
-        '''
+    script:
+        def pool_threads = Math.max(task.cpus - 1, 1)
+        """
+        pypy \$(which clair3.py) SwitchZygosityBasedOnSVCalls \
+            --bam_fn ${xam} \
+            --clair3_vcf_input clair.vcf.gz \
+            --sv_vcf_input ${sniffles_vcf} \
+            --vcf_output "${xam_meta.alias}.${contig}.wf_snp.vcf" \
+            --threads ${pool_threads} \
+            --ctg_name '${contig}'
+        """
 }
 
 /*

@@ -403,11 +403,13 @@ process getVersions {
 }
 
 
+// use -XX:ActiveProcessorCount to avoid GC threads overconsuming our proms
+// the JVM should be docker aware .. but sometimes isnt
 process annotate_vcf {
     // use SnpEff to generate basic functional annotations,
     // followed by SnpSift annotate to add ClinVar annotations
     label "snpeff_annotation"
-    cpus 1
+    cpus 2
     memory 6.GB
     input:
         tuple val(xam_meta), path("input.vcf.gz"), path("input.vcf.gz.tbi"), val(contig)
@@ -448,10 +450,10 @@ process annotate_vcf {
         fi
 
         # Revert back chrMT to chrM
-        snpEff -Xmx!{task.memory.giga - 1}g ann -noStats -noLog $snpeff_db ${INPUT_FILENAME} | sed 's/^chrMT\\t/chrM\\t/' > !{xam_meta.alias}.intermediate.snpeff_annotated.vcf
+        snpEff -XX:ActiveProcessorCount=!{task.cpus} -Xmx!{task.memory.giga - 1}g ann -noStats -noLog $snpeff_db ${INPUT_FILENAME} | sed 's/^chrMT\\t/chrM\\t/' > !{xam_meta.alias}.intermediate.snpeff_annotated.vcf
 
         # Add ClinVar annotations
-        SnpSift annotate $clinvar_vcf !{xam_meta.alias}.intermediate.snpeff_annotated.vcf | bgzip > !{xam_meta.alias}.wf_${OUTPUT_LABEL}.vcf.gz
+        SnpSift -XX:ActiveProcessorCount=!{task.cpus} annotate $clinvar_vcf !{xam_meta.alias}.intermediate.snpeff_annotated.vcf | bgzip > !{xam_meta.alias}.wf_${OUTPUT_LABEL}.vcf.gz
         tabix !{xam_meta.alias}.wf_${OUTPUT_LABEL}.vcf.gz
 
         # tidy up

@@ -21,6 +21,8 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
 - Failed to populate references during extract_not_haplotagged_contigs when running offline.
 - Typo in README and log where `override_basecaller_cfg` was mistakenly referred to as `override_basecall_cfg` (@flokraft85, #240).
 - Spectre VCFs hardcoded to use GRCh38/hg38 annotations from SnpEff, even when the sample's genome build was GRCh37/hg19, resulting in annotation errors.
+- Reduced load of concurrent workflows on machines with many CPUs when running with `--annotation`.
+- Decremented threads assigned to refine_with_sv to account for overhead that led to crashes when running many tasks simultaneously.
 ### Removed
 - Duplicate `getParams` processes in subworkflows.
 - Spurious OPTIONAL_FILE file in output directory.
