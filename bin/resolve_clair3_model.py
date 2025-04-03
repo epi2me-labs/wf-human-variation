@@ -67,6 +67,6 @@ with open(args.model_tsv) as tsv:
                 "because the basecaller configuration has not been recognised."
             ),
             advice=(
-                "Check your --basecaller_cfg has been provided correctly. "
+                "Check your --override_basecaller_cfg has been provided correctly. "
             ),
         )

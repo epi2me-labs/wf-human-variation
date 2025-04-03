@@ -190,7 +190,7 @@ docker-run:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "modkit_phase,getVersions,getParams,failedQCReport,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod true --cnv false --str false --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/demo_chr6_chr20_chrM_unmap.bam --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta --bed ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.bed --bam_min_coverage 0 --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v4.2.0 --haplocheck --annotation false"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod true --cnv false --str false --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/demo_chr6_chr20_chrM_unmap.bam --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta --bed ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.bed --bam_min_coverage 0 --haplocheck --annotation false"
 
         # This process tests all subworkflows, and also requests phasing.
         - if: $MATRIX_NAME == "all_phased"
@@ -357,7 +357,7 @@ docker-run:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "modkit_phase,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod true --cnv false --str false --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta --bam_min_coverage 0 --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v5.0.0 --annotation false"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod true --cnv false --str false --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta --bam_min_coverage 0 --annotation false"
 
         # Realign an aligned BAM [CW-4104]
         - if: $MATRIX_NAME == "multimods_realign"
@@ -365,7 +365,7 @@ docker-run:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/; wget -q -O ${CI_PROJECT_NAME}/data/human_g1k_v37.6_20_MT.fasta https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/ref/human_g1k_v37.6_20_MT.fasta; echo 'process { withName:minimap2_alignment { memory = '24.GB' } }' > ${CI_PROJECT_NAME}/data/mm2.config"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "modkit_phase,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod true --cnv false --str false --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam --ref ${CI_PROJECT_NAME}/data/human_g1k_v37.6_20_MT.fasta --bam_min_coverage 0 --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v5.0.0 --annotation false --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 -c ${CI_PROJECT_NAME}/data/mm2.config"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod true --cnv false --str false --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam --ref ${CI_PROJECT_NAME}/data/human_g1k_v37.6_20_MT.fasta --bam_min_coverage 0 --annotation false --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1 -c ${CI_PROJECT_NAME}/data/mm2.config"
 
         # This process checks the use with multiple modified bases concurrently, and using phase information.
         - if: $MATRIX_NAME == "multimods_phase"
@@ -373,7 +373,7 @@ docker-run:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod true --cnv false --str false --phased --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta --bam_min_coverage 0 --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac@v5.0.0 --annotation false"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod true --cnv false --str false --phased --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta --bam_min_coverage 0 --annotation false"
 
         # This uses the Spectre dataset, that contains the mt genome, and should therefore run
         # haplocheck.

@@ -23,6 +23,8 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
 - Spectre VCFs hardcoded to use GRCh38/hg38 annotations from SnpEff, even when the sample's genome build was GRCh37/hg19, resulting in annotation errors.
 - Reduced load of concurrent workflows on machines with many CPUs when running with `--annotation`.
 - Decremented threads assigned to refine_with_sv to account for overhead that led to crashes when running many tasks simultaneously.
+- "Input data problem" error necessitating use of the override_basecaller_cfg option when alignment is performed, relevant metadata from the input XAM header is now retained after alignment ensuring that the basecaller configuration is automatically detected.
+- Incorrect error message in lookup_clair3_model advising use of --basecaller_cfg has been updated to --override_basecaller_cfg
 ### Removed
 - Duplicate `getParams` processes in subworkflows.
 - Spurious OPTIONAL_FILE file in output directory.
