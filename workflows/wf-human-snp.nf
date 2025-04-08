@@ -11,13 +11,13 @@ include {
     evaluate_candidates;
     aggregate_full_align_variants;
     merge_pileup_and_full_vars;
-    post_clair_phase_contig;
     post_clair_contig_haplotag;
     aggregate_all_variants;
     phase_gvcf;
     hap;
     getVersions;
     makeReport;
+    post_clair_phase_contig;
 } from "../modules/local/wf-human-snp.nf"
 
 include {
@@ -171,11 +171,11 @@ workflow snp {
                 .combine(reorg_bam_channel, by: 0)
                 .combine(ref) |
                 post_clair_phase_contig
-            post_clair_phase.vcf
-                .map { meta, vcf, tbi -> [meta, vcf] }
-                .set { final_vcfs }
             post_clair_phase.for_tagging | post_clair_contig_haplotag
-
+            // Get final vcfs which are haplotagphased
+            // adding phase information to indels based on haplotagged reads
+            final_vcfs = post_clair_contig_haplotag.out.haplotagphased_vcf.map{ meta, vcf, tbi -> [meta, vcf]}
+     
             // intermediate ctg BAMs can flow to STR
             haplotagged_ctg_bams = post_clair_contig_haplotag.out.phased_bam
 

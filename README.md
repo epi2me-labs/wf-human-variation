@@ -296,7 +296,7 @@ The workflow will select an appropriate Clair3 model by detecting the basecall m
 If the input data does not have the required information to determine the basecall model, the workflow will require the basecall model to be provided explicitly with the `--override_basecaller_cfg` option.
 This workflow takes advantage of the parallel nature of Nextflow, providing optimal efficiency in high-performance, distributed systems. The workflow will automatically call small variants (SNPs and indels), collect statistics, annotate them with [SnpEff](https://pcingola.github.io/SnpEff/) (and additionally for SNPs, ClinVar details), and create a report summarising the findings.
 
-If desired, the workflow can perform phasing of structural variants by using the `--phased` option. This will lead the workflow to use [whatshap](https://whatshap.readthedocs.io/) to perform phasing of the variants, with the option to use [longphase](https://github.com/twolinin/longphase) instead by setting `--use_longphase true`. The phasing will also generate a GFF file with the annotation of the phase blocks, enabling the visualisation of these blocks in genome browsers.
+If desired, the workflow can perform phasing of structural variants by using the `--phased` option. The workflow will use [whatshap](https://whatshap.readthedocs.io/) to perform phasing of the variants. Phasing will also generate a GFF file with the annotation of the phase blocks, enabling the visualisation of these blocks in genome browsers.
 
 ### 4. Structural variant (SV) calling with Sniffles2
 
@@ -331,7 +331,7 @@ In addition to a gzipped VCF file containing STRs found in the dataset, the work
 
 ### 8. Phasing variants
 Variant phasing is switched on simply using the `--phased` option.
-By default, the workflow uses [whatshap](https://whatshap.readthedocs.io/) to perform phasing of the variants, with the option to use [longphase](https://github.com/twolinin/longphase) instead by setting `--use_longphase true`.
+The workflow uses [whatshap](https://whatshap.readthedocs.io/) to perform phasing of the variants. The workflow will also add phase information to variants based on haplotagged reads using [whatshap haplotagphase](https://whatshap.readthedocs.io/en/latest/guide.html#whatshap-haplotagphase).
 The workflow will automatically turn on the necessary phasing processes based on the selected subworkflows.
 The behaviour of the phasing is summarised in the below table:
 

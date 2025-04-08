@@ -196,6 +196,7 @@ process phase_contig {
     //   the original BAM and BAI as phased_bam for compatability,
     //   but adds the VCF as it is now tagged with phasing information
     //   used later in the full-alignment model
+    label "longphase"
     cpus 4
     memory { longphase_memory[task.attempt - 1] }
     maxRetries 2
@@ -466,9 +467,9 @@ process merge_pileup_and_full_vars{
 process post_clair_phase_contig {
     // Phase VCF for a contig
     // CW-2383: now uses base image to allow phasing of both snps and indels
-    cpus { params.use_longphase ? 4 : 1}
+    cpus 1
     // Define memory from phasing tool and number of attempt
-    memory { params.use_longphase ? longphase_memory[task.attempt - 1] : whatshap_memory[task.attempt - 1] }
+    memory { whatshap_memory[task.attempt - 1] }
     maxRetries 2
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
 
@@ -478,7 +479,7 @@ process post_clair_phase_contig {
             path(xam), path(xam_idx),
             path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
-        tuple val(xam_meta),
+        tuple val(xam_meta), val(contig),
             path("phased_${contig}.vcf.gz"), path("phased_${contig}.vcf.gz.tbi"),
             emit: vcf
         tuple val(contig),
@@ -487,15 +488,6 @@ process post_clair_phase_contig {
             path(ref), path(ref_idx), path(ref_cache), env(REF_PATH),
             emit: for_tagging
     script:
-    if (params.use_longphase)
-        """
-        echo "Using longphase for phasing"
-        longphase phase --ont -o phased_${contig} \
-            -s ${vcf} -b ${xam} -r ${ref} -t ${task.cpus}
-        bgzip phased_${contig}.vcf
-        tabix -f -p vcf phased_${contig}.vcf.gz
-    """
-    else
     """
         # REF_PATH points to the reference cache and allows faster parsing of CRAM files
         echo "Using whatshap for phasing"
@@ -526,20 +518,26 @@ process post_clair_contig_haplotag {
 
     input:
         tuple val(contig),
-            path(vcf), path(tbi),
+            path("phased_contig.vcf.gz"), path("phased_contig.vcf.gz.tbi"),
             path(xam), path(xam_idx), val(xam_meta),
             path(ref), path(ref_idx), path(ref_cache), env(REF_PATH)
     output:
         tuple val(xam_meta), val(contig), path("${contig}_hp.bam"), path("${contig}_hp.bam.bai"), emit: phased_bam
+        tuple val(xam_meta),
+            path("phased.${contig}.haplotagphased.vcf.gz"),
+            path("phased.${contig}.haplotagphased.vcf.gz.tbi"), emit: haplotagphased_vcf
     script:
     """
     whatshap haplotag \
         --reference ${ref} \
         --ignore-read-groups \
         --regions ${contig} \
-        phased_${contig}.vcf.gz \
+        phased_contig.vcf.gz \
         ${xam} \
     | samtools view -O bam --reference $ref -@3 -o ${contig}_hp.bam##idx##${contig}_hp.bam.bai --write-index
+    whatshap haplotagphase --ignore-read-groups --only-indels -o "phased.${contig}.haplotagphased.vcf" --reference ${ref} "phased_contig.vcf.gz" "${contig}_hp.bam"
+    bgzip "phased.${contig}.haplotagphased.vcf"
+    tabix -f -p vcf "phased.${contig}.haplotagphased.vcf.gz"
     """
 }
 
