@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [unreleased]
 This version does not impact accuracy.
 This version does not impact performance, save for an improvement to alignment speed using the high quality long read minimap2 preset.
@@ -16,6 +17,9 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
 - Analysis outputs of a single BAM file, or single folder of BAM files will no longer be prefixed with SAMPLE and will instead use part of the input BAM file name or BAM folder, respectively.
     - To maintain previous behaviour, users may set `--sample_name SAMPLE`.
 - Updated alignment to use the high quality long read preset (-x lr:hq) to reduce mapping time.
+- Update whatshap v2.0.0 to v2.3.0 to enable use of haplotagphase.
+### Added
+- Add whatshap haplotagphase step to add phase information to indels based on haplotagged reads.
 - ClinVar output VCF file from the SNP subworkflow is compressed and indexed.
 ### Fixed
 - Failed to populate references during extract_not_haplotagged_contigs when running offline.
@@ -28,6 +32,7 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
 ### Removed
 - Duplicate `getParams` processes in subworkflows.
 - Spurious OPTIONAL_FILE file in output directory.
+- The discouraged `--use_longphase` parameter has now been removed, it is no longer possible to override the workflow to use longphase instead of the default whatshap for final variant phasing.
 
 ## [v2.6.0]
 ### Changed
@@ -38,6 +43,7 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
 - Incorrect median quality score reported in stats.json.
 
 ## [v2.5.1]
+### Changed
 - Hidden additional options in MinKNOW for a simplified user experience.
 
 ## [v2.5.0]

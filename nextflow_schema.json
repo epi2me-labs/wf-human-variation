@@ -400,13 +400,6 @@
                 }
             },
             "properties": {
-                "use_longphase": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Use longphase for final phasing of output variants (experimental).",
-                    "hidden": true,
-                    "help_text": "The default behaviour of the workflow is to use [whatshap](https://whatshap.readthedocs.io/) for the variant phasing. If set to true, the workflow will execute [longphase](https://github.com/twolinin/longphase) instead."
-                },
                 "clair3_model_path": {
                     "type": "string",
                     "format": "directory-path",
