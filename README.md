@@ -20,7 +20,7 @@ The wf-human-variation workflow consolidates the small variant calling from the 
 This pipeline performs the steps of the four pipelines simultaneously and the results are generated and output in the same
 way as they would have been had the pipelines been run separately.
 
-Please note, the tools embedded in individual sub-workflows within wf-human-variation are intended for use with 20x whole-genome Oxford Nanopore Technologies sequencing data (with the exception of QDNAseq, please see [this section](#6b-copy-number-variants-cnv-calling-with-qdnaseq) for more information). Usage outside of this (e.g. with adaptive sampling data, or using lower coverage inputs) may cause the workflow to terminate with an error, or produce unexpected results.
+The tools embedded in individual sub-workflows within wf-human-variation are specifically designed for use with whole-genome Oxford Nanopore Technologies sequencing data. While 20x average coverage is the absolute minimum requirement for the workflow to run, we recommend an average coverage above 30x to ensure optimal performance. Usage below the minimum coverage may cause the workflow to terminate with an error, or yield unexpected outcomes.
 
 
 
