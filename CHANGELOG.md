@@ -17,7 +17,7 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
 - Analysis outputs of a single BAM file, or single folder of BAM files will no longer be prefixed with SAMPLE and will instead use part of the input BAM file name or BAM folder, respectively.
     - To maintain previous behaviour, users may set `--sample_name SAMPLE`.
 - Updated alignment to use the high quality long read preset (-x lr:hq) to reduce mapping time.
-- Update whatshap v2.0.0 to v2.3.0 to enable use of haplotagphase.
+- Update whatshap v2.0.0 to v2.5.0 to enable use of haplotagphase.
 - Updated documentation to clarify input requirements for the workflow.
 ### Added
 - Add whatshap haplotagphase step to add phase information to indels based on haplotagged reads.
