@@ -969,8 +969,10 @@ workflow {
     publish_artifact(
         // emit bams with the "to_align" meta tag
         // but only if haplotagging is not on
+        // drop meta which otherwise creates a spurious input.1 file
         bam_channel
         | filter( { it[2].to_align && !run_haplotagging} )
+        | map { xam, xai, meta -> [xam, xai] }
         // Emit fasta or fai if they were changed from the input
         // (i.e. decompressed for fasta, generated for the fai)
         | mix(
