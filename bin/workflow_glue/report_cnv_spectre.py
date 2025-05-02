@@ -48,6 +48,10 @@ def argparser():
     parser.add_argument(
         '-o', '--output', required=True, dest="output_report",
         help="Output report")
+    parser.add_argument(
+        '--genome_build',
+        help="Genome build of the sample"
+    )
 
     return parser
 
@@ -115,7 +119,12 @@ def make_report(params, versions, cnv_df, args):
                 if row['size'] > 5000000:
                     genes_in_region = "Unavailable"
                 else:
-                    ensembl = "https://rest.ensembl.org/overlap/region/human/"
+                    if args.genome_build == "hg19":
+                        ensembl = (
+                            "https://grch37.rest.ensembl.org/overlap/region/human/"
+                        )
+                    else:
+                        ensembl = "https://rest.ensembl.org/overlap/region/human/"
                     region = f"{row['chr']}:{row['start']}-{row['end']}"
                     options = "?feature=gene;content-type=text/x-gff3"
                     genes_in_region = f"""

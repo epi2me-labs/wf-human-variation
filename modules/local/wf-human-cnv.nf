@@ -77,6 +77,7 @@ process makeReport {
         path "params.json"
         tuple val(xam_meta), path(cnv_bed)
         tuple val(xam_meta), path(karyotype)
+        val genome_build
     output:
         path("*wf-human-cnv-report.html")
     script:
@@ -89,7 +90,8 @@ process makeReport {
             --cnv_bed ${cnv_bed} \
             --karyotype ${karyotype} \
             -o $report_name \
-            --workflow_version ${workflow.manifest.version}
+            --workflow_version ${workflow.manifest.version} \
+            --genome_build $genome_build
         """
 
 }
