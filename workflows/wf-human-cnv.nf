@@ -53,7 +53,7 @@ workflow cnv {
         software_versions_tmp = getVersions()
         software_versions = add_snp_tools_to_versions(software_versions_tmp)
         if (params.output_report){
-            report = makeReport(software_versions.collect(), workflow_params, spectre_bed, spectre_karyotype)
+            report = makeReport(software_versions.collect(), workflow_params, spectre_bed, spectre_karyotype, genome_build)
         } else {
             report = Channel.empty()
         }
