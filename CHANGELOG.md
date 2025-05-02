@@ -19,6 +19,7 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
 - Updated alignment to use the high quality long read preset (-x lr:hq) to reduce mapping time.
 - Update whatshap v2.0.0 to v2.5.0 to enable use of haplotagphase.
 - Updated documentation to clarify input requirements for the workflow.
+- ClinVar version in SnpEff container updated to version 20250429.
 ### Added
 - Add whatshap haplotagphase step to add phase information to indels based on haplotagged reads.
 - ClinVar output VCF file from the SNP subworkflow is compressed and indexed.
