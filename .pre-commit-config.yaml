@@ -8,7 +8,7 @@ repos:
         always_run: true
         pass_filenames: false
         additional_dependencies:
-          - epi2melabs==0.0.57
+          - epi2melabs==0.0.58
   - repo: https://github.com/pycqa/flake8
     rev: 5.0.4
     hooks:
