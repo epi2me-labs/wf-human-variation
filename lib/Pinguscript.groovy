@@ -48,13 +48,6 @@ class Pinguscript {
         String paramsJSON = new JsonBuilder(params).toPrettyString()
         def params_data = new JsonSlurper().parseText(paramsJSON)
 
-        // hostname
-        def host = null
-        try {
-            host = InetAddress.getLocalHost().getHostName()
-        }
-        catch(Exception e) {}
-
         // OS
         // TODO check version on WSL
         def opsys = System.properties['os.name'].toLowerCase()
@@ -103,7 +96,7 @@ class Pinguscript {
         body_json \
             "tracking_id": [
                 "msg_id": UUID.randomUUID().toString(),
-                "version": "3.0.0"
+                "version": "3.0.1"
             ],
             "source": "workflow",
             "event": event,
@@ -123,7 +116,6 @@ class Pinguscript {
             ],
             "env": [
                 "user": user, // placeholder for any future okta
-                "hostname": host,
                 "os": [
                     "name": opsys,
                     "version": opver

@@ -326,14 +326,16 @@ class NfcoreTemplate {
         String workflow_version = version(workflow)
         String.format(
             """
-            ${colors.igreen}||||||||||   ${colors.reset}${colors.dim}_____ ____ ___ ____  __  __ _____      _       _
-            ${colors.igreen}||||||||||  ${colors.reset}${colors.dim}| ____|  _ \\_ _|___ \\|  \\/  | ____|    | | __ _| |__  ___
-            ${colors.yellow}|||||       ${colors.reset}${colors.dim}|  _| | |_) | |  __) | |\\/| |  _| _____| |/ _` | '_ \\/ __|
-            ${colors.yellow}|||||       ${colors.reset}${colors.dim}| |___|  __/| | / __/| |  | | |__|_____| | (_| | |_) \\__ \\
-            ${colors.iblue}||||||||||  ${colors.reset}${colors.dim}|_____|_|  |___|_____|_|  |_|_____|    |_|\\__,_|_.__/|___/
+            ${colors.igreen}||||||||||   ${colors.reset}${colors.dim}_____ ____ ___ ____  __  __ _____
+            ${colors.igreen}||||||||||  ${colors.reset}${colors.dim}| ____|  _ \\_ _|___ \\|  \\/  | ____|
+            ${colors.yellow}|||||       ${colors.reset}${colors.dim}|  _| | |_) | |  __) | |\\/| |  _|
+            ${colors.yellow}|||||       ${colors.reset}${colors.dim}| |___|  __/| | / __/| |  | | |__
+            ${colors.iblue}||||||||||  ${colors.reset}${colors.dim}|_____|_|  |___|_____|_|  |_|_____|
             ${colors.iblue}||||||||||  ${colors.reset}${colors.bold}${workflow_name} ${workflow_version}${colors.reset}
             ${NfcoreTemplate.dashedLine(monochrome_logs)}
             """.stripIndent()
         )
     }
 }
+
+

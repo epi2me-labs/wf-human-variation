@@ -20,6 +20,9 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
 - Update whatshap v2.0.0 to v2.5.0 to enable use of haplotagphase.
 - Updated documentation to clarify input requirements for the workflow.
 - ClinVar version in SnpEff container updated to version 20250429.
+- Updated to wf-template v5.6.0, changing:
+    - Reduce verbosity of debug logging from fastcat which can occasionally occlude errors found in FASTQ files during ingress.
+    - Log banner art to say "EPI2ME" instead of "EPI2ME Labs" to match current branding. This has no effect on the workflow outputs.
 ### Added
 - Add whatshap haplotagphase step to add phase information to indels based on haplotagged reads.
 - ClinVar output VCF file from the SNP subworkflow is compressed and indexed.
@@ -33,6 +36,10 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
 - Incorrect error message in lookup_clair3_model advising use of --basecaller_cfg has been updated to --override_basecaller_cfg
 - Spectre CNV calls on GRCh37/hg19 now use correct Ensembl REST API endpoint for annotation.
 - Regression that caused emitting nonsense `input.1` file.
+- Updated to wf-template v5.6.0, fixing:
+    - dacite.exceptions.WrongTypeError during report generation when barcode is null.
+    - Sequence summary read length N50 incorrectly displayed minimum read length, it now correctly shows the N50.
+    - Sequence summary component alignment and coverage plots failed to plot under some conditions.
 ### Removed
 - Duplicate `getParams` processes in subworkflows.
 - Spurious OPTIONAL_FILE file in output directory.
