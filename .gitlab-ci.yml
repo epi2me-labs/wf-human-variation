@@ -103,7 +103,7 @@ docker-run:
         #   being incorrectly scheduled for "detached merge request pipelines" etc.
         - if: ($CI_COMMIT_BRANCH == null || $CI_COMMIT_BRANCH == "dev-template")
           when: never
-        
+
         # This test tries to run with a missing ref, and fails with an expected error.
         - if: $MATRIX_NAME == "missing-ref"
           variables:
@@ -128,7 +128,8 @@ docker-run:
           variables:
               NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-somatic-variation/wf-somatic-variation-demo.tar.gz && \
               tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && \
-              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz; echo 'process { withName:minimap2_alignment { memory = '24.GB' } }' > ${CI_PROJECT_NAME}/data/mm2.config"
+              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz; echo 'process { withName:minimap2_alignment { memory = '24.GB' } }' > ${CI_PROJECT_NAME}/data/mm2.config && \
+              wget -q -O ${CI_PROJECT_NAME}/data/wf-somatic-variation-demo/20240213_0951_0-AN-DN__abcde123/bam_pass/normal/unmapped.bam https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/misc/giab_2025.01-HG002-PAW70337.unmapped.bam"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "modkit_phase,minimap2_ubam,index_ref_gzi,get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,annotate_vcf,eval_downsampling,downsampling,modkit"
               NF_WORKFLOW_OPTS: "--snp true --sv true --mod --cnv false --str false \
@@ -139,6 +140,10 @@ docker-run:
               --annotation false --modkit_threads 4 \
               --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_sup@v4.0.0 \
               -c ${CI_PROJECT_NAME}/data/mm2.config"
+              AFTER_NEXTFLOW_CMD: >
+                grep '"Reads mapped": 7154' wf-human-variation/HOOT.stats.json &&
+                grep '"Unmapped reads": 9' wf-human-variation/HOOT.stats.json &&
+                grep '"Reads mapped (%)": 99\.87' wf-human-variation/HOOT.stats.json
 
         # This takes the multibam, and uses the two samples to check that the samples explode
         - if: $MATRIX_NAME == "multibam-ingress-case4-fail"
