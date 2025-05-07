@@ -139,7 +139,10 @@ process readStats {
     script:
         def view_threads = Math.max(task.cpus - 2, 1)
         """
-        samtools view --threads ${view_threads} -u -h -L ${target_bed} ${xam} | bamstats \
+        # append dummy "unmapped" region to BED
+        { cat ${target_bed}; echo '* 0 0'; } > target_incl_unmapped.bed
+        samtools view --threads ${view_threads} -u -h --regions-file target_incl_unmapped.bed ${xam} \
+        | bamstats \
             -s ${xam_meta.alias} \
             -i ${xam_meta.alias}.per-file-runids.txt \
             -l ${xam_meta.alias}.basecallers.tsv \
