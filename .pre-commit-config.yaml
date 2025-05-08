@@ -24,6 +24,8 @@ repos:
           - flake8-builtins
           - flake8-absolute-import
           - flake8-print
+          # avoid snowballstemmer>=3.0 as it causes flake8-docstrings to stop working [CW-6098]
+          - snowballstemmer==2.2.0
         args: [
             "bin",
             "--import-order-style=google",
