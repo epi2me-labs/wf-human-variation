@@ -18,7 +18,7 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
     - To maintain previous behaviour, users may set `--sample_name SAMPLE`.
 - Updated alignment to use the high quality long read preset (-x lr:hq) to reduce mapping time.
 - Update whatshap v2.0.0 to v2.5.0 to enable use of haplotagphase.
-- Updated documentation to clarify input requirements for the workflow.
+- Updated documentation to clarify input requirements for the workflow and use with non-human genomes.
 - ClinVar version in SnpEff container updated to version 20250429.
 - Updated to wf-template v5.6.0, changing:
     - Reduce verbosity of debug logging from fastcat which can occasionally occlude errors found in FASTQ files during ingress.

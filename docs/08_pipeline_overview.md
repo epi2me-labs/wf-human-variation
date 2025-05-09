@@ -104,3 +104,5 @@ Some of the sub-workflows in wf-human-variation are restricted to certain genome
 | Non human    | &check;  | &check; | &check; |         |                       |         |       &check;        |       &check;        |
 
 \* As noted above, annotation is performed by default but can be switched off for hg19/GRCh37 and hg38/GRCh38.
+
+> Please note that while running the workflow is possible on non-human genomes by following the guidance above, this is not a supported use-case of wf-human-variation. Even when following the suggestions in this section, the workflow may terminate with an error or yield unexpected outcomes on non-human inputs.
