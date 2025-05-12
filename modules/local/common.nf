@@ -62,10 +62,11 @@ process mosdepth {
     errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
-        file target_bed
+        file (target_bed)
         tuple path(ref), path(ref_idx), path(ref_cache), env(REF_PATH) 
         val (window_size)
-        val (create_gene_summary)
+        val (create_coverage_summary)
+        val (bed_type)
     output:
         tuple \
             val(xam_meta),
@@ -74,7 +75,7 @@ process mosdepth {
             path("${xam_meta.alias}.thresholds.bed.gz"), emit: mosdepth_tuple
         path "${xam_meta.alias}.mosdepth.summary.txt", emit: summary
         path("${xam_meta.alias}.per-base.bedgraph.gz"), emit: perbase, optional: true
-        path "${xam_meta.alias}.gene_summary.tsv", emit: gene_summary, optional: true
+        path "${xam_meta.alias}.${bed_type}_summary.tsv", emit: bed_summary, optional: true
     script:
         def perbase_args = params.depth_intervals ? "" : "--no-per-base"
         """
@@ -102,21 +103,23 @@ process mosdepth {
             mv ${xam_meta.alias}.per-base.bed.gz ${xam_meta.alias}.per-base.bedgraph.gz
         fi
 
-        # If gene summary requested and a BED provided, run mosdepth again without -x to get precise coverage 
-        # Use thresholds and regions file to create gene summary
-        if [ "${create_gene_summary}" = true ]; then
+        # If coverage summary requested and a BED with greater than 3 columns provided, run mosdepth again
+        # without -x to get precise coverage
+        # Use thresholds and regions file to create coverage summary
+        if [ "${create_coverage_summary}" = true ]; then
+            
             mosdepth \
             -t $task.cpus \
             -b ${target_bed} \
             --thresholds 1,10,15,20,30 \
             --no-per-base \
-            ${xam_meta.alias}.gene \
+            ${xam_meta.alias}.bed \
             $xam
 
-            gunzip -c ${xam_meta.alias}.gene.thresholds.bed.gz > thresholds.bed
-            gunzip -c ${xam_meta.alias}.gene.regions.bed.gz  > regions.bed
+            gunzip -c ${xam_meta.alias}.bed.thresholds.bed.gz > thresholds.bed
+            gunzip -c ${xam_meta.alias}.bed.regions.bed.gz  > regions.bed
 
-            workflow-glue generate_gene_summary --mosdepth_threshold thresholds.bed --mosdepth_average regions.bed --output ${xam_meta.alias}.gene_summary.tsv
+            workflow-glue generate_coverage_summary --mosdepth_threshold thresholds.bed --mosdepth_average regions.bed --output ${xam_meta.alias}.${bed_type}_summary.tsv
         fi
         """
 }
@@ -314,7 +317,9 @@ process failedQCReport  {
             env(REF_PATH),
             path("versions.txt"),
             path("params.json"),
-            val(using_user_bed)
+            val(using_user_bed),
+            path(bed_summary, stageAs: "bed_summary/*"),
+            path(coverage_bed_summary, stageAs: "coverage_bed_summary/*")
 
     output:
         path "*.html"
@@ -327,6 +332,24 @@ process failedQCReport  {
         def genome_wide_depth = params.bed ? "" : "--reference_fai ref.fasta.fai"
         def report_name = "${xam_meta.alias}.wf-human-alignment-report.html"
         def using_user_bed = using_user_bed ? "--using_user_bed" : ""
+        
+        // get the basename of the --bed and --coverage_bed if provided, used by the alignment report to
+        // give coverage table tabs more meaningful names
+        def bed_basename = ""
+        if (params.bed) {
+            def bed_file = params.bed.tokenize('/').last().replaceAll(/\.bed$/, "")
+            bed_basename = "--bed_basename ${bed_file}"
+        }
+
+        def coverage_bed_basename = ""
+        if (params.coverage_bed) {
+            def bed_file = params.coverage_bed.tokenize('/').last().replaceAll(/\.bed$/, "")
+            coverage_bed_basename = "--coverage_bed_basename ${bed_file}"
+        }
+
+        // check for OPTIONAL_FILE in bed_summary
+        def bed_summary = !bed_summary.toString().contains('OPTIONAL_FILE') ? "--bed_summary ${bed_summary}" : ""
+        def coverage_bed_summary = !coverage_bed_summary.toString().contains('OPTIONAL_FILE') ? "--coverage_bed_summary ${coverage_bed_summary}" : ""
         """
         workflow-glue report_al \\
             --name ${report_name} \\
@@ -342,7 +365,11 @@ process failedQCReport  {
             ${genome_wide_depth} \\
             --low_cov ${params.bam_min_coverage} \\
             --workflow_version ${workflow.manifest.version} \\
-            ${using_user_bed}
+            ${using_user_bed} \\
+            ${bed_summary} \\
+            ${coverage_bed_summary} \\
+            ${bed_basename} \\
+            ${coverage_bed_basename}
         """
 }
 
@@ -366,7 +393,9 @@ process makeAlignmentReport {
             env(REF_PATH),
             path("versions.txt"),
             path("params.json"),
-            val(using_user_bed)
+            val(using_user_bed),
+            path(bed_summary, stageAs: "bed_summary/*"),
+            path(coverage_bed_summary, stageAs: "coverage_bed_summary/*")
 
     output:
         path "*.html"
@@ -374,6 +403,24 @@ process makeAlignmentReport {
     script:
         def report_name = "${xam_meta.alias}.wf-human-alignment-report.html"
         def using_user_bed = using_user_bed ? "--using_user_bed" : ""
+
+        // get the basename of the --bed and --coverage_bed if provided, used by the alignment report to
+        // give coverage table tabs more meaningful names
+        def bed_basename = ""
+        if (params.bed) {
+            def bed_file = params.bed.tokenize('/').last().replaceAll(/\.bed$/, "")
+            bed_basename = "--bed_basename ${bed_file}"
+        }
+
+        def coverage_bed_basename = ""
+        if (params.coverage_bed) {
+            def bed_file = params.coverage_bed.tokenize('/').last().replaceAll(/\.bed$/, "")
+            coverage_bed_basename = "--coverage_bed_basename ${bed_file}"
+        }
+
+        // check for OPTIONAL_FILE in bed_summary
+        def bed_summary = !bed_summary.toString().contains('OPTIONAL_FILE') ? "--bed_summary ${bed_summary}" : ""
+        def coverage_bed_summary = !coverage_bed_summary.toString().contains('OPTIONAL_FILE') ? "--coverage_bed_summary ${coverage_bed_summary}" : ""
         """
         workflow-glue report_al \\
             --name ${report_name} \\
@@ -388,11 +435,13 @@ process makeAlignmentReport {
             --window_size ${params.depth_window_size} \\
             --params params.json \\
             --workflow_version ${workflow.manifest.version} \\
-            ${using_user_bed}
+            ${using_user_bed} \\
+            ${bed_summary} \\
+            ${coverage_bed_summary} \\
+            ${bed_basename} \\
+            ${coverage_bed_basename}
         """
 }
-
-
 
 process getVersions {
     cpus 1

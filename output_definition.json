@@ -200,10 +200,18 @@
       "optional": true,
       "type": "per-sample"
     },
-    "gene-summary": {
-      "filepath": "SAMPLE.gene_summary.tsv",
-      "title": "Gene level coverage summary",
-      "description": "A table where each gene of the input BED file has columns describing the percentage of positions along the gene region that are covered to a given threshold, and a column with the average coverage.",
+    "bed-summary": {
+      "filepath": "{{ alias }}.bed_summary.tsv",
+      "title": "BED summary",
+      "description": "Tab separated table with the average coverage and percentage of positions that are covered to a given threshold, for each region specified in the `--bed` BED file. Only generated if the BED file has at least 4 columns, where the fourth column is the region label.",
+      "mime-type": "text/tsv",
+      "optional": true,
+      "type": "per-sample"
+    },
+    "coverage-bed-summary": {
+      "filepath": "{{ alias }}.coverage_bed_summary.tsv",
+      "title": "Coverage BED summary",
+      "description": "Tab separated table with the average coverage and percentage of positions that are covered to a given threshold, for each region specified in the `--coverage_bed` BED file. Only generated if the BED file has at least 4 columns, where the fourth column is the region label.",
       "mime-type": "text/tsv",
       "optional": true,
       "type": "per-sample"

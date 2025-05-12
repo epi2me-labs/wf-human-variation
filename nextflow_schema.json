@@ -218,7 +218,7 @@
                     "title": "Target region BED file",
                     "type": "string",
                     "format": "file-path",
-                    "description": "An optional BED file enumerating regions to process for variant calling.",
+                    "description": "An optional BED file enumerating regions to process for variant calling. If a fourth column is present, this will be used to generate coverage metrics for the provided regions.",
                     "help_text": "",
                     "overrides": {
                         "minknow": {
@@ -226,6 +226,13 @@
                             "title": "Optional .bed file for enumerating regions to process for variant calling"
                         }
                     }
+                },
+                "coverage_bed": {
+                    "title": "Coverage region BED file",
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "An optional BED file enumerating regions to process for coverage metrics only. Requires a fourth BED column specifying region name in order to be valid.",
+                    "help_text": ""
                 },
                 "annotation": {
                     "type": "boolean",
@@ -254,17 +261,6 @@
                     "default": false,
                     "description": "Call for variants on all sequences in the reference, otherwise small and structural variants will only be called on chr{1..22,X,Y,MT}.",
                     "help_text": "Enabling this option will call for variants on all contigs of the input reference sequence. Typically this option is not required as standard human reference sequences contain decoy and unplaced contigs that are usually omitted for the purpose of variant calling. This option might be useful for non-standard reference sequence databases.",
-                    "overrides": {
-                        "minknow": {
-                            "hidden": true
-                        }
-                    }
-                },
-                "output_gene_summary": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "If set to true, the workflow will generate gene-level coverage summaries.",
-                    "help_text": "If set to true, a 4-column BED file must be supplied, where column 4 is the gene label. The workflow will generate a list of all genes in the BED and their percentage coverage at a range of thresholds (1x, 10x, 15x, 20x, and 30x), as well as the average coverage of each gene.",
                     "overrides": {
                         "minknow": {
                             "hidden": true

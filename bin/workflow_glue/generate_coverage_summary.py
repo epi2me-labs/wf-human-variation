@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Gene coverage summaries."""
+"""Coverage summaries."""
 
 import pandas as pd
 
@@ -10,7 +10,7 @@ def main(args):
     """Run entry point."""
     df = pd.read_csv(args.mosdepth_threshold, sep='\t')
 
-    # Calculate gene sizes
+    # Calculate region sizes
     df["length"] = df["end"] - df["start"]
 
     # Convert coverage to percentage
@@ -31,17 +31,17 @@ def main(args):
 
     merged_df = pd.merge(
         df, averages, on=["#chrom", "start", "end", "region"], how="left")
-    merged_df.rename({'region': 'gene', '#chrom': 'chrom'}, axis=1, inplace=True)
+    merged_df.rename({'#chrom': 'chrom'}, axis=1, inplace=True)
 
     merged_df.to_csv(args.output, index=False, sep='\t')
 
 
 def argparser():
     """Argument parser for entrypoint."""
-    parser = wf_parser("gene_summary")
+    parser = wf_parser("coverage_summary")
     parser.add_argument(
         "--output", required=True,
-        help="Output gene summary file"
+        help="Output coverage summary file"
     )
     parser.add_argument(
         "--mosdepth_threshold",

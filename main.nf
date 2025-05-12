@@ -24,6 +24,7 @@ include {
     decompress_ref;
     mosdepth as mosdepth_input;
     mosdepth as mosdepth_downsampled;
+    mosdepth as mosdepth_coverage;
     readStats;
     getAllChromosomesBed;
     publish_artifact;
@@ -40,6 +41,7 @@ include {
     sift_clinvar_vcf as sift_clinvar_snp_vcf;
     bed_filter;
     sanitise_bed;
+    sanitise_bed as sanitise_coverage_bed;
     combine_metrics_json;
     output_cnv;
     infer_sex;
@@ -139,21 +141,38 @@ workflow {
         }
     }
 
-    // If gene summaries are requested, check a BED is provided and warn if input BED doesn't have 4 columns
-    // Set gene_summary_bed accordingly so we can avoid running mosdepth on incompatible BED files
-    def gene_summary_bed = false
-    if(params.output_gene_summary) {
-        if (!params.bed) {
-            log.warn ("A BED file has not been provided, and therefore a gene summary will not be generated.")
+    // If coverage summaries are requested, check if BED files are provided and warn if they don't have 4 columns
+    // Set create_bed_summary and create_coverage_bed_summary accordingly so we can avoid running mosdepth on incompatible BED files
+
+    def create_bed_summary = false
+    def create_coverage_bed_summary = false
+
+    // check if a BED file has at least 4 columns
+    def check_bed_has_name_col = { bed_file ->
+        if (bed_file) {
+            def col_size = file(bed_file).splitCsv(sep: '\t').first().size
+            if (col_size < 4) {
+                return false
+            }
+            return true
+        }
+        return false
+    }
+
+    // Check and set create_bed_summary if --bed provided
+    if (params.bed) {
+        create_bed_summary = check_bed_has_name_col(params.bed)
+    }
+
+    // check and set create_coverage_bed_summary if --coverage_bed provided
+    // exit workflow if this BED file doesn't have at least 4 columns
+    if (params.coverage_bed) {
+        if (check_bed_has_name_col(params.coverage_bed)) {
+            create_coverage_bed_summary = true
         }
         else {
-            col_size = file(params.bed).splitCsv(sep: '\t').first().size
-            if (col_size < 4){
-                log.warn ("The input BED file has fewer than 4 columns, and therefore a gene summary will not be generated.")
-            }
-            else {
-                gene_summary_bed = true
-            }
+            log.error (colors.red + "The provided BED file (${params.coverage_bed}) has fewer than 4 columns, and therefore a coverage summary can not be generated." + colors.reset)
+            can_start = false
         }
     }
 
@@ -206,9 +225,6 @@ workflow {
 
     // Trigger the SNP workflow based on a range of different conditions:
     def run_snp = params.snp || run_haplotagging || (params.cnv && !params.use_qdnaseq)
-
-    // Trigger gene summary if: gene summary requested, BED provided, and BED compatible
-    def create_gene_summary = params.output_gene_summary && params.bed && gene_summary_bed
 
     reference = prepare_reference([
         "input_ref": params.ref,
@@ -317,6 +333,7 @@ workflow {
     // to be used as a final ROI filter
     bed = null
     using_user_bed = false
+
     if(params.bed){
         using_user_bed = true
         // Sanitise the input BED file
@@ -329,9 +346,22 @@ workflow {
         bed = getAllChromosomesBed(ref_channel).all_chromosomes_bed
     }
 
+    // Set coverage_bed, used only to generate coverage metrics
+    coverage_bed = null
+    if (params.coverage_bed) {
+        // Sanitise the coverage BED file
+        input_coverage_bed = Channel.fromPath(params.coverage_bed, checkIfExists: true)
+
+        coverage_bed = sanitise_coverage_bed(input_coverage_bed, ref_channel)
+
+    }
+    else {
+        coverage_bed = Channel.fromPath("$projectDir/data/OPTIONAL_FILE")
+    }
+
     // mosdepth for depth traces -- passed into wf-snp :/
 
-    mosdepth_input(bam_channel, bed, ref_channel, params.depth_window_size, create_gene_summary)
+    mosdepth_input(bam_channel, bed, ref_channel, params.depth_window_size, create_bed_summary, "bed")
     mosdepth_stats = mosdepth_input.out.mosdepth_tuple
     mosdepth_summary = mosdepth_input.out.summary
     if (params.depth_intervals){
@@ -339,12 +369,22 @@ workflow {
     } else {
         mosdepth_perbase = Channel.empty()
     }
+    
 
-    if (create_gene_summary){
-        coverage_summary = mosdepth_input.out.gene_summary
+    if (create_bed_summary){
+        bed_summary = mosdepth_input.out.bed_summary
     }
     else {
-        coverage_summary = Channel.empty()
+        bed_summary = Channel.fromPath("$projectDir/data/OPTIONAL_FILE")
+    }
+
+    // if requested, run mosdepth again to generate coverage summary for `--coverage_bed`
+    if (create_coverage_bed_summary){
+        mosdepth_coverage(bam_channel, coverage_bed, ref_channel, params.depth_window_size, create_coverage_bed_summary, "coverage_bed")
+        coverage_bed_summary = mosdepth_coverage.out.bed_summary
+    }
+    else {
+        coverage_bed_summary = Channel.fromPath("$projectDir/data/OPTIONAL_FILE")
     }
 
     // Determine if the coverage threshold is met to perform analysis.
@@ -429,7 +469,7 @@ workflow {
         // Prepare the output files for mosdepth.
         // First, we compute the depth for the downsampled files, if it
         // exists 
-        mosdepth_downsampled(downsampling.out, bed, ref_channel, params.depth_window_size, false)
+        mosdepth_downsampled(downsampling.out, bed, ref_channel, params.depth_window_size, false, "bed")
         // Then, choose which output will be used in the report. 
         // If it needs to be subset, then the combined output exists, whereas 
         // the original mosdepth file is merged with the empty ready channel, leaving 
@@ -621,6 +661,8 @@ workflow {
             .combine(software_versions.collect())
             .combine(workflow_params)
             .combine(Channel.value(using_user_bed))
+            .combine(bed_summary)
+            .combine(coverage_bed_summary)
             .flatten()
             .collect() | makeAlignmentReport
         // Create failing bam report
@@ -634,6 +676,8 @@ workflow {
             .combine(software_versions.collect())
             .combine(workflow_params)
             .combine(Channel.value(using_user_bed))
+            .combine(bed_summary)
+            .combine(coverage_bed_summary)
             .flatten()
             .collect() | failedQCReport
     } else {
@@ -995,7 +1039,8 @@ workflow {
             report_pass.flatten(),
             report_fail.flatten(),
             final_json.flatten(),
-            coverage_summary.flatten(),
+            bed_summary.flatten(),
+            coverage_bed_summary.flatten(),
             hap_check.flatten(),
             igv_out.flatten()
         )

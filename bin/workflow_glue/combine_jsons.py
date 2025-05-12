@@ -5,6 +5,7 @@ import json
 
 from ezcharts.components.fastcat import histogram_median
 from ezcharts.components.mosdepth import load_mosdepth_summary
+import numpy as np
 import pandas as pd
 
 from .util import wf_parser  # noqa: ABS101
@@ -144,6 +145,7 @@ def bamstats_summary_stats(bamstats_hists, bamstats_flagstats):
     # Load length and quality histograms
     len_hist, len_hist_map, len_hist_umap = load_hists(bamstats_hists, "length")
     qual_hist, qual_hist_map, qual_hist_umap = load_hists(bamstats_hists, "quality")
+
     # Load bamstats flagstats dataset
     flag_stats = pd.read_csv(bamstats_flagstats, sep="\t")
 
@@ -177,6 +179,8 @@ def bamstats_summary_stats(bamstats_hists, bamstats_flagstats):
     qual_hist['val'] = 0.5*(qual_hist['start'] + qual_hist['end'])
     # Median read quality
     median_qual = float(histogram_median(qual_hist, x='val'))
+    # Mean read quality
+    mean_qual = np.average(qual_hist['val'], weights=qual_hist['count'])
     # Median read length
     median_length = int(histogram_median(len_hist))
 
@@ -193,6 +197,7 @@ def bamstats_summary_stats(bamstats_hists, bamstats_flagstats):
         "Supplementary mappings": suppl_aln,
         "Unmapped reads": unmapped,
         "Median read quality": median_qual,
+        "Mean read quality": mean_qual,
         "Median read length": median_length,
     }
     return metrics
