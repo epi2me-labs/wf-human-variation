@@ -9,7 +9,7 @@ import dominate.tags as dom_tags  # noqa: I100,I202
 import ezcharts as ezc  # noqa: I202
 from ezcharts.components.ezchart import EZChart
 from ezcharts.components.fastcat import read_quality_plot
-from ezcharts.layout.snippets import Grid, Progress, Stats, Tabs
+from ezcharts.layout.snippets import DataTable, Grid, Progress, Stats, Tabs
 
 from .common import THEME  # noqa: ABS101
 
@@ -251,3 +251,42 @@ def at_a_glance(report, sample_names, values, use_bed=False):
                         for title, value in values.items()
                         ],
                     )
+
+
+def cov_summary(report, bed_summary_pairs):
+    """Generate tables of coverage summaries."""
+    with report.add_section("Coverage summary", "Coverage summary"):
+        dom_tags.p(
+            """
+            The table below summarises sequence coverage information for genomic
+            regions defined by the BED files provided to the workflow.
+            """
+        )
+        tabs = Tabs()
+        for bed, bed_label in bed_summary_pairs:
+            with tabs.add_tab(bed_label):
+                bed_df = pd.read_csv(bed, sep='\t')
+                # don't display all the coverage levels
+                cols_to_drop = ['1X', '10X', '15X']
+                bed_df = bed_df.drop(columns=cols_to_drop)
+                bed_df = bed_df.rename(columns={
+                    'chrom': 'Chromosome',
+                    'start': 'Start position',
+                    'end': 'End position',
+                    'region': 'Region',
+                    'length': 'Length',
+                    '30X': 'Bases covered ≥30X (%)',
+                    '20X': 'Bases covered ≥20X (%)',
+                    'avg_coverage': 'Average coverage'
+                })
+                bed_df = bed_df[[
+                    'Region',
+                    'Bases covered ≥20X (%)',
+                    'Bases covered ≥30X (%)',
+                    'Average coverage',
+                    'Chromosome',
+                    'Start position',
+                    'End position',
+                    'Length'
+                ]]
+                DataTable.from_pandas(bed_df, use_index=False)

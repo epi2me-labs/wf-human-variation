@@ -17,11 +17,11 @@
 | bam | string | BAM or unaligned BAM (uBAM) files for the sample to use in the analysis. | This accepts one of three cases: (i) the path to a single BAM file; (ii) the path to a folder containing BAM files; (iii) the path to a MinKNOW experiment folder containing sub-folders for each sample in the experiment. For cases (i) and (ii) an optional sample name can be supplied with `--sample`. For case (iii), a sample name must be provided to select the sample for analysis from the experiment folder. |  |
 | ref | string | Path to a reference FASTA file. | Reference against which to compare reads for variant calling. |  |
 | bam_min_coverage | number | Minimum read coverage required to run analysis. |  | 20 |
-| bed | string | An optional BED file enumerating regions to process for variant calling. |  |  |
+| bed | string | An optional BED file enumerating regions to process for variant calling. If a fourth column is present, this will be used to generate coverage metrics for the provided regions. |  |  |
+| coverage_bed | string | An optional BED file enumerating regions to process for coverage metrics only. Requires a fourth BED column specifying region name in order to be valid. |  |  |
 | annotation | boolean | SnpEff annotation. | If this option is unselected, VCFs will not be annotated with SnpEff. | True |
 | phased | boolean | Perform phasing. | This option enables phasing of SV, SNP and modifications, depending on which sub-workflow has been chosen; see [README](README.md#9-phasing-variants) for more details. | False |
 | include_all_ctgs | boolean | Call for variants on all sequences in the reference, otherwise small and structural variants will only be called on chr{1..22,X,Y,MT}. | Enabling this option will call for variants on all contigs of the input reference sequence. Typically this option is not required as standard human reference sequences contain decoy and unplaced contigs that are usually omitted for the purpose of variant calling. This option might be useful for non-standard reference sequence databases. | False |
-| output_gene_summary | boolean | If set to true, the workflow will generate gene-level coverage summaries. | If set to true, a 4-column BED file must be supplied, where column 4 is the gene label. The workflow will generate a list of all genes in the BED and their percentage coverage at a range of thresholds (1x, 10x, 15x, 20x, and 30x), as well as the average coverage of each gene. | False |
 | igv | boolean | Visualize outputs in the EPI2ME IGV visualizer. | Enabling this option will visualize the alignments and VCF files in the EPI2ME desktop app IGV visualizer. | False |
 | out_dir | string | Directory for output of all workflow results. |  | output |
 

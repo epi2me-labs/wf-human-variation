@@ -48,6 +48,7 @@ def main():
         help="Sanitised BED file",
         required=True
     )
+
     args = parser.parse_args()
 
     bed_data = read_bed_file(args.bed)
@@ -65,6 +66,7 @@ def main():
             inplace=True
         )
         write_updated_bed_file(bed_data, args.bed_out)
+
     # discrepancy between ref and bed chromosomes
     else:
         sys.stderr.write(

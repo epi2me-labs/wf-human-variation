@@ -85,6 +85,8 @@ docker-run:
                 "wf-human-snp_modelext",
                 "wf-human-snp_covblock",
                 "wf-human-snp_svrefine",
+                "wf-human-snp_cov_summary",
+                "wf-human-snp_cov_summary_fail",
                 "wf-human-sv",
                 "wf-human-sv-phase",
                 "wf-human-cnv-spectre",
@@ -95,7 +97,7 @@ docker-run:
                 "downsample",
                 "wf-human-snp_GVCF_unphased",
                 "wf-human-snp_GVCF_phased",
-                "wf-human-snp-gene-summary",
+                "wf-human-snp-coverage-summary",
               ]
     rules:
         # NOTE As we're overriding the rules block for the included docker-run
@@ -440,6 +442,25 @@ docker-run:
                                     evaluate_candidates,get_qual_filter,makeReport,make_chunks,merge_pileup_and_full_vars,output_snp,phase_contig,\
                                     pileup_variants,post_clair_phase_contig,select_het_snps,vcfStats,refine_with_sv,annotate_vcf,bed_filter,phase_gvcf"
               NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --clair3_model_path ${CI_PROJECT_NAME}/data/snp_demo/ont_r104_e81_sup_g5015 --phased --bam_min_coverage 100 --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom"
+        
+        - if: $MATRIX_NAME == "wf-human-snp_cov_summary"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo_cov.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
+              NF_IGNORE_PROCESSES: "phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo_cov/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo_cov/chr6_chr20_regionsA.bed --coverage_bed ${CI_PROJECT_NAME}/data/snp_demo_cov/chr6_chr20_regionsB.bed --ref ${CI_PROJECT_NAME}/data/snp_demo_cov/chr6_chr20.fasta --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom --phased --bam_min_coverage 0.00001"
+              AFTER_NEXTFLOW_CMD: >
+                grep $'chr6\t100000\t300000\t200000\tfeature1\t100.0\t99.95\t97.22\t87.73\t82.36\t65.41' wf-human-variation/chr6_chr20.bed_summary.tsv &&
+                grep $'chr20\t195000\t240000\t45000\tfeature2_part4\t100.0\t100.0\t100.0\t100.0\t99.96\t56.56' wf-human-variation/chr6_chr20.coverage_bed_summary.tsv
+
+        - if: $MATRIX_NAME == "wf-human-snp_cov_summary_fail"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/snp_demo_cov.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && cut -f1-3 ${CI_PROJECT_NAME}/data/snp_demo_cov/chr6_chr20_regionsB.bed > ${CI_PROJECT_NAME}/data/snp_demo_cov/chr6_chr20_regionsB_subset.bed"
+              NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
+              NF_IGNORE_PROCESSES: "phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo_cov/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo_cov/chr6_chr20_regionsA.bed --coverage_bed ${CI_PROJECT_NAME}/data/snp_demo_cov/chr6_chr20_regionsB_subset.bed --ref ${CI_PROJECT_NAME}/data/snp_demo_cov/chr6_chr20.fasta --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom --phased --bam_min_coverage 0.00001"
+              ASSERT_NEXTFLOW_FAILURE: "yes"
+              ASSERT_NEXTFLOW_FAILURE_REXP : "The provided BED file (\\${CI_PROJECT_NAME}/data/snp_demo_cov/chr6_chr20_regionsB_subset.bed) has fewer than 4 columns, and therefore a coverage summary can not be generated."
 
         - if: $MATRIX_NAME == "wf-human-snp_svrefine"
           variables:
@@ -562,13 +583,6 @@ docker-run:
               NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport,hap,phase_contig,post_clair_phase_contig,bed_filter,phase_gvcf,refine_with_sv"
               NF_WORKFLOW_OPTS: "--mod false --cnv false --str false --sv false --snp --phased true --GVCF  --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --sample_name demo --sex XX --bam_min_coverage 0.00001 --annotation false --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom"
-
-        - if: $MATRIX_NAME == "wf-human-snp-gene-summary"
-          variables:
-              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/snp_demo_new/snp_demo.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
-              NF_PROCESS_FILES: "modules/local/wf-human-snp.nf"
-              NF_IGNORE_PROCESSES: "phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp --sv false --mod false --cnv false --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20_with_gene.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --phased --bam_min_coverage 0.00001 --output_gene_summary --annotation false --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom"
 
 
 aws-run:

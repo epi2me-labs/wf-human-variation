@@ -125,6 +125,23 @@ def main(args):
     if not depth_df.empty:
         sections.depths(report, depth_df, args.sample_name)
 
+    # zip up all possible summary paths and their labels
+    # we'll forward only non-null pairs
+    all_bed_pairs = [
+        (args.coverage_bed_summary, args.coverage_bed_basename),
+        (args.bed_summary, args.bed_basename),
+    ]
+
+    clean_bed_pairs = [
+        pair for pair in all_bed_pairs if pair[0]
+    ]
+
+    if clean_bed_pairs:
+        sections.cov_summary(
+            report,
+            clean_bed_pairs,
+         )
+
     # write the report to the output file
     report.write(f"{args.name}")
 
@@ -195,5 +212,21 @@ def argparser():
         "--using_user_bed", action='store_true',
         help="Flag to use when user has provided a BED",
         default=False
+    )
+    parser.add_argument(
+        "--bed_summary",
+        help="Coverage summary for params.bed regions"
+    )
+    parser.add_argument(
+        "--coverage_bed_summary",
+        help="Coverage summary for params.coverage_bed regions"
+    )
+    parser.add_argument(
+        "--bed_basename",
+        help="Basename of BED file from params.bed"
+    )
+    parser.add_argument(
+        "--coverage_bed_basename",
+        help="Basename of BED file from params.coverage_bed"
     )
     return parser
