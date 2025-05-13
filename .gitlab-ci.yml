@@ -97,6 +97,7 @@ docker-run:
                 "downsample",
                 "wf-human-snp_GVCF_unphased",
                 "wf-human-snp_GVCF_phased",
+                "wf-human-cnv-ubam-to-bam",
                 "wf-human-snp-coverage-summary",
               ]
     rules:
@@ -585,6 +586,17 @@ docker-run:
               NF_WORKFLOW_OPTS: "--mod false --cnv false --str false --sv false --snp --phased true --GVCF  --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --sample_name demo --sex XX --bam_min_coverage 0.00001 --annotation false --override_basecaller_cfg dna_r10.4.1_e8.2_400bps_hac_prom"
 
 
+        - if: $MATRIX_NAME == "wf-human-cnv-ubam-to-bam"
+          variables:
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-cnv/demo_data.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_PROCESS_FILES: "modules/local/wf-human-cnv-qdnaseq.nf"
+              NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
+              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --use_qdnaseq --str false --bam ${CI_PROJECT_NAME}/data/demo_data/test.ubam --ref ${CI_PROJECT_NAME}/data/demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz --qdnaseq_bin_size 500 --bam_min_coverage 0.00001 --ubam_map_threads 2 --ubam_sort_threads 1 --ubam_bam2fq_threads 1"
+              # explode if we find <DIP> in this qdnaseq VCF [CW-5819]
+              AFTER_NEXTFLOW_CMD: >
+                ! zgrep -c '<DIP>' wf-human-variation/test.wf_cnv.vcf.gz
+
+
 aws-run:
     stage: test
     artifacts:
@@ -610,7 +622,6 @@ aws-run:
     parallel:
         matrix:
             - MATRIX_NAME: [
-                "wf-human-cnv-ubam-to-bam",
                 "wf-human-cnv-downsample",
                 "wf-human-cnv-skip-downsample",
               ]
@@ -635,12 +646,7 @@ aws-run:
               NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
               NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --use_qdnaseq --str false --bam ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bam --bed ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.bed --ref ${CI_PROJECT_NAME}/data/snp_demo/chr6_chr20.fasta --qdnaseq_bin_size 500 --bam_min_coverage 0.00001 --downsample_coverage --downsample_coverage_target 1000 --igv"
 
-        - if: $MATRIX_NAME == "wf-human-cnv-ubam-to-bam"
-          variables:
-              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-cnv/demo_data.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
-              NF_PROCESS_FILES: "modules/local/wf-human-cnv-qdnaseq.nf"
-              NF_IGNORE_PROCESSES: "get_coverage,getVersions,getParams,failedQCReport,makeAlignmentReport"
-              NF_WORKFLOW_OPTS: "--snp false --sv false --mod false --cnv --use_qdnaseq --str false --bam ${CI_PROJECT_NAME}/data/demo_data/test.ubam --ref ${CI_PROJECT_NAME}/data/demo_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz --qdnaseq_bin_size 500 --bam_min_coverage 0.00001"
+
 
 macos-run:
   # Let's avoid those ARM64 runners for now

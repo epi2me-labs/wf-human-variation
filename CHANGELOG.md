@@ -43,6 +43,7 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
     - dacite.exceptions.WrongTypeError during report generation when barcode is null.
     - Sequence summary read length N50 incorrectly displayed minimum read length, it now correctly shows the N50.
     - Sequence summary component alignment and coverage plots failed to plot under some conditions.
+- QDNAseq VCF files are now compatible with IGV, using "N" in the REF column in place of the invalid `<DIP>"`produced by QDNAseq (see https://github.com/ccagc/QDNAseq/issues/121).
 ### Removed
 - Duplicate `getParams` processes in subworkflows.
 - Spurious OPTIONAL_FILE file in output directory.

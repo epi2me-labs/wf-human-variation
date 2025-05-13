@@ -24,11 +24,11 @@ process callCNV {
         run_qdnaseq.r --bam ${bam} --out_prefix ${xam_meta.alias} --binsize ${params.qdnaseq_bin_size} --reference ${genome_build}
         cut -f5 ${xam_meta.alias}_calls.bed | paste ${xam_meta.alias}_bins.bed - > ${xam_meta.alias}_combined.bed
 
-        # VCF will be malformed if it contains one CNV (CW-1491), check and fix if necessary
+        # Fix known QDNAseq VCF malformations
         mv ${xam_meta.alias}_calls.vcf raw.vcf
         mv ${xam_meta.alias}_segs.vcf raw_segs.vcf
-        fix_1491_vcf.py -i raw.vcf -o ${xam_meta.alias}.wf_cnv.vcf --sample_id ${xam_meta.alias}
-        fix_1491_vcf.py -i raw_segs.vcf -o ${xam_meta.alias}_segs.vcf --sample_id ${xam_meta.alias}
+        fix_qdnaseq_vcf.py -i raw.vcf -o ${xam_meta.alias}.wf_cnv.vcf --sample_id ${xam_meta.alias}
+        fix_qdnaseq_vcf.py -i raw_segs.vcf -o ${xam_meta.alias}_segs.vcf --sample_id ${xam_meta.alias}
 
         # bgzip and index calls VCF
         bgzip ${xam_meta.alias}.wf_cnv.vcf
