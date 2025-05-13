@@ -1,7 +1,9 @@
 #!/usr/bin/env python
-"""Fix malformed QDNAseq VCFs by reformatting files with a single CNV call.
+"""Fix malformed QDNAseq VCFs.
 
-See CW-1491 for more information.
+This script addresses:
+- CW-1491: Single CNV calls broken over multiple lines.
+- CW-5819: <DIP> REF leads to invalid VCF for IGV.
 """
 
 import argparse
@@ -27,6 +29,7 @@ def main(args):
     result = open(args.fixed_vcf, 'w')
 
     seen_header = False
+    seen_dip = False
     in_record = False
     current_record = []
     with open(args.vcf, 'r') as vcf_file:
@@ -35,6 +38,10 @@ def main(args):
             if line.startswith("#"):
                 if line.startswith("#CHROM"):
                     seen_header = True
+                elif line.startswith("##REF=<ID=DIP"):
+                    sys.stderr.write(
+                        "[fix_vcf] Dropping ##REF DIP header line.\n")
+                    continue
                 result.write(line)
             else:
                 if not seen_header:
@@ -50,6 +57,7 @@ def main(args):
                 fields = line.strip().split('\t')
                 if len(fields) == 1:
                     # this is a bad VCF file and the cols needs to be reassembled
+                    # from multiple lines of QDNAseq output
                     if in_record:
                         # first col is the 'x' garbage, only append to
                         # current_record when in_record
@@ -67,10 +75,18 @@ def main(args):
                         in_record = False
                         current_record = []
 
-                    # pass through good lines
-                    result.write(line)
+                    # this is a correctly formed vcf line
+                    # check whether the REF is <DIP> and override accordingly
+                    if fields[3] == "<DIP>":
+                        seen_dip = True
+                        fields[3] = "N"
+                    result.write('\t'.join(fields) + '\n')
         if in_record:
             result.write('\t'.join(current_record) + '\n')
+
+    if seen_dip:
+        sys.stderr.write(
+            "[fix_vcf] Corrected at least one REF '<DIP>' to 'N'.\n")
 
 
 if __name__ == "__main__":
