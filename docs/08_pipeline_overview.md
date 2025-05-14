@@ -70,6 +70,9 @@ STR genotyping is performed using a fork of [straglr](https://github.com/philres
 The number of calls for repeats on chrX is dependent on the sample's genetic sex which should be provided if known with `--sex XX` or `--sex XY`.
 If `--sex` is not specified, the workflow will attempt to infer the genetic sex from coverage of the allosomes, falling back to `XX` if a determination is unclear.
 Please be aware that incorrect sex assignment will result in the wrong number of calls for all repeats on chrX.
+The STR subworkflow requires a haplotagged BAM file to accurately determine repeat expansions per haplotype.
+To generate this haplotagged BAM, the workflow automatically enables the `--snp` subworkflow to produce a phased VCF, which is then used to assign haplotype tags to reads.
+It is therefore not possible to genotype STRs without running the SNP subworkflow.
 In addition to a gzipped VCF file containing STRs found in the dataset, the workflow emits a TSV straglr output containing reads spanning STRs, and a haplotagged BAM.
 
 ### 8. Phasing variants

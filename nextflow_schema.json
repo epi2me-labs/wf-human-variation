@@ -70,7 +70,7 @@
                     "title": "STR: Short tandem repeat expansions",
                     "type": "boolean",
                     "description": "Enable Straglr to genotype STR expansions.",
-                    "help_text": "If this option is selected, genotyping of STR expansions will be carried out using Straglr. This sub-workflow is only compatible with genome build hg38.",
+                    "help_text": "If this option is selected, genotyping of STR expansions will be carried out using Straglr. This option will also automatically enable the SNP subworkflow as the STR caller requires a haplotagged BAM. This sub-workflow is only compatible with genome build hg38.",
                     "default": false,
                     "overrides": {
                         "minknow": {
