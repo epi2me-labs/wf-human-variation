@@ -327,12 +327,23 @@ docker-run:
                 --partner geneyx"
 
         # This process tests all subworkflows, and also requests phasing.
+        # We delete the included FAI to ensure it is recreated and output by the workflow as required by IGV
         - if: $MATRIX_NAME == "all_phased_igv"
           variables:
-              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/"
+              NF_BEFORE_SCRIPT: "mkdir -p ${CI_PROJECT_NAME}/data/ && wget -q -O ${CI_PROJECT_NAME}/data/demo_data.tar.gz https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-snp/wf-human-snp-v2.tar.gz && tar -xzvf ${CI_PROJECT_NAME}/data/demo_data.tar.gz -C ${CI_PROJECT_NAME}/data/ && rm ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta.fai"
               NF_PROCESS_FILES: "workflows/methyl.nf"
               NF_IGNORE_PROCESSES: "merge_tsv,make_report,modkit,post_clair_contig_haplotag,post_clair_phase_contig,phase_gvcf,hap,phase_contig_haplotag,cat_haplotagged_contigs,phase_contig,getGenome,get_coverage,getVersions,getParams,failedQCReport,refine_with_sv,makeAlignmentReport"
               NF_WORKFLOW_OPTS: "--igv --snp true --sv true --mod true --cnv true --str true --bam ${CI_PROJECT_NAME}/data/wf-human-snp-v2/multimods_10k_hg38.bam --ref ${CI_PROJECT_NAME}/data/wf-human-snp-v2/chr6_chr20_chrM.fasta --bam_min_coverage 0 --annotation false --phased"
+              # need to check both the original file path (as it may be an input) and the path inside the outdir
+              AFTER_NEXTFLOW_CMD: >
+                BAD_IGV=0;
+                for igv_f in $$(jq -r 'recurse | objects | to_entries[] | select(.key | test("URL")) | .value' wf-human-variation/igv.json); do
+                    if [ ! -f "$$igv_f" ] && [ ! -f "${CI_PROJECT_NAME}/$$igv_f" ]; then
+                        echo "IGV file referred to in configuration was not found: '$$igv_f'";
+                        BAD_IGV=1;
+                    fi;
+                done;
+                if [ $$BAD_IGV -ne 0 ]; then echo "At least one file required by the igv.json was missing."; exit 65; fi
 
         # This process tests all subworkflows, but without phasing.
         - if: $MATRIX_NAME == "all_unphased"
