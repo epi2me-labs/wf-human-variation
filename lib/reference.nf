@@ -42,13 +42,8 @@ process cram_cache {
 }
 
 // Process to create the faidx index
+// main.nf currently handles publishing the faidx if required
 process faidx {
-    // If the input file is gzipped, we need to emit the indexes for the input gzip file
-    // only. Therefore, this become reduntant to be emitted as it won't be used by the
-    // IGV configuration, but only by internal processes together with the decompressed
-    // FASTA file. To avoid unnecessary emissions, we enable only if the input file is
-    // decompressed.
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "*", enabled: !params.ref.toLowerCase().endsWith("gz")
     label "wf_common"
     cpus 1
     memory 4.GB

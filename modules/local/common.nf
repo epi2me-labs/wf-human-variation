@@ -1,59 +1,5 @@
 import groovy.json.JsonBuilder
 
-process cram_cache {
-    cpus 1
-    memory 4.GB
-    input:
-        path reference
-    output:
-        path("ref_cache/"), emit: ref_cache
-        env(REF_PATH), emit: ref_path
-    shell:
-    '''
-    # Invoke from binary installed to container PATH
-    seq_cache_populate.pl -root ref_cache/ !{reference}
-    REF_PATH="ref_cache/%2s/%2s/%s"
-    '''
-}
-
-process index_ref_fai {
-    cpus 1
-    memory 4.GB
-    input:
-        file reference
-    output:
-        path "${reference}.fai", emit: reference_index
-    """
-    samtools faidx ${reference}
-    """
-}
-
-process index_ref_gzi {
-    cpus 1
-    memory 4.GB
-    input:
-        file reference
-    output:
-        path "${reference}.gzi", emit: reference_index
-    """
-    bgzip -r ${reference}
-    """
-}
-
-// NOTE -f required to compress symlink
-process decompress_ref {
-    cpus 1
-    memory 4.GB
-    input:
-        file compressed_ref
-    output:
-        path "${compressed_ref.baseName}", emit: decompressed_ref
-    """
-    gzip -df ${compressed_ref}
-    """
-}
-
-
 //NOTE grep MOSDEPTH_TUPLE if changing output tuple
 process mosdepth {
     cpus 4

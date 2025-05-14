@@ -44,6 +44,7 @@ Users may wish to adopt this version to test the workflow's ability to ingress i
     - Sequence summary read length N50 incorrectly displayed minimum read length, it now correctly shows the N50.
     - Sequence summary component alignment and coverage plots failed to plot under some conditions.
 - QDNAseq VCF files are now compatible with IGV, using "N" in the REF column in place of the invalid `<DIP>"`produced by QDNAseq (see https://github.com/ccagc/QDNAseq/issues/121).
+- Regression causing a copy of the reference and its index to be incorrectly output in some cases where it was not required. The reference and index are now only emitted if required by `--igv`. We encourage use of readily available standard reference sequences, so re-emitting the input reference as a workflow output is unnecessarily consuming disk space and avoided where possible.
 ### Removed
 - Duplicate `getParams` processes in subworkflows.
 - Spurious OPTIONAL_FILE file in output directory.

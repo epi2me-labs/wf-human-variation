@@ -18,10 +18,6 @@ include { cnv as cnv_qdnaseq } from './workflows/wf-human-cnv-qdnaseq'
 include { partners } from './workflows/partners'
 
 include {
-    index_ref_gzi;
-    index_ref_fai;
-    cram_cache;
-    decompress_ref;
     mosdepth as mosdepth_input;
     mosdepth as mosdepth_downsampled;
     mosdepth as mosdepth_coverage;
@@ -987,7 +983,8 @@ workflow {
 
     // Prepare IGV viewer
     if (params.igv){
-        // Define output files
+        // Indicate which output files should be displayed
+        // Note igv() is not responsible for publishing these files
         igv_out = ref_channel
             // Add gzipped reference indexes
             | combine(ref_gzindex | ifEmpty([null, null, null]))
@@ -1019,6 +1016,7 @@ workflow {
         | map { xam, xai, meta -> [xam, xai] }
         // Emit fasta or fai if they were changed from the input
         // (i.e. decompressed for fasta, generated for the fai)
+        // if they are required for use with IGV
         | mix(
             ref_channel
             | map {
@@ -1026,7 +1024,7 @@ workflow {
             }
             | flatten
             | filter{
-                it.toString().startsWith("${workflow.workDir}")
+                it.toString().startsWith("${workflow.workDir}") && params.igv
             }
         )
         | mix(
