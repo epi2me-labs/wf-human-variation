@@ -11,7 +11,7 @@ This version has several small performance benefits, particularly for alignment 
 Users are recommended to upgrade to this version to benefit from improved SV calling at 25 - 250 kb, as well as our list of changes and fixes below.
 ### Changed
 - The structural variant caller has been updated to Sniffles v2.6.2.
-    - Benchmarking demonstrates that accuracy on SVs between 20 - 250 kb has been substantially improved.
+    - Benchmarking demonstrates that accuracy on SVs between 25 - 250 kb has been substantially improved.
     - F1 scores for smaller SVs dip marginally, though these changes reflect a rebalancing that favours more accurate recovery of biologically important events.
     - For more information on this update, please see [our summary on the update to Sniffles v2.6.2](https://epi2me.nanoporetech.com/sniffles-262/).
 - Workflow can analyse a single sample from a MinKNOW experiment folder.
