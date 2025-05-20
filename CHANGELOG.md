@@ -50,6 +50,7 @@ Users are recommended to upgrade to this version to benefit from improved SV cal
     - Sequence summary read length N50 incorrectly displayed minimum read length, it now correctly shows the N50.
     - Sequence summary component alignment and coverage plots failed to plot under some conditions.
 - Regression causing a copy of the reference and its index to be incorrectly output in some cases where it was not required. The reference and index are now only emitted if required by `--igv`. We encourage use of readily available standard reference sequences, so re-emitting the input reference as a workflow output is unnecessarily consuming disk space and avoided where possible.
+- Replaced incorrect `sample` parameter with `sample_name` in documentation.
 ### Removed
 - Duplicate `getParams` processes in subworkflows. These per subworkflow processes to output the user provided parameters were unnecessary and have been removed.
 - `--use_longphase`: Use of Longphase for final phasing has been discouraged since v2.2.0. It is no longer possible to override the workflow to use Longphase instead of the default WhatsHap for final variant phasing.
