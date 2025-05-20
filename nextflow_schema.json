@@ -169,7 +169,7 @@
                     "type": "string",
                     "format": "path",
                     "description": "BAM or unaligned BAM (uBAM) files for the sample to use in the analysis.",
-                    "help_text": "This accepts one of three cases: (i) the path to a single BAM file; (ii) the path to a folder containing BAM files; (iii) the path to a MinKNOW experiment folder containing sub-folders for each sample in the experiment. For cases (i) and (ii) an optional sample name can be supplied with `--sample`. For case (iii), a sample name must be provided to select the sample for analysis from the experiment folder.",
+                    "help_text": "This accepts one of three cases: (i) the path to a single BAM file; (ii) the path to a folder containing BAM files; (iii) the path to a MinKNOW experiment folder containing sub-folders for each sample in the experiment. For cases (i) and (ii) an optional sample name can be supplied with `--sample_name`. For case (iii), a sample name must be provided to select the sample for analysis from the experiment folder.",
                     "overrides": {
                         "minknow": {
                             "hint": "bamOutputDirectory",
