@@ -6,7 +6,7 @@ import groovy.json.JsonBuilder
 process sniffles2 {
     label "wf_human_sv"
     cpus params.threads
-    memory 6.GB
+    memory 24.GB
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
         file tr_bed
