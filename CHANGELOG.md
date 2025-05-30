@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+### Changed
+- Increased memory of the Sniffles2 process to mitigate out of memory errors observed in our downstream wf-trio workflow.
 
 ## [v2.7.0]
 This version may affect the structural variants called, as it includes an updated SV caller with improved detection of larger SVs. As a result, differences in the set of reported SVs may be observed.
