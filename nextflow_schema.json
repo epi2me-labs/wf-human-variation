@@ -97,20 +97,6 @@
                             "default": true
                         }
                     }
-                },
-                "partner": {
-                    "title": "Partner integration",
-                    "type": "string",
-                    "description": "Prepare outputs for tertiary analyses with partners.",
-                    "hidden": true,
-                    "overrides": {
-                        "geneyx": {
-                            "default": "geneyx"
-                        },
-                        "fabric": {
-                            "default": "fabric"
-                        }
-                    }
                 }
             },
             "anyOf": [
@@ -308,6 +294,23 @@
                     "overrides": {
                         "minknow": {
                             "hidden": true
+                        }
+                    }
+                },
+                "partner": {
+                    "title": "Partner integration",
+                    "type": "string",
+                    "description": "Prepare outputs for tertiary analyses with partners (geneyx or fabric).",
+                    "enum": [
+                        "geneyx",
+                        "fabric"
+                    ],
+                    "overrides": {
+                        "geneyx": {
+                            "default": "geneyx"
+                        },
+                        "fabric": {
+                            "default": "fabric"
                         }
                     }
                 }
