@@ -4,9 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [v2.7.1]
+This patch release of wf-human-variation is issued to address a problem identified in Sniffles 2.6.2, which was introduced by our wf-human-variation 2.7.0 release. All users of wf-human-variation 2.7.0 should immediately adopt this release.
+
+We have identified that in some cases Sniffles 2.6.2 consumes much more RAM than it has been allocated, and is killed by the system without raising an error, resulting in an empty or possibly truncated structural variant VCF. We have worked on [a patch with the Sniffles developers](https://github.com/fritzsedlazeck/Sniffles/pull/565) to ensure that the Sniffles program will exit with a fatal error in this scenario; allowing the workflow to safely terminate without providing an empty or truncated VCF.
+
+This patch is provided to ensure that in this case, users do not unknowingly analyse empty or truncated VCFs, but users should expect a further update to wf-human-variation to address the underlying Sniffles memory problem.
+
+This patch release also enables use of the `partner` parameter in EPI2ME Desktop.
+
 ### Changed
-- Increased memory of the Sniffles2 process to mitigate out of memory errors observed in our downstream wf-trio workflow.
+- Sniffles 2.6.2 patched to incorporate [Sniffles/#565](https://github.com/fritzsedlazeck/Sniffles/pull/565) to avoid empty SV VCF if all analysis workers are killed by the operating system.
+- Increased memory allocation of the Sniffles process to mitigate some out of memory errors with this version.
+- `partner` parameter unhidden to allow it to be used in the EPI2ME Desktop application.
+### Removed
+- wf-human-variation 2.7.0 has been untagged to prevent pipelines pinning this version.
 
 ## [v2.7.0]
 This version may affect the structural variants called, as it includes an updated SV caller with improved detection of larger SVs. As a result, differences in the set of reported SVs may be observed.
