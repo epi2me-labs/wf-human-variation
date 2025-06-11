@@ -161,6 +161,7 @@ input_reads.bam     ─── input_directory
 | include_all_ctgs | boolean | Call for variants on all sequences in the reference, otherwise small and structural variants will only be called on chr{1..22,X,Y,MT}. | Enabling this option will call for variants on all contigs of the input reference sequence. Typically this option is not required as standard human reference sequences contain decoy and unplaced contigs that are usually omitted for the purpose of variant calling. This option might be useful for non-standard reference sequence databases. | False |
 | igv | boolean | Visualize outputs in the EPI2ME IGV visualizer. | Enabling this option will visualize the alignments and VCF files in the EPI2ME desktop app IGV visualizer. | False |
 | out_dir | string | Directory for output of all workflow results. |  | output |
+| partner | string | Prepare outputs for tertiary analyses with partners (geneyx or fabric). |  |  |
 
 
 ### Copy number variant calling options
