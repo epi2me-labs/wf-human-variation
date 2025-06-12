@@ -5,14 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [v2.7.1]
-This patch release of wf-human-variation is issued to address a problem identified in Sniffles 2.6.2, which was introduced by our wf-human-variation 2.7.0 release. All users of wf-human-variation 2.7.0 should immediately adopt this release.
+This patch release of wf-human-variation addresses a problem identified in Sniffles 2.6.2, which was introduced by our wf-human-variation 2.7.0 release. All users of wf-human-variation 2.7.0 should immediately adopt this release.
 
 We have identified that in some cases Sniffles 2.6.2 consumes much more RAM than it has been allocated, and is killed by the system without raising an error, resulting in an empty or possibly truncated structural variant VCF. We have worked on [a patch with the Sniffles developers](https://github.com/fritzsedlazeck/Sniffles/pull/565) to ensure that the Sniffles program will exit with a fatal error in this scenario; allowing the workflow to safely terminate without providing an empty or truncated VCF.
 
 This patch is provided to ensure that in this case, users do not unknowingly analyse empty or truncated VCFs, but users should expect a further update to wf-human-variation to address the underlying Sniffles memory problem.
 
-This patch release also enables use of the `partner` parameter in EPI2ME Desktop.
+Additionally this release enables use of the `partner` parameter in EPI2ME Desktop, and adds support for v5.2.0 Dorado models.
 
+### Added
+- Support for v5.2.0 basecaller models.
 ### Changed
 - Sniffles 2.6.2 patched to incorporate [Sniffles/#565](https://github.com/fritzsedlazeck/Sniffles/pull/565) to avoid empty SV VCF if all analysis workers are killed by the operating system.
 - Increased memory allocation of the Sniffles process to mitigate some out of memory errors with this version.
