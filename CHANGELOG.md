@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+### Fixed
+- SUP Clair3 model was used to analyse SNPs on data basecalled with the dna_r10.4.1_e8.2_400bps_hac@v5.2.0 and dna_r10.4.1_e8.2_260bps_hac@v4.0.0 Dorado models. The corresponding HAC models are now correctly used.
+
 ## [v2.7.1]
 This patch release of wf-human-variation addresses a problem identified in Sniffles 2.6.2, which was introduced by our wf-human-variation 2.7.0 release. All users of wf-human-variation 2.7.0 should immediately adopt this release.
 
