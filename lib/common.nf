@@ -28,6 +28,7 @@ process configure_igv {
         val locus_str
         val aln_extra_opts
         val var_extra_opts
+        val keep_track_order
     output: path "igv.json"
     script:
     // the locus argument just makes sure that the initial view in IGV shows something
@@ -43,6 +44,8 @@ process configure_igv {
         var_extra_opts ? new JsonBuilder(var_extra_opts).toPrettyString() : ""
     String var_extra_opts_arg = \
         var_extra_opts ? "--extra-vcf-opts extra-var-opts.json" : ""
+    String keep_track_order_arg = \
+        keep_track_order ? "--keep-track-order" : ""
     """
     # write out JSON files with extra options for the alignment and variant tracks
     echo '$aln_opts_json_str' > extra-aln-opts.json
@@ -53,6 +56,7 @@ process configure_igv {
         $locus_arg \
         $aln_extra_opts_arg \
         $var_extra_opts_arg \
+        $keep_track_order_arg \
     > igv.json
     """
 }
