@@ -13,6 +13,7 @@ workflow igv {
         // 1. the igv.json is only relevant in the desktop app, and
         // 2. the desktop app only passes absolute paths when referring to files outside the outdir
         // The IGV configuration should work even when passing the input variable as file name.
+        boolean keep_track_order = false
         igv_files = outputs
             | flatten
             // If a file path starts with the workdir, then we assume it will be output by the workflow in the outdir and refer to it by its file name
@@ -25,7 +26,7 @@ workflow igv {
             | collectFile(name: "file-names.txt", newLine: true, sort: false)
 
         // Create IGV configuration file.
-        igv_out = configure_igv(igv_files, Channel.of(null), Channel.of(null), Channel.of(null))
+        igv_out = configure_igv(igv_files, Channel.of(null), Channel.of(null), Channel.of(null), keep_track_order)
     emit:
         igv_out = igv_out
 }

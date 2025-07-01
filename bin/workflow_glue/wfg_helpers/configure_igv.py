@@ -107,10 +107,11 @@ class TrackBuilder:
         if idx_basename == f"{basename}.gzi" and basename.endswith(".gz"):
             self.gzi = ref_index
 
-    def parse_fnames(self, fofn):
-        """Parse list with filenames and return them grouped.
+    def parse_fnames(self, fofn, keep_track_order=False):
+        """Parse list with filenames and set self with samples info per track.
 
         :param fofn: File with list of file names (one per line)
+        :param keep_track_order: Keep track order as in the list of file names.
         """
         tmp_samples = {}
         with open(fofn, "r") as f:
@@ -134,14 +135,18 @@ class TrackBuilder:
                             tmp_samples["NO_SAMPLE"] = SampleBundle(sample="NO_SAMPLE")
                         tmp_samples["NO_SAMPLE"].append(fname)
         # Re-order samples in dict and add them to the list, leaving
-        # NO_SAMPLE as last
-        sorted_samples = (
-            sorted([sample for sample in tmp_samples.keys() if sample != 'NO_SAMPLE'])
-        )
-        if 'NO_SAMPLE' in tmp_samples.keys():
-            sorted_samples += ['NO_SAMPLE']
-        for sample in sorted_samples:
-            self.samples[sample] = tmp_samples[sample]
+        # NO_SAMPLE
+        samples = {
+            sample_name: sample_content
+            for sample_name, sample_content in tmp_samples.items()
+            if sample_name != "NO_SAMPLE"
+        }
+        if not keep_track_order:
+            samples = dict(sorted(samples.items()))
+        # Add NO_SAMPLE as last
+        if "NO_SAMPLE" in tmp_samples.keys():
+            samples.update({"NO_SAMPLE": tmp_samples["NO_SAMPLE"]})
+        self.samples = samples
 
     def build_igv_json(self):
         """Ensure there is a reference genome."""
@@ -171,12 +176,22 @@ class TrackBuilder:
             bundle.process_data()
             # Add the bundled data to the tracks
             for fname, index, file_fmt in bundle.data_bundles:
+                # Check if there are custom opts per track
+                if sample != "NO_SAMPLE" and isinstance(
+                    self.extra_opts_lookups[file_fmt], list
+                ):
+                    sample_info = {}
+                    for e in self.extra_opts_lookups[file_fmt]:
+                        sample_info.update(e)
+                    extra_opts_lookups_track = sample_info[sample]
+                else:
+                    extra_opts_lookups_track = self.extra_opts_lookups[file_fmt]
                 self.add_track(
                     fname,
                     file_fmt,
                     sample_name=sample if sample != "NO_SAMPLE" else None,
                     index=index,
-                    extra_opts=self.extra_opts_lookups[file_fmt],
+                    extra_opts=extra_opts_lookups_track,
                 )
 
     def add_track(self, infile, file_fmt, sample_name=None, index=None, extra_opts={}):
@@ -325,7 +340,7 @@ def main(args):
     )
 
     # Import files
-    igv_builder.parse_fnames(args.fofn)
+    igv_builder.parse_fnames(args.fofn, args.keep_track_order)
 
     # initialise the IGV options dict with the reference options
     igv_builder.build_igv_json()
@@ -335,7 +350,6 @@ def main(args):
         igv_builder.add_locus(args.locus)
 
     json.dump(igv_builder.igv_json, sys.stdout, indent=4)
-
     logger.info("Printed IGV config JSON to STDOUT.")
 
 
@@ -349,6 +363,11 @@ def argparser():
             "File with list of names of reference / XAM / VCF files and indices "
             "(one filename per line)"
         ),
+    )
+    parser.add_argument(
+        "--keep-track-order",
+        action="store_true",
+        help="Keep track order as provided in fofn",
     )
     parser.add_argument(
         "--locus",
