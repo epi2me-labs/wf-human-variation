@@ -17,9 +17,7 @@ import pandas as pd
 from pkg_resources import resource_filename
 from .util import wf_parser  # noqa: ABS101
 
-# Setup simple globals
-WORKFLOW_NAME = 'wf-human-variation'
-REPORT_TITLE = f'{WORKFLOW_NAME} CNV report'
+# Setup global
 Colors = util.Colors
 
 GENETIC_SEX = {
@@ -114,6 +112,10 @@ def argparser():
     parser.add_argument(
         '-o', '--output', required=True, dest="output_report",
         help="Output report")
+    parser.add_argument(
+        "--workflow_name", required=True,
+        help="Workflow name",
+    )
 
     return parser
 
@@ -367,8 +369,8 @@ def make_report(
         args):
     """Layout all the compeonets of the report."""
     report = LabsReport(
-        f"{args.sample_id} | {REPORT_TITLE}",
-        WORKFLOW_NAME, params, versions, args.workflow_version,
+        "Copy number variation results", args.workflow_name,
+        params, versions, args.workflow_version,
         head_resources=[*LAB_head_resources])
 
     with report.add_section(

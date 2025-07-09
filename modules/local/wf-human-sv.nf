@@ -138,6 +138,7 @@ process report {
         path "*report.html", emit: html, optional: true
         path "${xam_meta.alias}.svs.json", emit: json
     script:
+        String workflow_name = workflow.manifest.name.replace("epi2me-labs/", "")
         def report_name = "${xam_meta.alias}.wf-human-sv-report.html"
         def evalResults = eval_json.name != 'OPTIONAL_FILE' ? "--eval_results ${eval_json}" : ""
         def generate_html = params.output_report ? "" : "--skip_report"
@@ -152,6 +153,7 @@ process report {
         --commit ${workflow.commitId} \
         --output_json "${xam_meta.alias}.svs.json" \
         --workflow_version ${workflow.manifest.version} \
+        --workflow_name ${workflow_name} \
         $evalResults $generate_html
     """
 }

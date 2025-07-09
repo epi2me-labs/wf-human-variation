@@ -164,6 +164,7 @@ process make_report {
     output:
         path "*wf-human-str-report.html", emit: html
     script:
+        String workflow_name = workflow.manifest.name.replace("epi2me-labs/", "")
         def report_name = "${xam_meta.alias}.wf-human-str-report.html"
         // if params.sex is not provided, assume the workflow inferred it
         String sex_source = params.sex ? "user-provided" : "workflow-inferred"
@@ -181,7 +182,8 @@ process make_report {
             --read_stats ${bam_stats} \
             --sex ${sex} \
             --sex_source ${sex_source} \
-            --workflow_version ${workflow.manifest.version}
+            --workflow_version ${workflow.manifest.version} \
+            --workflow_name ${workflow_name}
         """
 }
 

@@ -69,12 +69,12 @@ def main(args):
 
     # create the report
     if args.low_cov:
-        report_name = f"{args.name} reads QC report - failing"
+        report_name = "Alignment QC report - failing"
     else:
-        report_name = f"{args.name} reads QC report"
+        report_name = "Alignment QC report"
     report = labs.LabsReport(
         report_name,
-        args.name,
+        args.workflow_name,
         args.params,
         args.versions,
         args.workflow_version
@@ -154,6 +154,10 @@ def argparser():
     parser.add_argument(
         "--name",
         help="report name",
+    )
+    parser.add_argument(
+        "--workflow_name", required=True,
+        help="Workflow name"
     )
     parser.add_argument(
         "--stats_fn",

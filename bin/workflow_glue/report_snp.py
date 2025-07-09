@@ -113,7 +113,7 @@ def main(args):
         sys.exit(0)
     # Instantiate the report
     report = LabsReport(
-        "Small variation statistics", "wf-human-variation",
+        "Small variation summary", args.workflow_name,
         args.params, args.versions,
         args.workflow_version,
         head_resources=[*LAB_head_resources])
@@ -280,6 +280,10 @@ def argparser():
     parser.add_argument(
         "--workflow_version", required=True,
         help="Workflow version",
+    )
+    parser.add_argument(
+        "--workflow_name", required=True,
+        help="Workflow name",
     )
 
     return parser

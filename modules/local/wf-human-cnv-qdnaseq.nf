@@ -65,6 +65,7 @@ process makeReport {
         path("*wf-human-cnv-report.html")
 
     script:
+        String workflow_name = workflow.manifest.name.replace("epi2me-labs/", "")
         def report_name = "${xam_meta.alias}.wf-human-cnv-report.html"
         """
         workflow-glue report_cnv_qdnaseq \
@@ -78,7 +79,8 @@ process makeReport {
             --sample_id ${xam_meta.alias} \
             --noise_plot ${noise_plot} \
             --isobar_plot ${isobar_plot} \
-            --workflow_version ${workflow.manifest.version}
+            --workflow_version ${workflow.manifest.version} \
+            --workflow_name ${workflow_name}
         """
 
 }
