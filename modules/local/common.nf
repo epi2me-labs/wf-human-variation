@@ -296,9 +296,12 @@ process failedQCReport  {
         // check for OPTIONAL_FILE in bed_summary
         def bed_summary = !bed_summary.toString().contains('OPTIONAL_FILE') ? "--bed_summary ${bed_summary}" : ""
         def coverage_bed_summary = !coverage_bed_summary.toString().contains('OPTIONAL_FILE') ? "--coverage_bed_summary ${coverage_bed_summary}" : ""
+
+        String workflow_name = workflow.manifest.name.replace("epi2me-labs/", "")
         """
         workflow-glue report_al \\
             --name ${report_name} \\
+            --workflow_name ${workflow_name} \\
             --sample_name ${xam_meta.alias} \\
             --stats_fn readstats.tsv.gz \\
             --summary_dir summary/ \\
@@ -367,9 +370,12 @@ process makeAlignmentReport {
         // check for OPTIONAL_FILE in bed_summary
         def bed_summary = !bed_summary.toString().contains('OPTIONAL_FILE') ? "--bed_summary ${bed_summary}" : ""
         def coverage_bed_summary = !coverage_bed_summary.toString().contains('OPTIONAL_FILE') ? "--coverage_bed_summary ${coverage_bed_summary}" : ""
+
+        String workflow_name = workflow.manifest.name.replace("epi2me-labs/", "")
         """
         workflow-glue report_al \\
             --name ${report_name} \\
+            --workflow_name ${workflow_name} \\
             --sample_name "${xam_meta.alias}" \\
             --stats_fn readstats.tsv.gz \\
             --summary_dir summary/ \\

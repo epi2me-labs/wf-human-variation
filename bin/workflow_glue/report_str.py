@@ -16,10 +16,6 @@ import pandas as pd
 from .util import wf_parser  # noqa: ABS101
 
 
-WORKFLOW_NAME = 'wf-human-variation'
-REPORT_TITLE = f'{WORKFLOW_NAME} STR report'
-
-
 def argparser():
     """Return an arg parser object from arguments."""
     parser = wf_parser("report_str")
@@ -85,6 +81,10 @@ def argparser():
     parser.add_argument(
         "--workflow_version", required=True,
         help="Workflow version",
+    )
+    parser.add_argument(
+        "--workflow_name", required=True,
+        help="Workflow name",
     )
 
     return parser
@@ -429,8 +429,7 @@ def make_report(
         stranger_annotation, str_content_csv, args):
     """Put the STR plots into a report."""
     report = LabsReport(
-        f"{args.sample_name} | {REPORT_TITLE}",
-        WORKFLOW_NAME, params, versions,
+        "Short tandem repeat results", args.workflow_name, params, versions,
         args.workflow_version, head_resources=[*LAB_head_resources])
 
     vcf_data = parse_vcf(vcf, info_cols={'VARID': str})

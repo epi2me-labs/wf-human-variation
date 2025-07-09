@@ -12,9 +12,7 @@ import pandas as pd
 from .report_utils.common import CHROMOSOMES  # noqa: ABS101
 from .util import wf_parser  # noqa: ABS101
 
-# Setup simple globals
-WORKFLOW_NAME = 'wf-human-variation'
-REPORT_TITLE = f'{WORKFLOW_NAME} CNV report'
+# Setup global
 Colors = util.Colors
 
 
@@ -52,6 +50,10 @@ def argparser():
         '--genome_build',
         help="Genome build of the sample"
     )
+    parser.add_argument(
+        '--workflow_name', required=True,
+        help="Workflow name"
+    )
 
     return parser
 
@@ -59,8 +61,8 @@ def argparser():
 def make_report(params, versions, cnv_df, args):
     """Create the report."""
     report = LabsReport(
-        f"{args.sample_id} | {REPORT_TITLE}",
-        WORKFLOW_NAME, params, versions, args.workflow_version,
+        "Copy number variation results", args.workflow_name,
+        params, versions, args.workflow_version,
         head_resources=[*LAB_head_resources])
 
     with open(args.karyotype) as karyotype_file:

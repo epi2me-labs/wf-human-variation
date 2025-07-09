@@ -265,7 +265,7 @@ def main(args):
 
     # Create report file
     report = LabsReport(
-        "Structural variants analysis", "wf-human-variation",
+        "Structural variation summary", args.workflow_name,
         args.params, args.versions,
         args.workflow_version,
         head_resources=[*LAB_head_resources])
@@ -433,6 +433,10 @@ def argparser():
     parser.add_argument(
         "--workflow_version", required=True,
         help="Workflow version",
+    )
+    parser.add_argument(
+        "--workflow_name", required=True,
+        help="Workflow name",
     )
 
     return parser

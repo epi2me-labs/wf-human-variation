@@ -731,6 +731,7 @@ process makeReport {
         path "${xam_meta.alias}.wf-human-snp-report.html", emit: 'report', optional: true
         path "${xam_meta.alias}.snvs.json", emit: 'json'
     script:
+        String workflow_name = workflow.manifest.name.replace("epi2me-labs/", "")
         def clinvar = clinvar_vcf ?: ""
         def annotation = params.annotation ? "" : "--skip_annotation"
         def generate_html = params.output_report ? "" : "--skip_report"
@@ -743,6 +744,7 @@ process makeReport {
         """
         workflow-glue report_snp \
         $report_name \
+        --workflow_name ${workflow_name} \
         --versions $versions \
         --params params.json \
         --vcf_stats $vcfstats \
