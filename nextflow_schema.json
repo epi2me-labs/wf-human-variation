@@ -640,7 +640,7 @@
                     "type": "string",
                     "description": "Additional command line arguments to pass to the Sniffles2 process",
                     "hidden": false,
-                    "help_text": "The additional command line arguments will be passed directly to [Sniffles2](https://github.com/fritzsedlazeck/Sniffles/tree/v2.0.7); ensure to use the right commands for the version and from command line provide them as follows: `--sniffles_args=\"--non-germline\"`."
+                    "help_text": "The additional command line arguments will be passed directly to [Sniffles2](https://github.com/fritzsedlazeck/Sniffles/tree/v2.6.3); ensure to use the right commands for the version and from command line provide them as follows: `--sniffles_args=\"--mosaic\"`."
                 },
                 "spectre_args": {
                     "title": "Spectre additional arguments",
