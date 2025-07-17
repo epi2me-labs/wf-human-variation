@@ -77,9 +77,9 @@ process pileup_variants {
     // Calls variants per region ("chunk") using pileup network.
     label "wf_human_snp"
     cpus 1
-    memory { 4.GB * task.attempt }
+    memory { ["3.6 GB", "7 GB", "14 GB"][task.attempt - 1] }  // CW-6182
     errorStrategy 'retry'
-    maxRetries 1
+    maxRetries 2
     input:
         each region
         tuple path(xam), path(xam_idx), val(xam_meta)
@@ -338,10 +338,9 @@ process evaluate_candidates {
     // phased_bam just references the input BAM as it no longer contains phase information.
     label "wf_human_snp"
     cpus 1
-    // [CW-5461] recent testing has shown the Q90 for this is <2GB. we have seen more trouble with this in cloud that may be impacted by reducing this - we can configure that independently if this causes issues.
-    memory { 3.GB * task.attempt }
-    maxRetries 3
-    errorStrategy = {task.exitStatus in [137,140] ? 'retry' : 'finish'}
+    memory { ["3.6 GB", "7 GB", "29 GB"][task.attempt - 1] }  // CW-5461, CW-6182
+    errorStrategy 'retry'
+    maxRetries 2
 
     input:
         tuple val(contig), path(phased_xam), path(phased_xai), val(xam_meta), path(phased_vcf)
