@@ -1000,7 +1000,21 @@ workflow {
                 snp_vcf | map { meta, vcf, tbi -> [vcf, tbi] },
                 sv_vcf | map { meta, vcf, tbi -> [vcf, tbi] },
                 str_vcf | map { meta, vcf, tbi -> [vcf, tbi] },
-                cnv_vcf | map { meta, vcf, tbi -> [vcf, tbi] }
+                cnv_vcf | map { meta, vcf, tbi -> [vcf, tbi] },
+                // set correct BAM for IGV depending on whether haplotagging requested
+                // or alignment carried out - if neither then fall back to the original
+                // unchanged BAM
+                (run_haplotagging 
+                    ? clair_vcf.haplotagged_xam | map { xam, xai, meta -> [xam, xai] } 
+                    : bam_channel | map { 
+                        xam, xai, meta -> [
+                            meta.to_align ? xam : file(meta.src_xam),
+                            meta.to_align || !meta.src_xai ? xai : file(meta.src_xai)
+                        ] 
+                    }
+                ),
+                // haplotagged bedMethyl
+                mod_stats.take(2)
             )
             | igv
     } else {
