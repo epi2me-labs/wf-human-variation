@@ -785,6 +785,7 @@
                 },
                 "store_dir": {
                     "type": "string",
+                    "format": "directory-path",
                     "hidden": true
                 }
             }

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SUP Clair3 model was used to analyse SNPs on data basecalled with the dna_r10.4.1_e8.2_400bps_hac@v5.2.0 and dna_r10.4.1_e8.2_260bps_hac@v4.0.0 Dorado models. The corresponding HAC models are now correctly used.
 - Reduced fatal memory errors ("Error: 137") by improving how the `pileup_variants` and `evaluate_candidates` steps of the workflow are retried on error.
 - BAM and bedMethyl tracks missing from the integrated IGV viewer in the EPI2ME Desktop Application.
+- `store_dir` parameter format incorrectly declared in the schema preventing downstream workflows from using the Nextflow storeDir directive on Windows. This does not affect wf-human-variation and has been changed to support our other workflows.
 ### Changed
 - Updated to wf-template v5.6.2 to maintain compliance with our latest wf-template standard: this does not impact the workflow.
 - HTML report titles now simply describe the analysis report type; removing sample names and the workflow name to reduce clutter and match the visual style of our other workflow reports.
