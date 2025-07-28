@@ -4,19 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [v2.7.2]
+This patch release of wf-human-variation updates the structural variant caller to [Sniffles 2.6.3](https://github.com/fritzsedlazeck/Sniffles/releases/tag/v2.6.3), allowing analyses of structural variants that previously crashed with wf-human-variation 2.7.1 to correctly proceed.
+Sniffles 2.6.3 incorporates [a patch from Oxford Nanopore to improve memory management](https://github.com/fritzsedlazeck/Sniffles/pull/572) in order to address cases where significant amounts of memory were consumed by the caller, rendering some datasets impossible to analyse within the memory limits of our workflow.
+This patch makes no change to variant calls.
+
+Users of wf-human-variation 2.7.1 who have encountered the “All workers have exited but work remains to be done” error should immediately adopt this release.
+Remaining users of wf-human-variation 2.7.0 must adopt this release, as the version of Sniffles included in wf-human-variation 2.7.0 can fail without raising an error, resulting in an empty or possibly truncated structural variant VCF.
+
+Additionally this release includes a few minor fixes and improvements, notably a change to resourcing in order to reduce fatal memory errors.
+
+### Changed
+- The structural variant caller has been updated to Sniffles v2.6.3 to allow analysis of datasets that previously crashed with an "All workers have exited but work remains to be done" error when using wf-human-variation v2.7.1. This does not change structural variant calls for datasets that were successfully run with wf-human-variation 2.7.1.
+- Updated to wf-template v5.6.2 to maintain compliance with our latest wf-template standard: this does not impact the workflow.
+- HTML report titles now simply describe the analysis report type; removing sample names and the workflow name to reduce clutter and match the visual style of our other workflow reports.
 ### Fixed
 - SUP Clair3 model was used to analyse SNPs on data basecalled with the dna_r10.4.1_e8.2_400bps_hac@v5.2.0 and dna_r10.4.1_e8.2_260bps_hac@v4.0.0 Dorado models. The corresponding HAC models are now correctly used.
 - Reduced fatal memory errors ("Error: 137") by improving how the `pileup_variants` and `evaluate_candidates` steps of the workflow are retried on error.
 - BAM and bedMethyl tracks missing from the integrated IGV viewer in the EPI2ME Desktop Application.
 - `store_dir` parameter format incorrectly declared in the schema preventing downstream workflows from using the Nextflow storeDir directive on Windows. This does not affect wf-human-variation and has been changed to support our other workflows.
-### Changed
-- Updated to wf-template v5.6.2 to maintain compliance with our latest wf-template standard: this does not impact the workflow.
-- HTML report titles now simply describe the analysis report type; removing sample names and the workflow name to reduce clutter and match the visual style of our other workflow reports.
-- The structural variant caller has been updated to Sniffles v2.6.3.
-- The documentation for `sniffles_args` has been updated for Sniffles v2.6.3.
 ### Added
 - "Regions below target coverage" section in the alignment report will tabulate BED regions with mean coverage below the `alignment_report_coverage_threshold` parameter.
+
 
 ## [v2.7.1]
 This patch release of wf-human-variation addresses a problem identified in Sniffles 2.6.2, which was introduced by our wf-human-variation 2.7.0 release. All users of wf-human-variation 2.7.0 should immediately adopt this release.
