@@ -253,40 +253,59 @@ def at_a_glance(report, sample_names, values, use_bed=False):
                     )
 
 
-def cov_summary(report, bed_summary_pairs):
-    """Generate tables of coverage summaries."""
+def cov_summary(report, bed_summary_pairs, cov_bed_threshold):
+    """Generate coverage summary and failed regions tables."""
+
+    def process_bed(bed, filter_failed=False):
+        """Prepare coverage df."""
+        df = pd.read_csv(bed, sep='\t')
+        df = df.drop(columns=['1X', '10X', '15X'])
+        df = df.rename(columns={
+            'chrom': 'Chromosome',
+            'start': 'Start position',
+            'end': 'End position',
+            'region': 'Region',
+            'length': 'Length',
+            '30X': 'Bases covered ≥30X (%)',
+            '20X': 'Bases covered ≥20X (%)',
+            'avg_coverage': 'Average coverage'
+        })
+        df = df[[
+            'Region',
+            'Bases covered ≥20X (%)',
+            'Bases covered ≥30X (%)',
+            'Average coverage',
+            'Chromosome',
+            'Start position',
+            'End position',
+            'Length'
+        ]]
+        if filter_failed:
+            df = df[df['Average coverage'] < cov_bed_threshold]
+        return df
+
+    # coverage summary
     with report.add_section("Coverage summary", "Coverage summary"):
-        dom_tags.p(
-            """
+        dom_tags.p("""
             The table below summarises sequence coverage information for genomic
             regions defined by the BED files provided to the workflow.
-            """
-        )
+        """)
         tabs = Tabs()
-        for bed, bed_label in bed_summary_pairs:
-            with tabs.add_tab(bed_label):
-                bed_df = pd.read_csv(bed, sep='\t')
-                # don't display all the coverage levels
-                cols_to_drop = ['1X', '10X', '15X']
-                bed_df = bed_df.drop(columns=cols_to_drop)
-                bed_df = bed_df.rename(columns={
-                    'chrom': 'Chromosome',
-                    'start': 'Start position',
-                    'end': 'End position',
-                    'region': 'Region',
-                    'length': 'Length',
-                    '30X': 'Bases covered ≥30X (%)',
-                    '20X': 'Bases covered ≥20X (%)',
-                    'avg_coverage': 'Average coverage'
-                })
-                bed_df = bed_df[[
-                    'Region',
-                    'Bases covered ≥20X (%)',
-                    'Bases covered ≥30X (%)',
-                    'Average coverage',
-                    'Chromosome',
-                    'Start position',
-                    'End position',
-                    'Length'
-                ]]
-                DataTable.from_pandas(bed_df, use_index=False)
+        for bed, label in bed_summary_pairs:
+            with tabs.add_tab(label):
+                DataTable.from_pandas(process_bed(bed), use_index=False)
+
+    # failed regions
+    with report.add_section(
+            "Regions below target coverage", "Regions below target coverage"
+            ):
+        dom_tags.p(f"""
+            The table below displays targets in BED files provided to the workflow
+            which have mean coverage below {cov_bed_threshold}x.
+        """)
+        tabs = Tabs()
+        for bed, label in bed_summary_pairs:
+            with tabs.add_tab(label):
+                DataTable.from_pandas(
+                    process_bed(bed, filter_failed=True), use_index=False, export=True
+                )

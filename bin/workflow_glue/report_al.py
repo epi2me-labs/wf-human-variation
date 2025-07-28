@@ -140,6 +140,7 @@ def main(args):
         sections.cov_summary(
             report,
             clean_bed_pairs,
+            args.coverage_threshold
          )
 
     # write the report to the output file
@@ -232,5 +233,10 @@ def argparser():
     parser.add_argument(
         "--coverage_bed_basename",
         help="Basename of BED file from params.coverage_bed"
+    )
+    parser.add_argument(
+        "--coverage_threshold",
+        help="Alignment report coverage threshold",
+        type=int
     )
     return parser
