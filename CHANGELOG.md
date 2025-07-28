@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HTML report titles now simply describe the analysis report type; removing sample names and the workflow name to reduce clutter and match the visual style of our other workflow reports.
 - The structural variant caller has been updated to Sniffles v2.6.3.
 - The documentation for `sniffles_args` has been updated for Sniffles v2.6.3.
+### Added
+- "Regions below target coverage" section in the alignment report will tabulate BED regions with mean coverage below the `alignment_report_coverage_threshold` parameter.
 
 ## [v2.7.1]
 This patch release of wf-human-variation addresses a problem identified in Sniffles 2.6.2, which was introduced by our wf-human-variation 2.7.0 release. All users of wf-human-variation 2.7.0 should immediately adopt this release.

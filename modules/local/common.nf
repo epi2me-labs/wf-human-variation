@@ -318,7 +318,8 @@ process failedQCReport  {
             ${bed_summary} \\
             ${coverage_bed_summary} \\
             ${bed_basename} \\
-            ${coverage_bed_basename}
+            ${coverage_bed_basename} \\
+            --coverage_threshold ${params.alignment_report_coverage_threshold}
         """
 }
 
@@ -391,7 +392,8 @@ process makeAlignmentReport {
             ${bed_summary} \\
             ${coverage_bed_summary} \\
             ${bed_basename} \\
-            ${coverage_bed_basename}
+            ${coverage_bed_basename} \\
+            --coverage_threshold ${params.alignment_report_coverage_threshold}
         """
 }
 
