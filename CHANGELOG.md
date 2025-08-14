@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Fixed
+- Link to `modkit pileup` documentation in README was incorrect.
+
 ## [v2.7.2]
 This patch release of wf-human-variation updates the structural variant caller to [Sniffles 2.6.3](https://github.com/fritzsedlazeck/Sniffles/releases/tag/v2.6.3), allowing analyses of structural variants that previously crashed with wf-human-variation 2.7.1 to correctly proceed.
 Sniffles 2.6.3 incorporates [a patch from Oxford Nanopore to improve memory management](https://github.com/fritzsedlazeck/Sniffles/pull/572) in order to address cases where significant amounts of memory were consumed by the caller, rendering some datasets impossible to analyse within the memory limits of our workflow.
