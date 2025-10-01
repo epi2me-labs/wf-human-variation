@@ -2,7 +2,7 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/epi2me-labs/wf-human-variation/master/nextflow_schema.json",
     "title": "epi2me-labs/wf-human-variation",
-    "workflow_title": "Human variation workflow",
+    "workflow_title": "Human Variation",
     "description": "Human SNV, SV, CNV, genotyping STR and modified base calling.",
     "demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/hg002%2bmods.v1/wf-human-variation-demo.tar.gz",
     "aws_demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-human-variation/wf-human-variation-demo/hg002%2bmods.v1.aws.nextflow.config",
