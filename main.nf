@@ -86,35 +86,6 @@ workflow {
     Map colors = NfcoreTemplate.logColours(params.monochrome_logs)
 
     can_start = true
-    // Check for deprecated options
-    if (params.containsKey('methyl')) {
-        log.error (colors.red + "The workflow now uses modkit instead of the deprecated modbam2bed. Please use --mod instead of --methyl to enable modkit." + colors.reset)
-        can_start = false
-    }
-    if (params.containsKey('phase_methyl') || params.containsKey('phase_mod') || params.containsKey('phase_vcf')) {
-        log.error (colors.red + "phase_methyl, phase_mod and phase_vcf are deprecated. Please use --phased instead to enable phasing of modkit results." + colors.reset)
-        can_start = false
-    }
-
-    if (!params.snp && !params.sv && !params.mod && !params.cnv && !params.str) {
-        log.error (colors.red + "No work to be done! Choose one or more workflows to run from [--snp, --sv, --cnv, --str, --mod]" + colors.reset)
-        can_start = false
-    }
-
-    if (params.containsKey("ubam_threads")) {
-        log.error (colors.red + "--ubam_threads is deprecated. Use `nextflow run ${workflow.manifest.name} --help` to see the parameter list." + colors.reset)
-        can_start = false
-    }
-
-    if (params.containsKey("ubam")) {
-        log.error (colors.red + "--ubam is deprecated as this workflow can determine whether (re)alignment is required automatically, use --bam instead." + colors.reset)
-        can_start = false
-    }
-
-    if (params.containsKey("fast5_dir")) {
-        log.error (colors.red + "--fast5_dir is deprecated as this workflow does not run basecalling anymore. Use wf-basecalling to generate a valid BAM file instead." + colors.reset)
-        can_start = false
-    }
 
     // Check if it is in genotyping mode
     if (params.snp && params.vcf_fn) {
@@ -237,11 +208,6 @@ workflow {
     | concat(ref_cache)
     | flatten
     | buffer(size: 4)
-
-    // Otherwise handle (u)BAM/CRAM
-    if (!params.bam) {
-        throw new Exception(colors.red + "Missing required --bam input argument." + colors.reset)
-    }
 
     // ************************************************************************
     // Bail from the workflow for a reason we should have already specified

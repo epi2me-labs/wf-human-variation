@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed
 - Link to `modkit pileup` documentation in README was incorrect.
+### Removed
+- Parameter validation in `main.nf`. Parameter validation is already done in the schema so this change has no impact on the workflow.
 
 ## [v2.7.2]
 This patch release of wf-human-variation updates the structural variant caller to [Sniffles 2.6.3](https://github.com/fritzsedlazeck/Sniffles/releases/tag/v2.6.3), allowing analyses of structural variants that previously crashed with wf-human-variation 2.7.1 to correctly proceed.
