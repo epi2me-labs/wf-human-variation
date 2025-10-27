@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v2.7.3]
+This patch release of wf-human-variation updates our documentation to fix a link and update the workflow title for display in EPI2ME Desktop. This update removes some superfluous parameter checking that is no longer required as unknown parameters lead to an error since wf-human-variation v2.7.0. This patch does not affect any workflow outputs. Users of wf-human-variation v2.7.2 do not need to adopt this release.
+
+### Changed
+- Removed 'workflow' suffix from workflow title for display in EPI2ME Desktop.
 ### Fixed
 - Link to `modkit pileup` documentation in README was incorrect.
 ### Removed
