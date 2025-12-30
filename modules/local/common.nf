@@ -151,7 +151,7 @@ process getGenome {
     input:
         tuple path(xam), path(xam_idx), val(xam_meta)
     output:
-        env genome_build, emit: genome_build optional true
+        env genome_build, emit: genome_build, optional: true
      script:
         // set flags for subworkflows that have genome build restrictions
         def str_arg = params.str ? "--str" : ""
@@ -194,7 +194,7 @@ process downsampling {
         tuple val(to_downsample), val(downsampling_rate)
         tuple val(xam_fmt), val(xai_fmt)
     output:
-        tuple path("downsampled.${xam_fmt}"), path("downsampled.${xam_fmt}.${xai_fmt}"), val(xam_meta), emit: xam optional true
+        tuple path("downsampled.${xam_fmt}"), path("downsampled.${xam_fmt}.${xai_fmt}"), val(xam_meta), emit: xam, optional: true
     script:
         """
         samtools view \\
