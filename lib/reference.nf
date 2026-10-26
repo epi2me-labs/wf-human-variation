@@ -36,7 +36,7 @@ process cram_cache {
     shell:
     '''
     # Invoke from binary installed to container PATH
-    seq_cache_populate.pl -root ref_cache/ !{reference}
+    seq_cache_populate.py -root ref_cache/ !{reference}
     REF_PATH="ref_cache/%2s/%2s/%s"
     '''
 }
