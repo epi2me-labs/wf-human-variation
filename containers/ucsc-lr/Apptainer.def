@@ -1,0 +1,28 @@
+Bootstrap: docker
+From: mambaorg/micromamba:2.10.0
+
+%files
+    modules/local/ucsc_lr_frequency.environment.yml /ucsc_lr_frequency.environment.yml
+
+%post
+    export MAMBA_ROOT_PREFIX=/opt/conda
+
+    /bin/micromamba install \
+        --yes \
+        --name base \
+        --file /ucsc_lr_frequency.environment.yml
+
+    /bin/micromamba clean --all --yes
+
+    rm -f /ucsc_lr_frequency.environment.yml
+    chmod -R a+rX /opt/conda
+
+%environment
+    export MAMBA_ROOT_PREFIX=/opt/conda
+    export PATH=/opt/conda/bin:$PATH
+
+%test
+    python --version
+    python -c "import pandas, numpy"
+    command -v curl
+    command -v bigBedToBed

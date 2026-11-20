@@ -6,3 +6,69 @@ template-workflow
 *.pyc
 *.pyo
 .DS_store
+
+# Nextflow execution and output files
+work/
+results/
+.nextflow*
+*.nextflow.log*
+trace.txt
+timeline.html
+report.html
+dag.html
+
+# Apptainer / Singularity images
+*.sif
+*.simg
+*.img
+*.sqsh
+
+# Sequencing and clinical data
+*.bam
+*.bai
+*.cram
+*.crai
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.pod5
+*.fast5
+*.vcf
+*.vcf.gz
+*.bcf
+
+# Preserve the existing upstream reference file
+!data/empty_clinvar.vcf
+
+# Logs and temporary files
+*.log
+*.out
+*.err
+*.tmp
+*.temp
+*.partial
+
+# Backups
+*.bak
+*.bak.*
+*.backup
+*.backup.*
+*.before_*
+*.original*
+*.old
+*~
+
+# Python caches
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local credentials and configuration
+.env
+.env.*
+*.local.config
+nextflow.local.config
+params.local.yaml
+params.local.yml

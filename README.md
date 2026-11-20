@@ -30,6 +30,10 @@ The tools embedded in individual sub-workflows within wf-human-variation are spe
 
 
 
+## Custom extensions
+
+This branch includes additional functionality for 6mA modified-base analysis, GPAP/HPO integration, SvAnna prioritisation, AnnotSV, UCSC long-read population frequencies and Mahi-mahi STR genotyping. See [Custom extensions documentation](docs/CUSTOM_EXTENSIONS.md) for installation requirements, parameters, dependencies, outputs and licensing information.
+
 ## Compute requirements
 
 Recommended requirements:
@@ -188,9 +192,9 @@ SVs can be phased using `--phased`. However, this will cause the workflow to run
 
 Modified base calling can be performed by specifying `--mod`. The workflow will call modified bases using [modkit](https://github.com/nanoporetech/modkit). 
 The workflow will automatically check whether the files contain the appropriate `MM`/`ML` tags, required for running [modkit pileup](https://nanoporetech.github.io/modkit/intro_pileup.html). If the tags are not found, the workflow will not run the individual analysis, but will still run the other subworkflows requested by the user.
-The default behaviour of the workflow is to run modkit with the `--cpg --combine-strands` options set. It is possible to report strand-aware modifications with the workflow's `--force_strand` parameter, which will trigger modkit to run in strand-aware mode, and the resulting bedMethyl will include modifications for each site on each strand separately.
+Modified-base calling is configured for 6mA using `modkit pileup --modified-bases 6mA`. No CpG filtering or strand combining is applied. The bedMethyl output retains strand-specific records (`+` and `-`).
 The modkit invocation can be customized by providing `--modkit_args`. This will override all defaults and allow full control over the run of modkit, but note that not all options are compatible with wf-human-variation and may lead to workflow errors.
-The workflow will also output a bigWig file for visualisation of 5mC counts.
+The workflow also produces bigWig files for visualisation of 6mA modification counts. The `--force_strand` option controls whether negative-strand values are represented as negative values in these bigWig tracks; it does not control strand retention in the bedMethyl output.
 Haplotype-resolved aggregated counts of modified bases will be output when using the workflow's `--phased` option. This will generate two additional bedMethyl and bigWig files for the counts aggregated across each phased haplotype.
 
 
@@ -296,7 +300,7 @@ Some of the sub-workflows in wf-human-variation are restricted to certain genome
 
 | Nextflow parameter name  | Type | Description | Help | Default |
 |--------------------------|------|-------------|------|---------|
-| force_strand | boolean | Require modkit to call strand-aware modifications. | By default strand calls are collapsed (strand reported as '.'). Enabling this will force stranding to be considered when calling modifications, creating one output per modification per strand and the report will be tabulated by both modification and strand. | False |
+| force_strand | boolean | Represent negative-strand values as negative values in generated bigWig tracks. | By default, negative-strand values are not inverted in the bigWig. Enabling this option passes --negative-strand-values to modkit bm tobigwig. Strand-specific bedMethyl records are retained regardless of this option. | False |
 
 
 ### Short tandem repeat expansion genotyping options
@@ -358,9 +362,9 @@ Output files may be aggregated including information for all samples or provided
 | Modified bases bedMethyl | {{ alias }}.wf_mods.bedmethyl.gz | BED file with the aggregated modification counts for the sample. | per-sample |
 | Modified bases bedMethyl (haplotype 1) | {{ alias }}.wf_mods.1.bedmethyl.gz | BED file with the aggregated modification counts for haplotype 1 of the sample. | per-sample |
 | Modified bases bedMethyl (haplotype 2) | {{ alias }}.wf_mods.2.bedmethyl.gz | BED file with the aggregated modification counts for haplotype 2 of the sample. | per-sample |
-| 5mC bigWig | {{ alias }}.wf_mods.5mC.bw | bigWig for visualisation of aggregated 5mC modification counts. | per-sample |
-| 5mC bigWig (haplotype 1) | {{ alias }}.wf_mods.1-5mC.bw | bigWig for visualisation of aggregated 5mC modification counts for haplotype 1 of the sample. | per-sample |
-| 5mC bigWig (haplotype 2) | {{ alias }}.wf_mods.2-5mC.bw | bigWig for visualisation of aggregated 5mC modification counts for haplotype 2 of the sample. | per-sample |
+| 6mA bigWig | {{ alias }}.wf_mods.6mA.bw | bigWig for visualisation of aggregated 6mA modification counts. | per-sample |
+| 6mA bigWig (haplotype 1) | {{ alias }}.wf_mods.1-6mA.bw | bigWig for visualisation of aggregated 6mA modification counts for haplotype 1. | per-sample |
+| 6mA bigWig (haplotype 2) | {{ alias }}.wf_mods.2-6mA.bw | bigWig for visualisation of aggregated 6mA modification counts for haplotype 2. | per-sample |
 | Short tandem repeat VCF | {{ alias }}.wf_str.vcf.gz | VCF file with the STR sites for the sample. | per-sample |
 | Alignment file | {{ alias }}.cram | CRAM or BAM file with the aligned reads for the sample, generated when the input file is unaligned. | per-sample |
 | Alignment file index | {{ alias }}.cram.crai | The index of the resulting CRAM or BAM file with the reads for the sample, generated when the input file is unaligned. | per-sample |

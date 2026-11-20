@@ -1,0 +1,11 @@
+name: base
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - pandas=2.2.3
+  - numpy=1.26.4
+  - curl
+  - coreutils
+  - ucsc-bigbedtobed=482
