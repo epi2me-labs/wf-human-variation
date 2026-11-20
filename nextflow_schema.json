@@ -527,8 +527,8 @@
                     "title": "Force strand",
                     "type": "boolean",
                     "default": false,
-                    "description": "Require modkit to call strand-aware modifications.",
-                    "help_text": "By default strand calls are collapsed (strand reported as '.'). Enabling this will force stranding to be considered when calling modifications, creating one output per modification per strand and the report will be tabulated by both modification and strand."
+                    "description": "Represent negative-strand values as negative values in generated bigWig tracks.",
+                    "help_text": "By default, negative-strand values are not inverted in the bigWig. Enabling this option passes --negative-strand-values to modkit bm tobigwig. Strand-specific bedMethyl records are retained regardless of this option."
                 }
             }
         },
@@ -797,6 +797,82 @@
                     "hidden": true
                 }
             }
+        },
+        "custom_options": {
+            "title": "Custom extensions",
+            "type": "object",
+            "description": "Additional structural variant prioritization, annotation and STR genotyping tools.",
+            "properties": {
+                "svanna": {
+                    "title": "SvAnna: phenotype-driven prioritization",
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable phenotype-driven prioritization of SVs and CNVs using SvAnna.",
+                    "help_text": "Requires --sv or --cnv, a SvAnna container, CLI JAR, database and GPAP authentication secret."
+                },
+                "svanna_container": {
+                    "title": "SvAnna container",
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to the Apptainer/Singularity image containing SvAnna."
+                },
+                "svanna_jar": {
+                    "title": "SvAnna CLI JAR",
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to the SvAnna command-line JAR."
+                },
+                "svanna_db": {
+                    "title": "SvAnna database",
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Path to the SvAnna database directory, including the phenotype ontology."
+                },
+                "annotsv": {
+                    "title": "AnnotSV annotation",
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable AnnotSV annotation of called structural variants and copy number variants.",
+                    "help_text": "Requires --sv or --cnv, an AnnotSV annotations directory and a transcript file."
+                },
+                "annotsv_txfile": {
+                    "title": "AnnotSV transcript file",
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to the AnnotSV transcript annotation file."
+                },
+                "annotsv_annotations": {
+                    "title": "AnnotSV annotations directory",
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Path to the AnnotSV annotations directory."
+                },
+                "mahi_mahi": {
+                    "title": "Mahi-mahi: STR expansion genotyping",
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable STR expansion genotyping with Mahi-mahi.",
+                    "help_text": "Requires a compatible hg38 reference, a haplotagged alignment and a Mahi-mahi container. Sex can be provided with --sex XX or --sex XY; otherwise the workflow attempts to infer it from chromosome coverage."
+                },
+                "mahi_mahi_container": {
+                    "title": "Mahi-mahi container",
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to the Mahi-mahi Apptainer/Singularity image."
+                },
+                "mahi_mahi_repeat_id": {
+                    "title": "Mahi-mahi repeat identifier",
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_.-]+$",
+                    "description": "Optional identifier of a specific repeat to genotype."
+                },
+                "ucsc_lr_container": {
+                    "title": "UCSC long-read annotation container",
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to the Apptainer/Singularity image containing Python and UCSC BigBed utilities."
+                }
+            }
         }
     },
     "allOf": [
@@ -832,6 +908,9 @@
         },
         {
             "$ref": "#/definitions/misc"
+        },
+        {
+            "$ref": "#/definitions/custom_options"
         }
     ],
     "properties": {

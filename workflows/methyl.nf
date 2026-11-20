@@ -37,7 +37,7 @@ process modkit {
     modkit pileup \\
         ${xam} \\
         ${meta.alias}.wf_mods.${meta.sq}.bedmethyl.gz \\
-        --modified-bases 5mC 5hmC \\
+        --modified-bases 6mA \\
         --ref ${ref} \\
         --region ${meta.sq} \\
         --log-filepath modkit.log \\
@@ -71,7 +71,7 @@ process modkit_phase {
     modkit pileup \\
         ${xam} \\
         ${meta.alias} \\
-        --modified-bases 5mC 5hmC \\
+        --modified-bases 6mA \\
         --ref ${ref} \\
         --phased \\
         --prefix ${meta.alias}.wf_mods.${meta.sq} \\
@@ -183,7 +183,7 @@ workflow mod {
         reference
         run_haplotagging
     main:
-        def modkit_options = params.force_strand ? '' : '--combine-strands --cpg'
+        def modkit_options = ''
         // Custom options overwrite every custom setting.
         if (params.modkit_args){
             modkit_options = "${params.modkit_args}"
@@ -242,12 +242,12 @@ workflow mod {
                 | concat_bedmethyl
         }
         // make bigwig from the (un)phased bedmethyls
-        // currently only provide 5mC by default for now as that is what most users want
+        // Generate a 6mA bigWig track for adenine modifications.
         // mod codes use basemod codes from SAMTags, we label the files with the more
         //  human friendly abbreviation by sending <mod_code>:<mod_label> to tobigwig
         bigwig = modkit_tobigwig(
             reference.collect(),
-            bedmethyl | combine(["m:5mC"]),
+            bedmethyl | combine(["a:6mA"]),
         )
 
         // IGV tracks

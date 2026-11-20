@@ -7,6 +7,12 @@ include { lookup_clair3_model } from './modules/local/wf-human-snp'
 
 include { bam as sv } from './workflows/wf-human-sv'
 include { output_sv } from './modules/local/wf-human-sv'
+include { svanna_prioritize } from './modules/local/svanna'
+include { ANNOTSV_SV } from './modules/local/annotsv'
+include { UCSC_LR_REFERENCE; ADD_UCSC_LR_FREQUENCY } from './modules/local/ucsc_lr_frequency'
+include { GENERATE_UCSC_LR_BND_CANDIDATES; FIX_UCSC_LR_BND } from './modules/local/ucsc_lr_bnd'
+include { GENERATE_HPO } from './modules/local/hpo_generate'
+include { mahi_mahi } from './modules/local/mahi-mahi'
 
 include { str } from './workflows/wf-human-str'
 include { output_str } from './modules/local/wf-human-str'
@@ -81,7 +87,21 @@ include {
 
 // entrypoint workflow
 WorkflowMain.initialise(workflow, params, log)
+
 workflow {
+
+    if (params.svanna && !params.sv && !params.cnv) {
+    throw new IllegalArgumentException(
+        "SvAnna requiere --sv o --cnv para disponer de un VCF de entrada."
+    )
+}
+
+    if (params.annotsv && !params.sv && !params.cnv) {
+        throw new IllegalArgumentException(
+            "AnnotSV requiere --sv o --cnv para disponer de un VCF de entrada."
+        )
+    }
+
 
     Map colors = NfcoreTemplate.logColours(params.monochrome_logs)
 
@@ -153,7 +173,7 @@ workflow {
     }
 
     // Trigger haplotagging
-    def run_haplotagging = params.str || params.phased
+    def run_haplotagging = params.str || params.phased || params.mahi_mahi
     
     // Combine data for partners
     def run_partners = params.partner?: false
@@ -579,6 +599,45 @@ workflow {
         }
         .set{pass_bam_channel}
 
+    // Generate HPO terms from GPAP only when SvAnna is executed
+        // ============================================================
+    // Generate and normalize HPO terms from GPAP
+    // ============================================================
+
+    if (params.svanna) {
+
+        // Extract metadata from samples passing the QC filter
+        gpap_sample_meta = pass_bam_channel.map {
+            xam, xai, meta -> meta
+        }
+
+        // HPO ontology used by SvAnna
+        hp_json_file = file(
+            "${params.svanna_db}/phenotype/hp.json"
+        )
+
+        // Query GPAP and generate one HPO file per sample
+        GENERATE_HPO(
+            gpap_sample_meta,
+            hp_json_file
+        )
+
+        // Associate each HPO file with its sample identifier
+        gpap_hpo_by_sample = GENERATE_HPO.out.hpo_terms.map {
+            meta, hpo_file ->
+
+            def sample_key = meta?.id ?: meta?.alias
+
+            if (!sample_key || sample_key.toString() == 'null') {
+                throw new IllegalArgumentException(
+                    "No valid sample ID found for HPO: ${meta}"
+                )
+            }
+
+            tuple(sample_key.toString(), hpo_file)
+        }
+    }
+
     // If it doesn't pass the minimum depth required, 
     // emit a bam channel of discarded bam files.
     filter.not_pass
@@ -705,6 +764,25 @@ workflow {
             using_user_bed,
             chromosome_codes
         )
+
+        if (params.mahi_mahi) {
+
+    // Reutilizar el alineamiento haplotipado:
+    // [xam, xai, meta]
+    mahi_input = clair_vcf.haplotagged_xam
+
+    // Seleccionar FASTA e índice de la referencia
+    ref_for_mahi = ref_channel.map {
+        fasta, fai, cache, ref_path ->
+        [fasta, fai]
+    }
+
+    // Ejecutar Mahi-mahi con el sexo definido por el workflow
+    mahi_results = mahi_mahi(
+        mahi_input,
+        ref_for_mahi,
+        sex
+    ) }
     }
     
     // wf-human-sv
@@ -734,6 +812,8 @@ workflow {
         json_sv = results_sv.sv_stats_json
         sv_vcf = results_sv.for_phasing
         output_sv(artifacts)
+
+
     } else {
         json_sv = Channel.empty()
         sv_vcf = Channel.empty()
@@ -909,6 +989,166 @@ workflow {
         cnv_vcf = Channel.empty()
     }
 
+    // ============================================================
+    // ============================================================
+    // Preparar los VCF de SV y CNV para anotación y priorización
+    // ============================================================
+
+    // SV: results_sv.for_phasing emite [meta, vcf, tbi]
+    sv_tool_input = sv_vcf.map { meta, vcf, tbi ->
+
+        def sample_id = meta?.id ?: meta?.alias
+
+        if (!sample_id || sample_id.toString() == 'null') {
+            sample_id = vcf.name
+                .replaceFirst(/\.vcf\.gz$/, '')
+                .replaceFirst(/\.vcf$/, '')
+                .replaceFirst(/\.wf_(sv|cnv)$/, '')
+                .replaceFirst(/\.(sv|cnv)$/, '')
+        }
+
+        def fixed_meta = (meta instanceof Map ? meta : [:]) + [
+            id: sample_id,
+            variant_source: 'SVs'
+        ]
+
+        tuple(fixed_meta, vcf, "${sample_id}.SVs")
+    }
+
+    // CNV: results_cnv.cnv_vcf emite [meta, vcf, tbi]
+    cnv_tool_input = cnv_vcf.map { meta, vcf, tbi ->
+
+        def sample_id = meta?.id ?: meta?.alias
+
+        if (!sample_id || sample_id.toString() == 'null') {
+            sample_id = vcf.name
+                .replaceFirst(/\.vcf\.gz$/, '')
+                .replaceFirst(/\.vcf$/, '')
+                .replaceFirst(/\.wf_(sv|cnv)$/, '')
+                .replaceFirst(/\.(sv|cnv)$/, '')
+        }
+
+        def fixed_meta = (meta instanceof Map ? meta : [:]) + [
+            id: sample_id,
+            variant_source: 'CNVs'
+        ]
+
+        tuple(fixed_meta, vcf, "${sample_id}.CNVs")
+    }
+
+    // Canal común: [meta, vcf, sample_prefix]
+    all_variant_tool_input = sv_tool_input.mix(cnv_tool_input)
+
+
+    // ============================================================
+    // SvAnna: priorización de SV y CNV
+    // ============================================================
+
+
+    if (params.svanna) {
+
+    // ------------------------------------------------------------
+    // Preparar los VCF con una clave común por muestra
+    // ------------------------------------------------------------
+
+    svanna_vcfs_by_sample = all_variant_tool_input.map {
+        meta, vcf, sample_prefix ->
+
+        def sample_key = meta?.id ?: meta?.alias
+
+        if (!sample_key || sample_key.toString() == 'null') {
+            throw new IllegalArgumentException(
+                "No valid ID for VCF: ${vcf.name}"
+            )
+        }
+
+        tuple(
+            sample_key.toString(),
+            meta,
+            vcf,
+            sample_prefix
+        )
+    }
+
+    // ------------------------------------------------------------
+    // Asociar cada VCF con el HPO de su muestra
+    // ------------------------------------------------------------
+
+    svanna_input = svanna_vcfs_by_sample
+        .combine(gpap_hpo_by_sample, by: 0)
+        .map {
+            sample_key, meta, vcf, sample_prefix, hpo_file ->
+
+            tuple(
+                meta,
+                vcf,
+                sample_prefix,
+                hpo_file
+            )
+        }
+
+    // ------------------------------------------------------------
+    // Ejecutar SvAnna
+    // ------------------------------------------------------------
+
+    svanna_prioritize(
+        svanna_input,
+        file(params.svanna_jar, checkIfExists: true),
+        params.svanna_db,
+        file("${projectDir}/bin/normalize_svanna_vcf.py")
+    )
+}
+
+
+    // ============================================================
+    // AnnotSV y frecuencias UCSC: SV + CNV
+    // ============================================================
+
+    if (params.annotsv) {
+
+        annotsv_input_vcf = all_variant_tool_input.map {
+            meta, vcf, sample_prefix ->
+            tuple(meta, vcf)
+        }
+
+        annotsv_results = ANNOTSV_SV(annotsv_input_vcf)
+
+        // Referencia poblacional UCSC de long reads
+        UCSC_LR_REFERENCE()
+        ucsc_lr_reference_bed = UCSC_LR_REFERENCE.out.bed
+
+        ucsc_lr_script = Channel.value(
+            file("${projectDir}/bin/add_ucsc_lr_frequency.py")
+        )
+
+        ucsc_lr_results = ADD_UCSC_LR_FREQUENCY(
+            annotsv_results.annotated_SVs,
+            ucsc_lr_reference_bed,
+            ucsc_lr_script
+        )
+
+        // Emparejamiento de breakends
+        ucsc_lr_bnd_generator = Channel.value(
+            file("${projectDir}/bin/generate_bnd_ucsc_candidates.py")
+        )
+
+        ucsc_lr_bnd_fixer = Channel.value(
+            file("${projectDir}/bin/fix_ucsc_lr_bnd.py")
+        )
+
+        ucsc_lr_bnd_candidates = GENERATE_UCSC_LR_BND_CANDIDATES(
+            ucsc_lr_results.annotated_ucsc_lr,
+            ucsc_lr_reference_bed,
+            ucsc_lr_bnd_generator
+        )
+
+        ucsc_lr_final = FIX_UCSC_LR_BND(
+            ucsc_lr_bnd_candidates.bnd_candidates,
+            ucsc_lr_reference_bed,
+            ucsc_lr_bnd_fixer
+        )
+    }
+
     // wf-human-str
     if (params.str) {
         // use haplotagged bam from snp() as input to str()
@@ -1034,7 +1274,6 @@ workflow {
         )
         | filter{it.name != 'OPTIONAL_FILE'}
     )
-
 }
 
 workflow.onComplete {
